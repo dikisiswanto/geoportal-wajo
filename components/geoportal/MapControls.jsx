@@ -21,26 +21,26 @@ export default function MapControls({
   return (
     <div className="map-ui-chrome pointer-events-none absolute inset-0 z-[700]">
       <div className="pointer-events-auto absolute left-3 top-14 flex flex-col gap-1 sm:top-3">
-        <IconButton label="Perbesar peta" tone="blue" disabled={!mapReady} onClick={onZoomIn}>
+        <IconButton label="Perbesar peta" tone="blue" placement="right" disabled={!mapReady} onClick={onZoomIn}>
           <IconPlus size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Perkecil peta" tone="slate" disabled={!mapReady} onClick={onZoomOut}>
+        <IconButton label="Perkecil peta" tone="slate" placement="right" disabled={!mapReady} onClick={onZoomOut}>
           <IconMinus size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Tampilkan seluruh Kabupaten Wajo" tone="amber" disabled={!mapReady} onClick={onHome}>
+        <IconButton label="Tampilkan seluruh Kabupaten Wajo" tone="amber" placement="right" disabled={!mapReady} onClick={onHome}>
           <IconTarget size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Gunakan lokasi perangkat" tone="emerald" disabled={!mapReady} onClick={onLocate}>
+        <IconButton label="Gunakan lokasi perangkat" tone="emerald" placement="right" disabled={!mapReady} onClick={onLocate}>
           <IconCurrentLocation size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Cetak peta" tone="violet" disabled={!mapReady} onClick={onPrint}>
+        <IconButton label="Cetak peta" tone="violet" placement="right" disabled={!mapReady} onClick={onPrint}>
           <IconPrinter size={18} stroke={1.8} />
         </IconButton>
       </div>
 
       {!sidebarOpen && (
         <div className="pointer-events-auto absolute left-3 top-3">
-          <IconButton label="Tampilkan katalog layer" tone="blue" onClick={onOpenSidebar}>
+          <IconButton label="Tampilkan katalog layer" tone="blue" placement="right" onClick={onOpenSidebar}>
             <IconLayersIntersect size={18} stroke={1.8} />
           </IconButton>
         </div>

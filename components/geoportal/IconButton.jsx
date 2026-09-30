@@ -6,6 +6,7 @@ export default function IconButton({
   disabled = false,
   active = false,
   className = "",
+  placement = "right",
 }) {
   const tones = {
     slate: active
@@ -25,6 +26,13 @@ export default function IconButton({
       : "bg-violet-50 text-violet-700 ring-violet-200 hover:bg-violet-100",
   };
 
+  const tooltipPlacement = {
+    right: "left-full top-1/2 ml-2 -translate-y-1/2",
+    left: "right-full top-1/2 mr-2 -translate-y-1/2",
+    top: "left-1/2 bottom-full mb-2 -translate-x-1/2",
+    bottom: "left-1/2 top-full mt-2 -translate-x-1/2",
+  }[placement] || "left-full top-1/2 ml-2 -translate-y-1/2";
+
   return (
     <button
       type="button"
@@ -38,7 +46,7 @@ export default function IconButton({
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-full top-1/2 z-[1400] ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-visible:block"
+        className={`pointer-events-none absolute z-[1600] hidden max-w-[min(280px,calc(100vw-24px))] whitespace-normal rounded bg-slate-900 px-2 py-1 text-left text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-visible:block ${tooltipPlacement}`}
       >
         {label}
       </span>

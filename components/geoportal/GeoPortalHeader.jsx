@@ -28,6 +28,7 @@ export default function GeoPortalHeader({ search, onSearch, sidebarOpen, legendO
       <nav className="ml-auto flex items-center gap-1" aria-label="Tampilan peta">
         <IconButton
           label={sidebarOpen ? "Sembunyikan katalog layer" : "Tampilkan katalog layer"}
+          placement="bottom"
           tone="blue"
           active={sidebarOpen}
           onClick={onToggleSidebar}
@@ -37,6 +38,7 @@ export default function GeoPortalHeader({ search, onSearch, sidebarOpen, legendO
         </IconButton>
         <IconButton
           label={legendOpen ? "Sembunyikan legenda" : "Tampilkan legenda"}
+          placement="bottom"
           tone="amber"
           active={legendOpen}
           onClick={onToggleLegend}

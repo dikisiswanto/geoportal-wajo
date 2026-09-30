@@ -71,7 +71,10 @@ a:focus-visible {
 }
 
 .leaflet-tooltip.leaflet-smart-tooltip {
-  max-width: min(280px, calc(100vw - 32px));
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: min(140px, calc(100vh - 32px));
+  overflow-y: auto;
   white-space: normal;
   overflow-wrap: anywhere;
 }

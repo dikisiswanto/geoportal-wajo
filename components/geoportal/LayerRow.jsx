@@ -7,11 +7,15 @@ export default function LayerRow({ layer, active, busy, error, onToggle }) {
       <button
         type="button"
         onClick={() => onToggle(layer)}
-        className="grid size-6 shrink-0 place-items-center text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+        className="group relative grid size-6 shrink-0 place-items-center text-slate-500 hover:bg-slate-100 hover:text-slate-900"
         aria-label={active ? `Sembunyikan ${layer.title}` : `Tampilkan ${layer.title}`}
         aria-pressed={active}
       >
         {active ? <IconEye size={16} stroke={1.7} /> : <IconEyeOff size={16} stroke={1.7} />}
+      
+        <span role="tooltip" className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-visible:block">
+          {active ? `Sembunyikan ${layer.title}` : `Tampilkan ${layer.title}`}
+        </span>
       </button>
       <button type="button" onClick={() => onToggle(layer)} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-2">

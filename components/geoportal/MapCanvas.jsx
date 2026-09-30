@@ -15,14 +15,28 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
   const requestCache = useRef({});
   const tileRef = useRef(null);
   const selectedRef = useRef(null);
+  const printViewRef = useRef(null);
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
+  const onStatusRef = useRef(onStatus);
+  const onCoordsRef = useRef(onCoords);
+  const onLayerLoadingRef = useRef(onLayerLoading);
+  const onLayerErrorRef = useRef(onLayerError);
+  const onLayerDataLoadedRef = useRef(onLayerDataLoaded);
+  const onFeatureSelectRef = useRef(onFeatureSelect);
+
+  useEffect(() => { onStatusRef.current = onStatus; }, [onStatus]);
+  useEffect(() => { onCoordsRef.current = onCoords; }, [onCoords]);
+  useEffect(() => { onLayerLoadingRef.current = onLayerLoading; }, [onLayerLoading]);
+  useEffect(() => { onLayerErrorRef.current = onLayerError; }, [onLayerError]);
+  useEffect(() => { onLayerDataLoadedRef.current = onLayerDataLoaded; }, [onLayerDataLoaded]);
+  useEffect(() => { onFeatureSelectRef.current = onFeatureSelect; }, [onFeatureSelect]);
 
   const loadLayerData = useCallback(async (layer) => {
     if (loadedData.current[layer.id]) return loadedData.current[layer.id];
     if (requestCache.current[layer.id]) return requestCache.current[layer.id];
 
-    onLayerLoading?.(layer.id, true);
+    onLayerLoadingRef.current?.(layer.id, true);
     const request = fetch(`/data/${encodeURIComponent(layer.file)}`, { cache: "force-cache" })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -36,22 +50,22 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
           delete next[layer.id];
           return next;
         });
-        onLayerDataLoaded?.(layer, data);
+        onLayerDataLoadedRef.current?.(layer, data);
         return data;
       })
       .catch((error) => {
         setErrors((previous) => ({ ...previous, [layer.id]: error.message || "Gagal memuat layer" }));
-        onLayerError?.(layer.id, error.message || "Gagal memuat layer");
+        onLayerErrorRef.current?.(layer.id, error.message || "Gagal memuat layer");
         return null;
       })
       .finally(() => {
-        onLayerLoading?.(layer.id, false);
+        onLayerLoadingRef.current?.(layer.id, false);
         delete requestCache.current[layer.id];
       });
 
     requestCache.current[layer.id] = request;
     return request;
-  }, [onLayerDataLoaded, onLayerError, onLayerLoading]);
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -84,22 +98,61 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
         attribution: "&copy; OpenStreetMap contributors"
       });
 
-      osm.on("loading", () => onStatus?.("Memuat peta dasar OpenStreetMap…"));
-      osm.on("load", () => onStatus?.("Peta dasar OpenStreetMap siap"));
-      osm.on("tileerror", () => onStatus?.("Peta dasar OpenStreetMap tidak dapat dimuat"));
+      osm.on("loading", () => onStatusRef.current?.("Memuat peta dasar OpenStreetMap…"));
+      osm.on("load", () => onStatusRef.current?.("Peta dasar OpenStreetMap siap"));
+      osm.on("tileerror", () => onStatusRef.current?.("Peta dasar OpenStreetMap tidak dapat dimuat"));
       osm.addTo(map);
       tileRef.current = osm;
 
-      map.on("mousemove", (event) => onCoords?.(`${event.latlng.lat.toFixed(5)}, ${event.latlng.lng.toFixed(5)}`));
-      map.on("zoomend", () => onStatus?.(`Zoom ${map.getZoom()} · WGS84`));
+      map.on("mousemove", (event) => onCoordsRef.current?.(`${event.latlng.lat.toFixed(5)}, ${event.latlng.lng.toFixed(5)}`));
+      map.on("zoomend", () => onStatusRef.current?.(`Zoom ${map.getZoom()} · WGS84`));
       mapRef.current = map;
       map.whenReady(() => {
-        window.requestAnimationFrame(() => map.invalidateSize());
+        window.requestAnimationFrame(() => map.invalidateSize({ pan: false }));
       });
-      onStatus?.("Peta siap");
+
+      // Printing changes the CSS size of the map container. Leaflet can
+      // otherwise recalculate the viewport and subtly pan the map. Preserve
+      // the exact center/zoom and invalidate without panning.
+      const beforePrint = () => {
+        if (!mapRef.current) return;
+        const center = map.getCenter();
+        printViewRef.current = {
+          lat: center.lat,
+          lng: center.lng,
+          zoom: map.getZoom()
+        };
+        map.invalidateSize({ pan: false, debounceMoveend: true });
+        map.setView(center, map.getZoom(), { animate: false });
+      };
+      const afterPrint = () => {
+        if (!mapRef.current || !printViewRef.current) return;
+        const view = printViewRef.current;
+        window.requestAnimationFrame(() => {
+          map.invalidateSize({ pan: false, debounceMoveend: true });
+          map.setView([view.lat, view.lng], view.zoom, { animate: false });
+          window.requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+        });
+      };
+      window.addEventListener("beforeprint", beforePrint);
+      window.addEventListener("afterprint", afterPrint);
+      map._wajoPrintHandlers = { beforePrint, afterPrint };
+      mapRef.current = map;
+      onStatusRef.current?.("Peta siap");
     });
-    return () => { disposed = true; mapRef.current?.remove(); mapRef.current = null; tileRef.current = null; };
-  }, [onCoords, onStatus]);
+    return () => {
+      disposed = true;
+      const map = mapRef.current;
+      if (map?._wajoPrintHandlers) {
+        window.removeEventListener("beforeprint", map._wajoPrintHandlers.beforePrint);
+        window.removeEventListener("afterprint", map._wajoPrintHandlers.afterPrint);
+      }
+      map?.remove();
+      mapRef.current = null;
+      tileRef.current = null;
+      printViewRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const active = layers.filter((layer) => visible[layer.id] && !loadedData.current[layer.id] && !errors[layer.id]);
@@ -134,7 +187,7 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
               selectedRef.current = featureLayer;
               featureLayer.__wajoBaseStyle = baseStyle;
               featureLayer.setStyle?.({ weight: isPolygon ? 2.6 : 2.8, color: "#0f172a", fillOpacity: isPolygon ? 0.82 : baseStyle.fillOpacity });
-              onFeatureSelect?.({ layer, feature });
+              onFeatureSelectRef.current?.({ layer, feature });
             });
 
             if (isPolygon) {
@@ -142,7 +195,6 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
               featureLayer.on("mouseover", () => {
                 if (selectedRef.current === featureLayer) return;
                 featureLayer.setStyle({ weight: 2.05, color: "#334155", fillOpacity: Math.min(0.82, (baseStyle.fillOpacity ?? 0.7) + 0.12) });
-                featureLayer.bringToFront?.();
               });
               featureLayer.on("mouseout", () => {
                 if (selectedRef.current === featureLayer) return;
@@ -155,8 +207,47 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
             } else {
               const label = featureLabel(layer, feature);
               const tooltipOptions = { sticky: true, direction: "auto", opacity: 0.96, offset: [10, 0], className: "leaflet-smart-tooltip" };
-              if (layer.group === "Infrastruktur" && feature.properties?.NAMOBJ) featureLayer.bindTooltip(String(feature.properties.NAMOBJ), tooltipOptions);
-              else if (layer.styleMode === "toponym" || (label && layer.labelField && layer.geometry === "Point")) featureLayer.bindTooltip(String(label), tooltipOptions);
+
+              const bindSmartTooltip = (content) => {
+                featureLayer.bindTooltip(String(content), tooltipOptions);
+                featureLayer.on("tooltipopen", (event) => {
+                  const map = mapRef.current;
+                  const tooltip = event.tooltip;
+                  const element = tooltip?.getElement?.();
+                  if (!map || !tooltip || !element) return;
+
+                  const size = map.getSize();
+                  const latLng = event?.latlng || tooltip?.getLatLng?.() || featureLayer.getLatLng?.() || featureLayer.getBounds?.().getCenter?.();
+                  if (!latLng) return;
+                  const point = map.latLngToContainerPoint(latLng);
+                  const width = Math.min(element.offsetWidth || 220, 320);
+                  const height = Math.min(element.offsetHeight || 40, 140);
+                  const gap = 12;
+                  const available = {
+                    right: size.x - point.x,
+                    left: point.x,
+                    bottom: size.y - point.y,
+                    top: point.y,
+                  };
+
+                  let direction = "top";
+                  if (available.right >= width + gap) direction = "right";
+                  else if (available.left >= width + gap) direction = "left";
+                  else if (available.bottom >= height + gap) direction = "bottom";
+
+                  const offsets = {
+                    right: [10, 0],
+                    left: [-10, 0],
+                    bottom: [0, 10],
+                    top: [0, -10],
+                  };
+                  tooltip.setDirection(direction);
+                  tooltip.setOffset(offsets[direction]);
+                });
+              };
+
+              if (layer.group === "Infrastruktur" && feature.properties?.NAMOBJ) bindSmartTooltip(feature.properties.NAMOBJ);
+              else if (layer.styleMode === "toponym" || (label && layer.labelField && layer.geometry === "Point")) bindSmartTooltip(label);
             }
           }
         }).addTo(mapRef.current);
@@ -195,6 +286,14 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
         () => onStatus?.("Lokasi tidak tersedia"),
         { enableHighAccuracy: true, timeout: 10000 }
       );
+    },
+    preparePrint: () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const center = map.getCenter();
+      printViewRef.current = { lat: center.lat, lng: center.lng, zoom: map.getZoom() };
+      map.invalidateSize({ pan: false, debounceMoveend: true });
+      map.setView(center, map.getZoom(), { animate: false });
     },
     zoomToFeature: (selection) => {
       if (!selection || !mapRef.current) return;

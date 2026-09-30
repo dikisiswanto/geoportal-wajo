@@ -94,13 +94,18 @@ export default function GeoPortal() {
   const handleMapCoords = useCallback((nextCoords) => setCoords(nextCoords), []);
   const handlePrint = useCallback(() => {
     if (typeof window === "undefined") return;
-    setStatus("Menyiapkan peta untuk dicetak…");
-    window.requestAnimationFrame(() => window.print());
+    setStatus("Menyiapkan area peta untuk dicetak…");
+    // Preserve the exact map viewport. Print CSS changes the map container
+    // dimensions; MapCanvas invalidates Leaflet without allowing it to pan.
+    mapApi.current?.preparePrint?.();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.print());
+    });
   }, []);
 
   const handleMapReadyStatus = useCallback((nextStatus) => {
-    setMapReady(true);
-    setStatus(nextStatus);
+    setMapReady((current) => current || true);
+    setStatus((current) => current === nextStatus ? current : nextStatus);
   }, []);
 
   return (
