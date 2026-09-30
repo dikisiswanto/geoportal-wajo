@@ -1,0 +1,10 @@
+Geoportal Wajo — data bundle
+
+Included source-derived GeoJSON layers:
+- PETA WAJO GIS: 2 layers (Adm Kecamatan, Jalan)
+- PETA WAJO ALL LAYERS: 15 layers
+- PETA WAJO PRASARANA: 10 layers
+- PETA WAJO ANGKA NILAI: 11 layers
+
+Total: 37 GeoJSON layers.
+All data served by the demo portal are EPSG:4326 GeoJSON copies from the previously generated GIS packages.
