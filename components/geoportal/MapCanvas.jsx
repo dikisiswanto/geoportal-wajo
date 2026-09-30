@@ -67,6 +67,13 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
         zoomDelta: 1
       }).setView(DEFAULT_VIEW, 11);
 
+      // Keep the basemap visually quieter while vector data remains fully legible.
+      // Leaflet places tiles at z-index 200 and vector overlays at 400 by default.
+      const tintPane = map.createPane("basemapTint");
+      tintPane.style.zIndex = "250";
+      tintPane.style.pointerEvents = "none";
+      L.DomUtil.create("div", "leaflet-basemap-tint", tintPane);
+
       const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         maxNativeZoom: 19,
@@ -119,19 +126,37 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
             return L.circleMarker(latlng, { radius: 4, color: "#fff", weight: 1, fillColor: layer.color, fillOpacity: 0.82 });
           },
           onEachFeature: (feature, featureLayer) => {
+            const baseStyle = styleFor(layer, feature);
+            const isPolygon = layer.geometry === "Polygon" || featureLayer instanceof L.Polygon;
+
             featureLayer.on("click", () => {
-              selectedRef.current?.setStyle?.(styleFor(layer, feature));
+              selectedRef.current?.setStyle?.(selectedRef.current.__wajoBaseStyle || {});
               selectedRef.current = featureLayer;
-              featureLayer.setStyle?.({ weight: 2.8, color: "#0f172a" });
+              featureLayer.__wajoBaseStyle = baseStyle;
+              featureLayer.setStyle?.({ weight: isPolygon ? 2.6 : 2.8, color: "#0f172a", fillOpacity: isPolygon ? 0.82 : baseStyle.fillOpacity });
               onFeatureSelect?.({ layer, feature });
             });
 
+            if (isPolygon) {
+              featureLayer.__wajoBaseStyle = baseStyle;
+              featureLayer.on("mouseover", () => {
+                if (selectedRef.current === featureLayer) return;
+                featureLayer.setStyle({ weight: 2.05, color: "#334155", fillOpacity: Math.min(0.82, (baseStyle.fillOpacity ?? 0.7) + 0.12) });
+                featureLayer.bringToFront?.();
+              });
+              featureLayer.on("mouseout", () => {
+                if (selectedRef.current === featureLayer) return;
+                featureLayer.setStyle(baseStyle);
+              });
+            }
+
             if (layer.styleMode === "admin" && feature.properties?.Kecamatan) {
-              featureLayer.bindTooltip(String(feature.properties.Kecamatan), { permanent: true, direction: "center", className: "leaflet-kecamatan-label", opacity: 1 });
+              featureLayer.bindTooltip(String(feature.properties.Kecamatan), { permanent: true, direction: "center", className: "leaflet-kecamatan-label", opacity: 1, interactive: false });
             } else {
               const label = featureLabel(layer, feature);
-              if (layer.group === "Infrastruktur" && feature.properties?.NAMOBJ) featureLayer.bindTooltip(String(feature.properties.NAMOBJ), { sticky: true, opacity: 0.92 });
-              else if (layer.styleMode === "toponym" || (label && layer.labelField && layer.geometry === "Point")) featureLayer.bindTooltip(String(label), { sticky: true, opacity: 0.92 });
+              const tooltipOptions = { sticky: true, direction: "auto", opacity: 0.96, offset: [10, 0], className: "leaflet-smart-tooltip" };
+              if (layer.group === "Infrastruktur" && feature.properties?.NAMOBJ) featureLayer.bindTooltip(String(feature.properties.NAMOBJ), tooltipOptions);
+              else if (layer.styleMode === "toponym" || (label && layer.labelField && layer.geometry === "Point")) featureLayer.bindTooltip(String(label), tooltipOptions);
             }
           }
         }).addTo(mapRef.current);
@@ -182,13 +207,16 @@ const MapCanvas = forwardRef(function MapCanvas({ visible, layers, onFeatureSele
       if (!selectedRef.current) return;
       const layer = Object.values(layerRefs.current).find((candidate) => candidate?.hasLayer?.(selectedRef.current));
       void layer;
-      selectedRef.current?.setStyle?.({ weight: 1.05 });
+      selectedRef.current?.setStyle?.(selectedRef.current.__wajoBaseStyle || { weight: 1.05 });
       selectedRef.current = null;
     }
   }), [onStatus]);
 
   return (
-    <div ref={mapNode} className="absolute inset-0" role="application" aria-label="Peta interaktif Kabupaten Wajo" />
+    <>
+      <p id="map-instructions" className="sr-only">Gunakan katalog layer untuk menampilkan data. Klik objek pada peta untuk melihat informasi feature.</p>
+      <div ref={mapNode} className="absolute inset-0" role="region" aria-label="Peta interaktif Kabupaten Wajo" aria-describedby="map-instructions" />
+    </>
   );
 });
 

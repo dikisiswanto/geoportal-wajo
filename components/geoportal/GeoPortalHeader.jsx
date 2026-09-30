@@ -1,4 +1,5 @@
 import { IconLayersIntersect, IconMap, IconSearch } from "@tabler/icons-react";
+import IconButton from "./IconButton";
 
 export default function GeoPortalHeader({ search, onSearch, sidebarOpen, legendOpen, onToggleSidebar, onToggleLegend }) {
   return (
@@ -15,18 +16,35 @@ export default function GeoPortalHeader({ search, onSearch, sidebarOpen, legendO
         <label className="relative block">
           <span className="sr-only">Cari layer</span>
           <IconSearch aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari layer…" className="w-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:bg-white" />
+          <input
+            value={search}
+            onChange={(event) => onSearch(event.target.value)}
+            placeholder="Cari layer…"
+            className="w-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
+          />
         </label>
       </div>
 
-      <div className="ml-auto flex items-center gap-1">
-        <button type="button" onClick={onToggleSidebar} className="grid size-9 place-items-center text-slate-600 hover:bg-slate-100" aria-label={sidebarOpen ? "Sembunyikan katalog" : "Tampilkan katalog"} aria-pressed={sidebarOpen}>
+      <nav className="ml-auto flex items-center gap-1" aria-label="Tampilan peta">
+        <IconButton
+          label={sidebarOpen ? "Sembunyikan katalog layer" : "Tampilkan katalog layer"}
+          tone="blue"
+          active={sidebarOpen}
+          onClick={onToggleSidebar}
+          className="size-9"
+        >
           <IconLayersIntersect size={18} stroke={1.7} />
-        </button>
-        <button type="button" onClick={onToggleLegend} className="grid size-9 place-items-center text-slate-600 hover:bg-slate-100" aria-label={legendOpen ? "Sembunyikan legenda" : "Tampilkan legenda"} aria-pressed={legendOpen}>
+        </IconButton>
+        <IconButton
+          label={legendOpen ? "Sembunyikan legenda" : "Tampilkan legenda"}
+          tone="amber"
+          active={legendOpen}
+          onClick={onToggleLegend}
+          className="size-9"
+        >
           <IconMap size={18} stroke={1.7} />
-        </button>
-      </div>
+        </IconButton>
+      </nav>
     </header>
   );
 }

@@ -1,15 +1,50 @@
-import { IconCurrentLocation, IconLayersIntersect, IconMinus, IconPlus, IconTarget } from "@tabler/icons-react";
+import {
+  IconCurrentLocation,
+  IconLayersIntersect,
+  IconMinus,
+  IconPlus,
+  IconTarget,
+  IconPrinter,
+} from "@tabler/icons-react";
+import IconButton from "./IconButton";
 
-export default function MapControls({ mapReady, onZoomIn, onZoomOut, onHome, onLocate, sidebarOpen, onOpenSidebar }) {
+export default function MapControls({
+  mapReady,
+  onZoomIn,
+  onZoomOut,
+  onHome,
+  onLocate,
+  sidebarOpen,
+  onOpenSidebar,
+  onPrint,
+}) {
   return (
-    <>
-      <div className="absolute left-3 top-14 z-[700] flex flex-col border border-slate-200 bg-white shadow-sm sm:top-3">
-        <button type="button" onClick={onZoomIn} disabled={!mapReady} className="grid size-10 place-items-center border-b border-slate-200 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300" aria-label="Perbesar peta"><IconPlus size={18} stroke={1.7} /></button>
-        <button type="button" onClick={onZoomOut} disabled={!mapReady} className="grid size-10 place-items-center border-b border-slate-200 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300" aria-label="Perkecil peta"><IconMinus size={18} stroke={1.7} /></button>
-        <button type="button" onClick={onHome} disabled={!mapReady} className="grid size-10 place-items-center border-b border-slate-200 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300" aria-label="Tampilkan Kabupaten Wajo"><IconTarget size={18} stroke={1.7} /></button>
-        <button type="button" onClick={onLocate} disabled={!mapReady} className="grid size-10 place-items-center text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300" aria-label="Gunakan lokasi perangkat"><IconCurrentLocation size={18} stroke={1.7} /></button>
+    <div className="map-ui-chrome pointer-events-none absolute inset-0 z-[700]">
+      <div className="pointer-events-auto absolute left-3 top-14 flex flex-col gap-1 sm:top-3">
+        <IconButton label="Perbesar peta" tone="blue" disabled={!mapReady} onClick={onZoomIn}>
+          <IconPlus size={18} stroke={1.8} />
+        </IconButton>
+        <IconButton label="Perkecil peta" tone="slate" disabled={!mapReady} onClick={onZoomOut}>
+          <IconMinus size={18} stroke={1.8} />
+        </IconButton>
+        <IconButton label="Tampilkan seluruh Kabupaten Wajo" tone="amber" disabled={!mapReady} onClick={onHome}>
+          <IconTarget size={18} stroke={1.8} />
+        </IconButton>
+        <IconButton label="Gunakan lokasi perangkat" tone="emerald" disabled={!mapReady} onClick={onLocate}>
+          <IconCurrentLocation size={18} stroke={1.8} />
+        </IconButton>
+        <IconButton label="Cetak peta" tone="violet" disabled={!mapReady} onClick={onPrint}>
+          <IconPrinter size={18} stroke={1.8} />
+        </IconButton>
       </div>
-      {!sidebarOpen && <button type="button" onClick={onOpenSidebar} className="absolute left-3 top-3 z-[700] grid size-10 place-items-center border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50" aria-label="Tampilkan katalog layer"><IconLayersIntersect size={18} stroke={1.7} /></button>}
-    </>
+
+      {!sidebarOpen && (
+        <div className="pointer-events-auto absolute left-3 top-3">
+          <IconButton label="Tampilkan katalog layer" tone="blue" onClick={onOpenSidebar}>
+            <IconLayersIntersect size={18} stroke={1.8} />
+          </IconButton>
+        </div>
+      )}
+    </div>
   );
 }

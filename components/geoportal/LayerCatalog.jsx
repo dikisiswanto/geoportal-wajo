@@ -1,4 +1,4 @@
-import { IconSearch, IconSquareX } from "@tabler/icons-react";
+import { IconRefresh, IconSearch, IconSquareX } from "@tabler/icons-react";
 import LayerRow from "./LayerRow";
 
 export default function LayerCatalog({
@@ -34,7 +34,7 @@ export default function LayerCatalog({
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
           <div><p className="text-sm font-semibold text-slate-900">Layer</p><p className="text-xs text-slate-500">Pilih data yang ingin ditampilkan.</p></div>
-          <button type="button" onClick={onReset} className="text-xs font-medium text-slate-500 hover:text-slate-900">Reset</button>
+          <button type="button" onClick={onReset} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Kembalikan tampilan peta dan filter ke kondisi awal"><IconRefresh size={14} stroke={1.8} /> Reset</button>
         </div>
         <div className="mt-3">
           <label className="sr-only" htmlFor="group-filter">Kelompok layer</label>

@@ -14,7 +14,8 @@ export const metadata = {
     default: "Geoportal Kabupaten Wajo",
     template: "%s | Geoportal Kabupaten Wajo"
   },
-  description: "Portal peta dan data geospasial Kabupaten Wajo.",
+  description: "Geoportal resmi untuk menjelajah peta, data geospasial, administrasi, jaringan, infrastruktur, dan informasi tematik Kabupaten Wajo.",
+  keywords: ["Geoportal Wajo", "Kabupaten Wajo", "peta Wajo", "data geospasial Wajo", "GIS Wajo", "peta interaktif Wajo"],
   applicationName: "Geoportal Kabupaten Wajo",
   alternates: { canonical: "/" },
   robots: {

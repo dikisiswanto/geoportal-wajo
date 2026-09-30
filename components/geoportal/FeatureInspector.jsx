@@ -5,7 +5,7 @@ export default function FeatureInspector({ selected, open, onClose, onZoom }) {
   if (!open || !selected) return null;
 
   return (
-    <aside className="absolute inset-y-0 right-0 z-[1000] flex w-[380px] max-w-[92vw] flex-col border-l border-slate-200 bg-white shadow-[-8px_0_24px_rgba(15,23,42,0.05)]" aria-label="Informasi feature">
+    <aside className="map-ui-chrome absolute inset-y-0 right-0 z-[1000] flex w-[380px] max-w-[92vw] flex-col border-l border-slate-200 bg-white shadow-[-8px_0_24px_rgba(15,23,42,0.05)]" aria-label="Informasi feature">
       <div className="flex items-start gap-3 border-b border-slate-200 px-4 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Feature</p>
