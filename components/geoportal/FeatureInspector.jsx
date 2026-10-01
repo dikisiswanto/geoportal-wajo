@@ -75,6 +75,10 @@ export default function FeatureInspector({
             {" · "}
             {selected.layer.group}
           </p>
+          <p className="mt-1 truncate text-[10px] text-slate-400" title={selected.layer.source}>
+            Sumber: {selected.layer.source || "Tidak tersedia"}
+            {selected.layer.dataYear ? ` · ${selected.layer.dataYear}` : ""}
+          </p>
         </div>
 
         <button

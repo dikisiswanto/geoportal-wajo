@@ -1,21 +1,48 @@
 import { IconLayersIntersect, IconMap, IconSearch } from "@tabler/icons-react";
 import IconButton from "./IconButton";
 
-export default function GeoPortalHeader({ search, onSearch, sidebarOpen, legendOpen, onToggleSidebar, onToggleLegend }) {
+const WAJO_COAT_OF_ARMS =
+  "https://upload.wikimedia.org/wikipedia/commons/2/22/Lambang_Kabupaten_Wajo.png";
+
+export default function GeoPortalHeader({
+  search,
+  onSearch,
+  sidebarOpen,
+  legendOpen,
+  onToggleSidebar,
+  onToggleLegend
+}) {
   return (
     <header className="z-[1500] flex h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-2.5">
-        <div className="grid size-8 shrink-0 place-items-center border border-slate-300 text-sm font-bold text-slate-800">W</div>
+        <div className="grid size-9 shrink-0 place-items-center overflow-hidden border border-slate-200 bg-white">
+          <img
+            src={WAJO_COAT_OF_ARMS}
+            alt="Lambang Kabupaten Wajo"
+            width="36"
+            height="36"
+            className="size-full object-contain p-0.5"
+            referrerPolicy="no-referrer"
+          />
+        </div>
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Pemerintah Kabupaten Wajo</p>
-          <h1 className="truncate text-[15px] font-semibold text-slate-900">Geoportal</h1>
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Pemerintah Kabupaten Wajo
+          </p>
+          <h1 className="truncate text-[15px] font-semibold text-slate-900">
+            Geoportal
+          </h1>
         </div>
       </div>
 
       <div className="mx-auto hidden w-full max-w-md px-8 md:block">
         <label className="relative block">
           <span className="sr-only">Cari layer</span>
-          <IconSearch aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <IconSearch
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            size={16}
+          />
           <input
             value={search}
             onChange={(event) => onSearch(event.target.value)}

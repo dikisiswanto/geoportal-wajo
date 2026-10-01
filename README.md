@@ -8,10 +8,10 @@ Tampilan utama berfokus pada peta. Pengguna dapat membuka katalog layer, menyala
 
 - Basemap OpenStreetMap tanpa API key.
 - Katalog layer yang dapat dicari dan difilter berdasarkan kelompok.
-- Batas administrasi dan kecamatan aktif secara default.
+- Batas administrasi dan batas kecamatan aktif secara default.
 - Nama kecamatan ditampilkan langsung pada area kecamatan.
 - Polygon diberi warna agar perbedaan wilayah mudah dibaca.
-- Layer jaringan dan jalan ditampilkan sebagai garis.
+- Layer jaringan dan jalan ditampilkan sebagai garis dengan nama layer formal yang stabil.
 - Data titik menggunakan ikon yang disesuaikan dengan jenis sarana, misalnya transportasi, telekomunikasi, energi, air, dan fasilitas lainnya.
 - Klik feature untuk membuka informasi atribut.
 - Tombol Zoom, Home, dan Lokasi perangkat.
@@ -85,6 +85,22 @@ lib/
 public/data/
   *.geojson                   # dataset yang digunakan portal
 ```
+
+## Penamaan layer dan sumber data
+
+Nama layer yang dilihat pengguna menggunakan istilah geografis/formal dan tidak memasukkan tahun dataset. Tahun tetap dicatat sebagai metadata jika tersedia.
+
+Contoh:
+
+```text
+Jaringan Jalan
+Sumber: Data Jaringan Jalan Kabupaten Wajo
+Tahun: 2020
+```
+
+Nama file GeoJSON boleh tetap menggunakan nama teknis dari dataset sumber karena file tersebut tidak ditampilkan sebagai nama layer utama. Registry layer pada `lib/layers.js` menjadi satu tempat untuk mengatur nama tampilan, sumber data, tahun data, kelompok, geometry, dan metadata lainnya.
+
+Sumber data menggunakan pola nama yang seragam: `Data <nama dataset> Kabupaten Wajo`.
 
 ## Prinsip pengembangan
 

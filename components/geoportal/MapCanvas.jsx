@@ -842,15 +842,10 @@ const MapCanvas = forwardRef(function MapCanvas(
                             ]
                           };
 
-                          tooltip.setDirection(
-                            direction
-                          );
-
-                          tooltip.setOffset(
-                            offsets[
-                              direction
-                            ]
-                          );
+                          tooltip.options.direction = direction;
+                          tooltip.options.offset =
+                            offsets[direction];
+                          tooltip.update();
                         }
                       );
                     };
