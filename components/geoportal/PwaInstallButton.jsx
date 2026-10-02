@@ -58,7 +58,7 @@ export default function PwaInstallButton() {
       tone="emerald"
       onClick={install}
       disabled={busy}
-      className="size-9"
+      className="size-10"
     >
       <IconDownload size={18} stroke={1.8} />
     </IconButton>

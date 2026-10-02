@@ -1,17 +1,17 @@
 import { IconInfoCircle, IconLayersIntersect, IconMap } from "@tabler/icons-react";
 import IconButton from "./IconButton";
 
-export default function MobileActions({ onOpenSidebar, onToggleLegend, selected, onOpenInspector }) {
+export default function MobileActions({ onOpenSidebar, onToggleLegend, selected, onOpenInspector, sidebarOpen = false, legendOpen = false }) {
   return (
-    <div className="map-ui-chrome absolute bottom-3 right-3 z-[700] flex items-center gap-2 sm:hidden">
-      <IconButton label="Buka katalog layer" tone="blue" placement="top" onClick={onOpenSidebar} className="size-9">
+    <div className="map-ui-chrome absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-[840] flex items-center gap-2 sm:hidden">
+      <IconButton label={sidebarOpen ? "Katalog layer sedang terbuka" : "Buka katalog layer"} tone="blue" active={sidebarOpen} placement="top" onClick={onOpenSidebar} className="size-10">
         <IconLayersIntersect size={17} />
       </IconButton>
-      <IconButton label="Tampilkan atau sembunyikan legenda" tone="amber" placement="top" onClick={onToggleLegend} className="size-9">
+      <IconButton label={legendOpen ? "Sembunyikan legenda" : "Tampilkan legenda"} tone="amber" active={legendOpen} placement="top" onClick={onToggleLegend} className="size-10">
         <IconMap size={17} />
       </IconButton>
       {selected && (
-        <IconButton label="Buka informasi feature" tone="emerald" placement="top" onClick={onOpenInspector} className="size-9">
+        <IconButton label="Buka informasi feature" tone="emerald" placement="top" onClick={onOpenInspector} className="size-10">
           <IconInfoCircle size={17} />
         </IconButton>
       )}

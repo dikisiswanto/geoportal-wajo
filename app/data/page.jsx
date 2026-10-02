@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { layers } from "../../lib/layers";
 import { absoluteUrl, datasetSlug, getDatasetSeo, PUBLISHER_NAME, SITE_NAME, SOCIAL_IMAGE } from "../../lib/seo";
+import SiteHeader from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter";
+import CatalogDatasetList from "../../components/CatalogDatasetList";
 
 export const metadata = {
   title: { absolute: "Katalog Data Geospasial Kabupaten Wajo | Geoportal Wajo" },
@@ -45,6 +48,7 @@ export default function DataCatalogPage() {
     description:
       "Katalog data geospasial yang tersedia pada Peta Interaktif Kabupaten Wajo.",
     url: absoluteUrl("/data"),
+    mainEntityOfPage: absoluteUrl("/data"),
     provider: {
       "@type": "GovernmentOrganization",
       name: "Pemerintah Kabupaten Wajo",
@@ -59,18 +63,19 @@ export default function DataCatalogPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50">
+      <SiteHeader active="data" title="Geoportal Kabupaten Wajo" kicker="Pemerintah Kabupaten Wajo" />
+      <main>
+      <div className="mx-auto max-w-6xl px-5 pb-10 pt-10 sm:px-6 sm:pt-11 lg:px-8">
         <header className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             {PUBLISHER_NAME}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 lg:text-3xl">
             Katalog Data Geospasial Kabupaten Wajo
           </h1>
-          <p className="mt-4 text-base leading-7 text-slate-600">
-            Jelajahi daftar data geospasial yang tersedia pada {SITE_NAME}. Setiap halaman data
-            menjelaskan tema, geometri, sumber, dan informasi singkat tentang dataset.
+          <p className="mt-4 text-sm leading-6 text-slate-600 lg:text-base lg:leading-7">
+            Jelajahi dataset geospasial Kabupaten Wajo melalui halaman ringkas yang memuat konteks data, sumber, statistik, dan tautan ke peta interaktif.
           </p>
           <Link
             href="/"
@@ -80,42 +85,18 @@ export default function DataCatalogPage() {
           </Link>
         </header>
 
-        <section className="mt-10 space-y-10" aria-label="Daftar dataset">
-          {groups.map((group) => (
-            <section key={group}>
-              <h2 className="text-lg font-semibold text-slate-900">{group}</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {layers
-                  .filter((layer) => layer.group === group)
-                  .map((layer) => {
-                    const seo = getDatasetSeo(layer);
-                    return (
-                      <Link
-                        key={layer.id}
-                        href={`/data/${datasetSlug(layer)}`}
-                        className="group rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:shadow-sm"
-                      >
-                        <h3 className="font-semibold text-slate-900 group-hover:text-blue-800">
-                          {layer.title}
-                        </h3>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{seo.description}</p>
-                        <p className="mt-3 text-xs text-slate-500">
-                          {layer.geometry}
-                          {layer.dataYear ? ` · ${layer.dataYear}` : ""}
-                        </p>
-                      </Link>
-                    );
-                  })}
-              </div>
-            </section>
-          ))}
+        <section className="mt-10" aria-label="Daftar dataset">
+          <CatalogDatasetList layers={layers} groups={groups} />
         </section>
+
       </div>
+      </main>
+      <SiteFooter />
 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-    </main>
+    </div>
   );
 }

@@ -15,12 +15,18 @@ import {
 } from "../../lib/geo/markers";
 
 import {
+  featureKey,
   featureLabel
 } from "../../lib/geo/format";
 
 import {
   styleFor
 } from "../../lib/geo/styles";
+
+import {
+  featureMatchesRegion,
+  featureRegionName
+} from "../../lib/geo/region";
 
 const DEFAULT_VIEW = [-4.13, 120.03];
 
@@ -57,15 +63,20 @@ function fitWajoBounds(map, L, data) {
   return true;
 }
 
-function filterGeoJsonForLayer(layer, data) {
+function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData) {
   const filter = layer?.featureFilter;
+  const hasRegionFilter = Boolean(regionFilter);
 
-  if (!filter || !Array.isArray(data?.features)) {
+  if (!filter && !hasRegionFilter) {
+    return data;
+  }
+
+  if (!Array.isArray(data?.features)) {
     return data;
   }
 
   const excluded = new Set(
-    (filter.excludeValues ?? []).map((value) =>
+    (filter?.excludeValues ?? []).map((value) =>
       String(value ?? "").trim().toLowerCase()
     )
   );
@@ -73,14 +84,24 @@ function filterGeoJsonForLayer(layer, data) {
   return {
     ...data,
     features: data.features.filter((feature) => {
-      const value = feature?.properties?.[filter.field];
-      const normalized = String(value ?? "").trim();
+      if (filter) {
+        const value = feature?.properties?.[filter.field];
+        const normalized = String(value ?? "").trim();
 
-      if (filter.excludeEmpty && normalized === "") {
-        return false;
+        if (filter.excludeEmpty && normalized === "") {
+          return false;
+        }
+
+        if (excluded.has(normalized.toLowerCase())) {
+          return false;
+        }
       }
 
-      return !excluded.has(normalized.toLowerCase());
+      if (!hasRegionFilter || layer?.id === "adm-kecamatan" || layer?.id === "batas-administrasi") {
+        return true;
+      }
+
+      return featureMatchesRegion(feature, regionFilter, boundaryData);
     })
   };
 }
@@ -94,7 +115,9 @@ const MapCanvas = forwardRef(function MapCanvas(
     onLayerLoading,
     onLayerError,
     onStatus,
-    onCoords
+    onCoords,
+    onViewChange,
+    regionFilter
   },
   ref
 ) {
@@ -122,6 +145,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     useRef(onLayerDataLoaded);
   const onFeatureSelectRef =
     useRef(onFeatureSelect);
+  const onViewChangeRef = useRef(onViewChange);
 
   useEffect(() => {
     onStatusRef.current = onStatus;
@@ -149,6 +173,10 @@ const MapCanvas = forwardRef(function MapCanvas(
       onFeatureSelect;
   }, [onFeatureSelect]);
 
+  useEffect(() => {
+    onViewChangeRef.current = onViewChange;
+  }, [onViewChange]);
+
   const loadLayerData = useCallback(
     async (layer) => {
       if (loadedData.current[layer.id]) {
@@ -165,7 +193,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       );
 
       const request = fetch(
-        `/data/${encodeURIComponent(layer.file)}`,
+        `/geo-data/${encodeURIComponent(layer.file)}`,
         {
           cache: "force-cache"
         }
@@ -364,6 +392,15 @@ const MapCanvas = forwardRef(function MapCanvas(
           )
       );
 
+      map.on("moveend", () => {
+        const center = map.getCenter();
+        onViewChangeRef.current?.({
+          lat: Number(center.lat.toFixed(5)),
+          lng: Number(center.lng.toFixed(5)),
+          zoom: map.getZoom()
+        });
+      });
+
       mapRef.current = map;
 
       map.whenReady(() => {
@@ -538,6 +575,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   /*
    * Render vector layers.
    */
+  const previousRegionFilterRef = useRef(regionFilter);
+
   useEffect(() => {
     if (!mapRef.current) {
       return;
@@ -545,6 +584,13 @@ const MapCanvas = forwardRef(function MapCanvas(
 
     import("leaflet").then((L) => {
       const map = mapRef.current;
+
+      if (previousRegionFilterRef.current !== regionFilter) {
+        Object.values(layerRefs.current).forEach((candidate) => candidate?.remove?.());
+        layerRefs.current = {};
+        selectedRef.current = null;
+        previousRegionFilterRef.current = regionFilter;
+      }
       const vectorRenderer =
         vectorRendererRef.current ||
         L.canvas({ padding: 0.35 });
@@ -579,7 +625,9 @@ const MapCanvas = forwardRef(function MapCanvas(
         const renderData =
           filterGeoJsonForLayer(
             layer,
-            sourceData
+            sourceData,
+            regionFilter,
+            loadedData.current["adm-kecamatan"]
           );
 
         const geoLayer =
@@ -693,6 +741,8 @@ const MapCanvas = forwardRef(function MapCanvas(
                   featureLayer instanceof
                     L.Polygon;
 
+                featureLayer.__wajoFeatureKey = featureKey(layer, feature);
+
                 /*
                  * Universal feature selection.
                  */
@@ -726,7 +776,12 @@ const MapCanvas = forwardRef(function MapCanvas(
 
                     onFeatureSelectRef.current?.({
                       layer,
-                      feature
+                      feature,
+                      featureKey: featureKey(layer, feature),
+                      regionName: featureRegionName(
+                        feature,
+                        loadedData.current["adm-kecamatan"]
+                      )
                     });
                   }
                 );
@@ -1045,7 +1100,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   }, [
     layers,
     visible,
-    renderVersion
+    renderVersion,
+    regionFilter
   ]);
 
   useImperativeHandle(
@@ -1084,6 +1140,52 @@ const MapCanvas = forwardRef(function MapCanvas(
             );
           }
         );
+      },
+
+      setView: ({ lat, lng, zoom } = {}) => {
+        if (!mapRef.current || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        mapRef.current.setView([lat, lng], Number.isFinite(zoom) ? zoom : mapRef.current.getZoom(), { animate: false });
+      },
+
+      zoomToRegion: (regionName) => {
+        if (!mapRef.current || !regionName) return;
+        const adminData = loadedData.current["adm-kecamatan"];
+        if (!adminData?.features?.length) return;
+        import("leaflet").then((L) => {
+          const feature = adminData.features.find((item) =>
+            String(item?.properties?.Kecamatan || "").trim().toLowerCase() === String(regionName).trim().toLowerCase()
+          );
+          if (!feature) return;
+          const bounds = L.geoJSON(feature).getBounds();
+          if (bounds.isValid()) {
+            mapRef.current.fitBounds(bounds, { padding: [56, 56], maxZoom: 13, animate: true });
+          }
+        });
+      },
+
+      selectFeature: (layerId, key) => {
+        const group = layerRefs.current[layerId];
+        if (!group || key == null) return false;
+        let target = null;
+        group.eachLayer?.((candidate) => {
+          if (target) return;
+          if (candidate?.__wajoFeatureKey != null && String(candidate.__wajoFeatureKey) === String(key)) {
+            target = candidate;
+          }
+        });
+        if (!target) return false;
+        target.fire?.("click");
+        return true;
+      },
+
+      shareView: () => {
+        if (!mapRef.current) return null;
+        const center = mapRef.current.getCenter();
+        return {
+          lat: Number(center.lat.toFixed(5)),
+          lng: Number(center.lng.toFixed(5)),
+          zoom: mapRef.current.getZoom()
+        };
       },
 
       locateMe: () => {
@@ -1161,6 +1263,25 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       },
 
+      zoomToLayer: (layerId) => {
+        if (!mapRef.current) return;
+        import("leaflet").then((L) => {
+          const data = loadedData.current[layerId];
+          const layerConfig = layers.find((item) => item.id === layerId);
+          if (!data || !layerConfig) return;
+          const scoped = filterGeoJsonForLayer(
+            layerConfig,
+            data,
+            regionFilter,
+            loadedData.current["adm-kecamatan"]
+          );
+          const bounds = L.geoJSON(scoped).getBounds();
+          if (bounds.isValid()) {
+            mapRef.current.fitBounds(bounds, { padding: [44, 44], maxZoom: regionFilter ? 15 : 14, animate: true });
+          }
+        });
+      },
+
       zoomToFeature: (
         selection
       ) => {
@@ -1226,7 +1347,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           null;
       }
     }),
-    [onStatus]
+    [onStatus, regionFilter, layers]
   );
 
   return (

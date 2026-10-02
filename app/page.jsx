@@ -88,8 +88,9 @@ export default function Home() {
       <section className="sr-only" aria-labelledby="geoportal-summary">
         <h2 id="geoportal-summary">Peta dan data geospasial Kabupaten Wajo</h2>
         <p>
-          {DEFAULT_DESCRIPTION} Portal ini dibuat dan dikelola oleh {PUBLISHER_NAME}. Sebagian data
-          bersumber dari ArcGIS dan sumber data terbuka.
+          {DEFAULT_DESCRIPTION} Portal ini dibuat dan dikelola oleh {PUBLISHER_NAME}. Data dasar administrasi
+          bersumber dari Ina-Geoportal BIG, data pendidikan dari Kemendikdasmen, dan dataset sektoral
+          lainnya dari sumber data terbuka dan/atau ArcGIS sesuai metadata.
         </p>
       </section>
       {structuredData.map((item) => (

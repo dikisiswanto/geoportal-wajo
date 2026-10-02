@@ -1,4 +1,4 @@
-const CACHE_NAME = "geoportal-wajo-v2";
+const CACHE_NAME = "geoportal-wajo-v3";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -58,7 +58,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // GeoJSON: serve the cached version immediately, then refresh it in the background.
-  if (url.pathname.startsWith("/data/")) {
+  if (url.pathname.startsWith("/geo-data/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
         const network = fetch(request)

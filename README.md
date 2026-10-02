@@ -27,7 +27,7 @@ Aplikasi web untuk melihat dan menjelajahi data geospasial Kabupaten Wajo secara
 - Leaflet
 - Tabler Icons
 - Inter melalui `next/font/google`
-- GeoJSON statis di `public/data`
+- GeoJSON statis di `public/geo-data`
 
 ## Struktur project
 
@@ -137,7 +137,7 @@ npm run lint
 
 ## Menambah layer
 
-1. Tambahkan GeoJSON ke `public/data/` dengan nama `lowercase-kebab-case.geojson`.
+1. Tambahkan GeoJSON ke `public/geo-data/` dengan nama `lowercase-kebab-case.geojson`.
 2. Tambahkan metadata layer ke `lib/layers.js`.
 3. Tentukan kelompok, geometry, sumber data, dan style.
 4. Untuk point, tambahkan pemetaan ikon di `lib/geo/markers.js` bila diperlukan.
@@ -153,7 +153,7 @@ Aplikasi menggunakan label yang dapat dibaca screen reader, focus state, tooltip
 
 Untuk deployment publik, isi `NEXT_PUBLIC_SITE_URL` dengan URL production agar canonical URL, sitemap, robots, dan structured data mengarah ke alamat yang benar.
 
-Pastikan seluruh file di `public/data/` dan `public/brand/` ikut dipublikasikan.
+Pastikan seluruh file di `public/geo-data/` dan `public/brand/` ikut dipublikasikan.
 
 ## Catatan data
 

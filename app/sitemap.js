@@ -1,9 +1,16 @@
 import { layers } from "../lib/layers";
 import { absoluteUrl, datasetSlug } from "../lib/seo";
 
+function parseDate(value) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export default function sitemap() {
   const datasetUrls = layers.map((layer) => ({
     url: absoluteUrl(`/data/${datasetSlug(layer)}`),
+    ...(parseDate(layer.dataUpdatedAt) ? { lastModified: parseDate(layer.dataUpdatedAt) } : {}),
     changeFrequency: "monthly",
     priority: 0.75
   }));

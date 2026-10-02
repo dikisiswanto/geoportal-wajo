@@ -7,11 +7,10 @@ export default function robots() {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/data/", "/tentang/"],
+        allow: ["/", "/data", "/data/", "/tentang" , "/tentang/"],
         disallow: ["/api/"]
       }
     ],
-    sitemap: `${base}/sitemap.xml`,
-    host: base
+    sitemap: `${base}/sitemap.xml`
   };
 }

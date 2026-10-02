@@ -46,7 +46,7 @@ export default function IconButton({
       {children}
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-[1600] hidden max-w-[min(280px,calc(100vw-24px))] whitespace-normal rounded bg-slate-900 px-2 py-1 text-left text-[11px] font-medium text-white shadow-lg group-hover:block group-focus-visible:block ${tooltipPlacement}`}
+        className={`pointer-events-none absolute z-[900] hidden max-w-[min(280px,calc(100vw-24px))] whitespace-normal rounded bg-slate-900 px-2 py-1 text-left map-text-micro font-medium text-white shadow-lg group-hover:block group-focus-visible:block ${tooltipPlacement}`}
       >
         {label}
       </span>

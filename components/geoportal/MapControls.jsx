@@ -19,7 +19,7 @@ export default function MapControls({
   onPrint,
 }) {
   return (
-    <div className="map-ui-chrome pointer-events-none absolute inset-0 z-[700]">
+    <div className="map-ui-chrome pointer-events-none absolute inset-0 z-[800]">
       <div className="pointer-events-auto absolute left-3 top-14 flex flex-col gap-1 sm:top-3">
         <IconButton label="Perbesar peta" tone="blue" placement="right" disabled={!mapReady} onClick={onZoomIn}>
           <IconPlus size={18} stroke={1.8} />

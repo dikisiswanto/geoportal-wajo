@@ -2,7 +2,7 @@ import { Inter } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import PwaRegister from "../components/PwaRegister";
-import { absoluteUrl, DEFAULT_DESCRIPTION, PUBLISHER_NAME, SITE_KEYWORDS, SITE_NAME } from "../lib/seo";
+import { absoluteUrl, DEFAULT_DESCRIPTION, PUBLISHER_NAME, SITE_NAME, getSiteUrl } from "../lib/seo";
 
 const WAJO_ICON = "/icon.png";
 const WAJO_OG = "/seo/geoportal-wajo-og.png";
@@ -14,13 +14,12 @@ const inter = Inter({
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: SITE_NAME,
     template: "%s | Geoportal Wajo"
   },
   description: DEFAULT_DESCRIPTION,
-  keywords: SITE_KEYWORDS,
   applicationName: SITE_NAME,
   generator: "Next.js",
   creator: PUBLISHER_NAME,

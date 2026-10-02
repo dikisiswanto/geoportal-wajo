@@ -16,10 +16,10 @@ export default function Loading() {
           className="object-contain"
           referrerPolicy="no-referrer"
         />
-        <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
           Pemerintah Kabupaten Wajo
         </p>
-        <h1 className="mt-1 text-base font-semibold text-slate-900">
+        <h1 className="mt-1 text-sm lg:text-base font-semibold text-slate-900">
           Peta Interaktif Kabupaten Wajo
         </h1>
         <div className="mt-6 flex items-center gap-2 text-sm text-slate-500">
