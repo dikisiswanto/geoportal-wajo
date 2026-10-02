@@ -24,6 +24,34 @@ import {
 
 const DEFAULT_VIEW = [-4.13, 120.03];
 
+function filterGeoJsonForLayer(layer, data) {
+  const filter = layer?.featureFilter;
+
+  if (!filter || !Array.isArray(data?.features)) {
+    return data;
+  }
+
+  const excluded = new Set(
+    (filter.excludeValues ?? []).map((value) =>
+      String(value ?? "").trim().toLowerCase()
+    )
+  );
+
+  return {
+    ...data,
+    features: data.features.filter((feature) => {
+      const value = feature?.properties?.[filter.field];
+      const normalized = String(value ?? "").trim();
+
+      if (filter.excludeEmpty && normalized === "") {
+        return false;
+      }
+
+      return !excluded.has(normalized.toLowerCase());
+    })
+  };
+}
+
 const MapCanvas = forwardRef(function MapCanvas(
   {
     visible,
@@ -473,11 +501,17 @@ const MapCanvas = forwardRef(function MapCanvas(
           return;
         }
 
+        const sourceData =
+          loadedData.current[layer.id];
+        const renderData =
+          filterGeoJsonForLayer(
+            layer,
+            sourceData
+          );
+
         const geoLayer =
           L.geoJSON(
-            loadedData.current[
-              layer.id
-            ],
+            renderData,
             {
               style: (feature) =>
                 styleFor(
