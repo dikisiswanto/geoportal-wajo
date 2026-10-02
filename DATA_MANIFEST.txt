@@ -11,7 +11,7 @@ Kelompok data:
 - Kesehatan: Puskesmas.
 - Jaringan: jaringan jalan, transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
 - Infrastruktur: sarana transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
-- Peta Tematik: penggunaan/tutupan lahan, badan air, sungai, kontur, potensi pertanian dan potensi peternakan per kecamatan.
+- Peta Tematik: penggunaan/tutupan lahan, badan air, sungai, kontur, potensi pertanian dan potensi peternakan.
 - Referensi: toponimi.
 
 Sumber data pada registry layer menggunakan nama formal yang seragam:
@@ -22,9 +22,3 @@ Konvensi nama file:
 - Nama file mengikuti nama layer yang stabil dan tidak memasukkan tahun sumber.
 - Tahun data yang diketahui dicatat pada metadata layer, bukan pada nama file atau nama layer.
 - Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset tematik GeoJSON.
-
-### Data pertanian
-Layer **Potensi Pertanian per Kecamatan** menggunakan file `public/data/potensi-pertanian-kecamatan.geojson`. Hanya wilayah yang memiliki nilai `POTENSI` yang ditampilkan; record tanpa potensi tidak dirender pada peta. Dataset yang dipublikasikan berisi 44 fitur dengan potensi yang terisi.
-
-### Data peternakan
-Layer **Potensi Peternakan per Kecamatan** menggunakan file `public/data/potensi-peternakan-kecamatan.geojson`. Hanya wilayah yang memiliki nilai `PETERNAKAN` yang ditampilkan; record tanpa potensi tidak dirender pada peta. Dataset yang dipublikasikan berisi 21 fitur dengan potensi yang terisi.

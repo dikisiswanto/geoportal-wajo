@@ -1,8 +1,7 @@
 import { IconLayersIntersect, IconMap, IconSearch } from "@tabler/icons-react";
 import IconButton from "./IconButton";
 
-const WAJO_COAT_OF_ARMS =
-  "https://upload.wikimedia.org/wikipedia/commons/2/22/Lambang_Kabupaten_Wajo.png";
+const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
 
 export default function GeoPortalHeader({
   search,
@@ -16,12 +15,11 @@ export default function GeoPortalHeader({
     <header className="z-[1500] flex h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
         <img
-          src={WAJO_COAT_OF_ARMS}
+          src={WAJO_LOGO}
           alt="Lambang Kabupaten Wajo"
           width="46"
           height="46"
           className="block h-11 w-[46px] shrink-0 object-contain"
-          referrerPolicy="no-referrer"
         />
         <div className="min-w-0 leading-tight">
           <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">

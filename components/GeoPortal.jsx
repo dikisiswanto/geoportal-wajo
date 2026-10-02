@@ -32,6 +32,17 @@ export default function GeoPortal() {
   const [coords, setCoords] = useState("—");
   const [status, setStatus] = useState("Memuat peta…");
   const [mapReady, setMapReady] = useState(false);
+  const [startupLoading, setStartupLoading] = useState(true);
+
+  useEffect(() => {
+    if (!mapReady) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setStartupLoading(false);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [mapReady]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -116,6 +127,35 @@ export default function GeoPortal() {
       >
         Lewati ke peta
       </a>
+
+      {startupLoading && (
+        <div
+          className="fixed inset-0 z-[5000] grid place-items-center bg-white"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="flex flex-col items-center text-center px-6">
+            <img
+              src="/brand/logo-kabupaten-wajo.png"
+              alt="Lambang Kabupaten Wajo"
+              width="82"
+              height="82"
+              className="h-20 w-20 object-contain"
+            />
+            <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Pemerintah Kabupaten Wajo
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              Peta Interaktif Kabupaten Wajo
+            </p>
+            <div className="mt-5 flex items-center gap-2 text-xs text-slate-500">
+              <span className="size-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700" aria-hidden="true" />
+              Menyiapkan peta…
+            </div>
+          </div>
+        </div>
+      )}
 
       <GeoPortalHeader
         search={search}

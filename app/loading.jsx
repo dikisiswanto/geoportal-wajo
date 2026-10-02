@@ -1,16 +1,34 @@
+const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
+
 export default function Loading() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-slate-100 px-6">
-      <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl" aria-live="polite" aria-busy="true">
-        <div className="flex items-center gap-4">
-          <div className="grid size-11 shrink-0 place-items-center rounded-2xl bg-slate-950 text-sm font-black text-white">W</div>
-          <div className="min-w-0 flex-1">
-            <div className="h-3 w-36 animate-pulse rounded bg-slate-200" />
-            <div className="mt-2 h-5 w-56 max-w-full animate-pulse rounded bg-slate-100" />
-          </div>
+    <main
+      className="grid min-h-dvh place-items-center bg-white px-6"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <section className="flex w-full max-w-sm flex-col items-center text-center">
+        <img
+          src={WAJO_LOGO}
+          alt="Lambang Kabupaten Wajo"
+          width="96"
+          height="96"
+          className="object-contain"
+          referrerPolicy="no-referrer"
+        />
+        <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          Pemerintah Kabupaten Wajo
+        </p>
+        <h1 className="mt-1 text-base font-semibold text-slate-900">
+          Peta Interaktif Kabupaten Wajo
+        </h1>
+        <div className="mt-6 flex items-center gap-2 text-sm text-slate-500">
+          <span
+            className="size-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700"
+            aria-hidden="true"
+          />
+          <span>Menyiapkan peta…</span>
         </div>
-        <div className="mt-6 h-56 animate-pulse rounded-2xl bg-slate-100" />
-        <p className="mt-4 text-sm text-slate-500">Menyiapkan Peta Interaktif Kabupaten Wajo…</p>
       </section>
     </main>
   );

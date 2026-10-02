@@ -2,8 +2,7 @@ import { Inter } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
-const WAJO_COAT_OF_ARMS =
-  "https://upload.wikimedia.org/wikipedia/commons/2/22/Lambang_Kabupaten_Wajo.png";
+const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,9 +20,9 @@ export const metadata = {
   keywords: ["Geoportal Wajo", "Kabupaten Wajo", "peta Wajo", "data geospasial Wajo", "GIS Wajo", "peta interaktif Wajo"],
   applicationName: "Peta Interaktif Kabupaten Wajo",
   icons: {
-    icon: WAJO_COAT_OF_ARMS,
-    shortcut: WAJO_COAT_OF_ARMS,
-    apple: WAJO_COAT_OF_ARMS
+    icon: WAJO_LOGO,
+    shortcut: WAJO_LOGO,
+    apple: WAJO_LOGO
   },
   alternates: { canonical: "/" },
   robots: {

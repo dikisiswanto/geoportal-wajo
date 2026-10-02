@@ -9,7 +9,7 @@ export default function manifest() {
     theme_color: "#0f172a",
     lang: "id",
     icons: [
-      { src: "https://upload.wikimedia.org/wikipedia/commons/2/22/Lambang_Kabupaten_Wajo.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      { src: "/brand/logo-kabupaten-wajo.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
     ]
   };
 }
