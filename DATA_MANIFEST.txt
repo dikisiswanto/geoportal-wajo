@@ -1,24 +1,57 @@
 Peta Interaktif Kabupaten Wajo — Data Manifest
 
-Dataset yang digunakan portal disajikan sebagai GeoJSON EPSG:4326.
-Nama layer pada antarmuka menggunakan nama geografis/formal yang stabil.
-Tahun data, jika tersedia, disimpan sebagai metadata dan tidak menjadi bagian dari nama layer.
+Dataset portal disajikan sebagai GeoJSON WGS84 (EPSG:4326). Metadata crs runtime dihilangkan untuk mengikuti format GeoJSON modern dan mengurangi ukuran transfer.
+Nama file menggunakan lowercase-kebab-case dan tidak memasukkan tahun sumber.
 
 Kelompok data:
-- Administrasi: batas administrasi dan batas kecamatan.
-- Pemerintahan: lokasi kantor Organisasi Perangkat Daerah (OPD).
-- Pendidikan: satuan pendidikan.
-- Kesehatan: Puskesmas.
-- Jaringan: jaringan jalan, transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
-- Infrastruktur: sarana transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
-- Peta Tematik: penggunaan/tutupan lahan, badan air, sungai, kontur, potensi pertanian dan potensi peternakan.
-- Referensi: toponimi.
+- Administrasi:
+  - batas-administrasi.geojson — 679 feature
+  - batas-kecamatan.geojson — 15 feature
+- Pemerintahan:
+  - organisasi-perangkat-daerah.geojson — 27 feature
+- Pendidikan:
+  - satuan-pendidikan.geojson — 807 feature
+- Kesehatan:
+  - puskesmas.geojson — 23 feature
+- Jaringan:
+  - jaringan-energi.geojson — 2492 feature
+  - jaringan-jalan.geojson — 298 feature
+  - jaringan-prasarana-lainnya.geojson — 852 feature
+  - jaringan-sumber-daya-air.geojson — 340 feature
+  - jaringan-telekomunikasi.geojson — 425 feature
+  - jaringan-transportasi.geojson — 2136 feature
+- Peta Tematik:
+  - danau.geojson — 59 feature
+  - kawasan-alang-alang.geojson — 642 feature
+  - kawasan-hutan-lahan-basah.geojson — 24 feature
+  - kawasan-hutan-lahan-kering.geojson — 16 feature
+  - kawasan-perkebunan.geojson — 104 feature
+  - kawasan-permukiman.geojson — 940 feature
+  - kawasan-persawahan.geojson — 323 feature
+  - kawasan-pertanian-lahan-kering.geojson — 403 feature
+  - kawasan-semak-belukar.geojson — 2064 feature
+  - kawasan-tambak.geojson — 217 feature
+  - kontur-topografi.geojson — 768 feature
+  - potensi-pertanian.geojson — 44 feature
+  - potensi-peternakan.geojson — 21 feature
+  - sungai.geojson — 51 feature
+- Infrastruktur:
+  - sarana-energi.geojson — 8 feature
+  - sarana-prasarana-lainnya.geojson — 94 feature
+  - sarana-sumber-daya-air.geojson — 55 feature
+  - sarana-telekomunikasi.geojson — 58 feature
+  - sarana-transportasi.geojson — 257 feature
+- Referensi:
+  - toponimi.geojson — 1216 feature
 
-Sumber data pada registry layer menggunakan nama formal yang seragam:
-"Data <nama dataset> Kabupaten Wajo".
+Aturan data tematik:
+- Potensi Pertanian dan Potensi Peternakan hanya menyimpan feature yang memiliki nilai potensi.
+- Data Angka Nilai tidak menjadi bagian dari portal.
 
-Konvensi nama file:
-- Semua file GeoJSON menggunakan huruf kecil dengan format kebab-case.
-- Nama file mengikuti nama layer yang stabil dan tidak memasukkan tahun sumber.
-- Tahun data yang diketahui dicatat pada metadata layer, bukan pada nama file atau nama layer.
-- Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset tematik GeoJSON.
+Optimasi data:
+- GeoJSON dipadatkan tanpa whitespace.
+- Koordinat dibulatkan maksimum 6 angka desimal WGS84.
+- Dataset potensi duplikat dengan suffix `-kecamatan` dihapus karena tidak digunakan.
+- Data dimuat lazy: browser mengambil GeoJSON hanya ketika layer diaktifkan.
+
+Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset GeoJSON.

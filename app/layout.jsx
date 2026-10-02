@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
+const WAJO_ICON = "/icon.png";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,8 +21,8 @@ export const metadata = {
   keywords: ["Geoportal Wajo", "Kabupaten Wajo", "peta Wajo", "data geospasial Wajo", "GIS Wajo", "peta interaktif Wajo"],
   applicationName: "Peta Interaktif Kabupaten Wajo",
   icons: {
-    icon: WAJO_LOGO,
-    shortcut: WAJO_LOGO,
+    icon: WAJO_ICON,
+    shortcut: WAJO_ICON,
     apple: WAJO_LOGO
   },
   alternates: { canonical: "/" },

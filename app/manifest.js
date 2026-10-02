@@ -9,7 +9,7 @@ export default function manifest() {
     theme_color: "#0f172a",
     lang: "id",
     icons: [
-      { src: "/brand/logo-kabupaten-wajo.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      { src: "/icon.png", sizes: "128x128", type: "image/png", purpose: "any" }
     ]
   };
 }

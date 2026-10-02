@@ -75,6 +75,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   const tileRef = useRef(null);
   const selectedRef = useRef(null);
   const printViewRef = useRef(null);
+  const markerIconCacheRef = useRef(new Map());
+  const vectorRendererRef = useRef(null);
 
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
@@ -296,13 +298,30 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       tileRef.current = osm;
 
-      map.on(
-        "mousemove",
-        (event) =>
+      let coordsFrame = 0;
+      let latestCoords = null;
+
+      const handleMapMouseMove = (event) => {
+        latestCoords = event.latlng;
+
+        if (coordsFrame) {
+          return;
+        }
+
+        coordsFrame = window.requestAnimationFrame(() => {
+          coordsFrame = 0;
+
+          if (!latestCoords) {
+            return;
+          }
+
           onCoordsRef.current?.(
-            `${event.latlng.lat.toFixed(5)}, ${event.latlng.lng.toFixed(5)}`
-          )
-      );
+            `${latestCoords.lat.toFixed(5)}, ${latestCoords.lng.toFixed(5)}`
+          );
+        });
+      };
+
+      map.on("mousemove", handleMapMouseMove);
 
       map.on(
         "zoomend",
@@ -406,6 +425,12 @@ const MapCanvas = forwardRef(function MapCanvas(
       };
 
       mapRef.current = map;
+      map._wajoCoordsFrame = () => {
+        if (coordsFrame) {
+          window.cancelAnimationFrame(coordsFrame);
+          coordsFrame = 0;
+        }
+      };
 
       onStatusRef.current?.(
         "Peta siap"
@@ -434,11 +459,14 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       }
 
+      map?._wajoCoordsFrame?.();
       map?.remove();
 
       mapRef.current = null;
       tileRef.current = null;
       printViewRef.current = null;
+      vectorRendererRef.current = null;
+      markerIconCacheRef.current.clear();
     };
   }, []);
 
@@ -483,26 +511,38 @@ const MapCanvas = forwardRef(function MapCanvas(
     }
 
     import("leaflet").then((L) => {
+      const map = mapRef.current;
+      const vectorRenderer =
+        vectorRendererRef.current ||
+        L.canvas({ padding: 0.35 });
+
+      vectorRendererRef.current =
+        vectorRenderer;
+
       layers.forEach((layer) => {
-        layerRefs.current[
-          layer.id
-        ]?.remove();
-
-        delete layerRefs.current[
-          layer.id
-        ];
-
-        if (
-          !visible[layer.id] ||
-          !loadedData.current[
-            layer.id
-          ]
-        ) {
-          return;
-        }
+        const existing =
+          layerRefs.current[layer.id];
 
         const sourceData =
           loadedData.current[layer.id];
+
+        if (
+          !visible[layer.id] ||
+          !sourceData
+        ) {
+          if (existing) {
+            existing.remove();
+            delete layerRefs.current[layer.id];
+          }
+
+          return;
+        }
+
+        // Keep already-rendered layers intact. Toggling one layer
+        // should not rebuild every other active layer.
+        if (existing) {
+          return;
+        }
         const renderData =
           filterGeoJsonForLayer(
             layer,
@@ -513,6 +553,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           L.geoJSON(
             renderData,
             {
+              renderer: vectorRenderer,
               style: (feature) =>
                 styleFor(
                   layer,
@@ -550,28 +591,42 @@ const MapCanvas = forwardRef(function MapCanvas(
                     );
                   }
 
+                  const iconKey =
+                    `${kind}:${layer.color}`;
+
+                  let icon =
+                    markerIconCacheRef.current.get(
+                      iconKey
+                    );
+
+                  if (!icon) {
+                    icon =
+                      L.divIcon({
+                        className: "",
+                        html:
+                          markerIconMarkup(
+                            kind,
+                            layer.color
+                          ),
+                        iconSize: [
+                          30,
+                          30
+                        ],
+                        iconAnchor: [
+                          15,
+                          15
+                        ]
+                      });
+
+                    markerIconCacheRef.current.set(
+                      iconKey,
+                      icon
+                    );
+                  }
+
                   return L.marker(
                     latlng,
-                    {
-                      icon:
-                        L.divIcon({
-                          className:
-                            "",
-                          html:
-                            markerIconMarkup(
-                              kind,
-                              layer.color
-                            ),
-                          iconSize: [
-                            30,
-                            30
-                          ],
-                          iconAnchor: [
-                            15,
-                            15
-                          ]
-                        })
-                    }
+                    { icon }
                   );
                 }
 
@@ -937,26 +992,23 @@ const MapCanvas = forwardRef(function MapCanvas(
        * Initial map fit hanya sekali
        * berdasarkan kecamatan.
        */
-      const admin =
-        loadedData.current[
+      const adminLayer =
+        layerRefs.current[
           "adm-kecamatan"
         ];
 
       if (
-        admin &&
+        adminLayer &&
         visible["adm-kecamatan"] &&
-        !mapRef.current
-          ._wajoInitialFit
+        !map._wajoInitialFit
       ) {
         const bounds =
-          L.geoJSON(
-            admin
-          ).getBounds();
+          adminLayer.getBounds();
 
         if (
           bounds.isValid()
         ) {
-          mapRef.current.fitBounds(
+          map.fitBounds(
             bounds,
             {
               padding: [
@@ -968,16 +1020,13 @@ const MapCanvas = forwardRef(function MapCanvas(
           );
         }
 
-        mapRef.current
-          ._wajoInitialFit =
-          true;
+        map._wajoInitialFit = true;
       }
     });
   }, [
     layers,
     visible,
-    renderVersion,
-    onFeatureSelect
+    renderVersion
   ]);
 
   useImperativeHandle(

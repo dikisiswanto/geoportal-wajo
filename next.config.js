@@ -12,6 +12,24 @@ const nextConfig = {
             value: "public, max-age=86400, stale-while-revalidate=604800"
           }
         ]
+      },
+      {
+        source: "/brand/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=2592000"
+          }
+        ]
+      },
+      {
+        source: "/icon.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable"
+          }
+        ]
       }
     ];
   }
