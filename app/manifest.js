@@ -2,7 +2,8 @@ export default function manifest() {
   return {
     name: "Peta Interaktif Kabupaten Wajo",
     short_name: "Peta Wajo",
-    description: "Peta interaktif dan data geospasial Kabupaten Wajo.",
+    description:
+      "Geoportal resmi Kabupaten Wajo untuk menjelajahi peta administrasi, jaringan, fasilitas publik, pendidikan, kesehatan, dan data potensi wilayah.",
     id: "/",
     start_url: "/",
     scope: "/",
@@ -11,6 +12,7 @@ export default function manifest() {
     background_color: "#ffffff",
     theme_color: "#ffffff",
     lang: "id",
+    categories: ["government", "utilities", "navigation"],
     prefer_related_applications: false,
     icons: [
       {

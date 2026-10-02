@@ -12,6 +12,7 @@ import LegendPanel from "./geoportal/LegendPanel";
 import FeatureInspector from "./geoportal/FeatureInspector";
 import MapStatus from "./geoportal/MapStatus";
 import MobileActions from "./geoportal/MobileActions";
+import Image from "next/image";
 
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
@@ -136,11 +137,12 @@ export default function GeoPortal() {
           aria-busy="true"
         >
           <div className="flex flex-col items-center text-center px-6">
-            <img
+            <Image
               src="/brand/logo-kabupaten-wajo.png"
               alt="Lambang Kabupaten Wajo"
-              width="82"
-              height="82"
+              width={82}
+              height={82}
+              priority
               className="h-20 w-20 object-contain"
             />
             <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { IconLayersIntersect, IconMap, IconSearch } from "@tabler/icons-react";
 import IconButton from "./IconButton";
+import PwaInstallButton from "./PwaInstallButton";
 
 const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
 
@@ -14,11 +16,12 @@ export default function GeoPortalHeader({
   return (
     <header className="z-[1500] flex h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
-        <img
+        <Image
           src={WAJO_LOGO}
           alt="Lambang Kabupaten Wajo"
-          width="46"
-          height="46"
+          width={46}
+          height={46}
+          priority
           className="block h-11 w-[46px] shrink-0 object-contain"
         />
         <div className="min-w-0 leading-tight">
@@ -48,7 +51,8 @@ export default function GeoPortalHeader({
         </label>
       </div>
 
-      <nav className="ml-auto flex items-center gap-1" aria-label="Tampilan peta">
+      <nav className="ml-auto flex items-center gap-1" aria-label="Tampilan peta dan aplikasi">
+        <PwaInstallButton />
         <IconButton
           label={sidebarOpen ? "Sembunyikan katalog layer" : "Tampilkan katalog layer"}
           placement="bottom"

@@ -1,14 +1,17 @@
+import { getSiteUrl } from "../lib/seo";
+
 export default function robots() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const base = getSiteUrl();
 
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/data/", "/tentang/"],
         disallow: ["/api/"]
       }
     ],
-    sitemap: `${base}/sitemap.xml`
+    sitemap: `${base}/sitemap.xml`,
+    host: base
   };
 }
