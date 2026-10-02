@@ -15,6 +15,7 @@ Aplikasi web untuk melihat dan menjelajahi data geospasial Kabupaten Wajo secara
 - Panel katalog, legenda, dan inspector dengan scroll internal.
 - Loading screen saat aplikasi pertama kali dibuka.
 - Branding dan favicon menggunakan aset logo lokal Kabupaten Wajo.
+- PWA installable dengan manifest, service worker, dan cache aset/data lokal.
 - SEO dasar, accessibility, print map, dan responsive layout.
 
 ## Teknologi
@@ -105,6 +106,10 @@ GeoJSON dimuat secara lazy saat layer diaktifkan. Dataset telah dipadatkan untuk
 Ikon point menggunakan cache, sedangkan update koordinat kursor dibatasi agar tidak memicu render React berlebihan.
 
 Detail hasil audit tersedia di `PERFORMANCE_AUDIT.md`.
+
+## PWA
+
+PWA menggunakan `app/manifest.js`, `public/sw.js`, ikon lokal di `public/pwa/`, dan registrasi service worker pada `components/PwaRegister.jsx`. Service worker mencache shell aplikasi, branding, ikon, GeoJSON, serta aset Next.js yang sudah pernah dimuat. Basemap OpenStreetMap tetap membutuhkan koneksi saat tile belum tersedia di cache browser.
 
 ## Menjalankan project
 

@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
+import PwaRegister from "../components/PwaRegister";
 
 const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
 const WAJO_ICON = "/icon.png";
@@ -20,10 +21,15 @@ export const metadata = {
   description: "Geoportal resmi untuk menjelajah peta, data geospasial, administrasi, jaringan, infrastruktur, dan informasi tematik Kabupaten Wajo.",
   keywords: ["Geoportal Wajo", "Kabupaten Wajo", "peta Wajo", "data geospasial Wajo", "GIS Wajo", "peta interaktif Wajo"],
   applicationName: "Peta Interaktif Kabupaten Wajo",
+  appleWebApp: {
+    capable: true,
+    title: "Peta Wajo",
+    statusBarStyle: "default"
+  },
   icons: {
     icon: WAJO_ICON,
     shortcut: WAJO_ICON,
-    apple: WAJO_LOGO
+    apple: "/apple-icon.png"
   },
   alternates: { canonical: "/" },
   robots: {
@@ -49,7 +55,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" className={inter.variable}>
-      <body>{children}</body>
+      <body>{children}<PwaRegister /></body>
     </html>
   );
 }

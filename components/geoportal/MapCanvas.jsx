@@ -24,6 +24,39 @@ import {
 
 const DEFAULT_VIEW = [-4.13, 120.03];
 
+function getResponsiveHomeFitOptions(map) {
+  const size = map.getSize();
+  const width = Math.max(size.x || 0, 1);
+  const height = Math.max(size.y || 0, 1);
+  const compact = width < 768 || height < 560;
+
+  const horizontal = Math.round(
+    Math.min(64, Math.max(20, width * 0.035))
+  );
+  const vertical = Math.round(
+    Math.min(56, Math.max(20, height * 0.035))
+  );
+
+  return {
+    paddingTopLeft: [horizontal, vertical],
+    paddingBottomRight: [horizontal, compact ? Math.max(64, vertical) : vertical],
+    maxZoom: compact ? 11 : 12,
+    animate: false
+  };
+}
+
+function fitWajoBounds(map, L, data) {
+  if (!map || !data) return false;
+
+  const bounds = L.geoJSON(data).getBounds();
+
+  if (!bounds.isValid()) return false;
+
+  map.invalidateSize({ pan: false, debounceMoveend: true });
+  map.fitBounds(bounds, getResponsiveHomeFitOptions(map));
+  return true;
+}
+
 function filterGeoJsonForLayer(layer, data) {
   const filter = layer?.featureFilter;
 
@@ -1002,22 +1035,8 @@ const MapCanvas = forwardRef(function MapCanvas(
         visible["adm-kecamatan"] &&
         !map._wajoInitialFit
       ) {
-        const bounds =
-          adminLayer.getBounds();
-
-        if (
-          bounds.isValid()
-        ) {
-          map.fitBounds(
-            bounds,
-            {
-              padding: [
-                36,
-                36
-              ],
-              maxZoom: 12
-            }
-          );
+        if (adminLayer.getBounds().isValid()) {
+          fitWajoBounds(map, L, adminLayer.toGeoJSON());
         }
 
         map._wajoInitialFit = true;
@@ -1054,24 +1073,8 @@ const MapCanvas = forwardRef(function MapCanvas(
               ];
 
             if (data) {
-              const bounds =
-                L.geoJSON(
-                  data
-                ).getBounds();
-
-              if (
-                bounds.isValid()
-              ) {
-                return mapRef.current.fitBounds(
-                  bounds,
-                  {
-                    padding: [
-                      36,
-                      36
-                    ],
-                    maxZoom: 12
-                  }
-                );
+              if (fitWajoBounds(mapRef.current, L, data)) {
+                return;
               }
             }
 
