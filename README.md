@@ -1,40 +1,21 @@
-# Geoportal Kabupaten Wajo
+# Peta Interaktif Kabupaten Wajo
 
-Geoportal ini adalah aplikasi web untuk melihat dan menjelajahi data geospasial Kabupaten Wajo secara interaktif.
+Aplikasi web untuk melihat dan menjelajahi data geospasial Kabupaten Wajo secara interaktif. Antarmuka berfokus pada peta dengan katalog layer, legenda, pencarian, kontrol peta, dan informasi atribut feature.
 
-Tampilan utama berfokus pada peta. Pengguna dapat membuka katalog layer, menyalakan atau mematikan data, melihat legenda, mencari layer, lalu mengeklik objek di peta untuk melihat atributnya.
-
-## Yang tersedia
+## Fitur utama
 
 - Basemap OpenStreetMap tanpa API key.
-- Katalog layer yang dapat dicari dan difilter berdasarkan kelompok.
-- Batas administrasi dan batas kecamatan aktif secara default.
-- Nama kecamatan ditampilkan langsung pada area kecamatan.
-- Polygon diberi warna agar perbedaan wilayah mudah dibaca.
-- Layer jaringan dan jalan ditampilkan sebagai garis dengan nama layer formal yang stabil.
-- Data titik menggunakan ikon yang disesuaikan dengan jenis sarana, misalnya transportasi, telekomunikasi, energi, air, dan fasilitas lainnya.
-- Klik feature untuk membuka informasi atribut.
-- Tombol Zoom, Home, dan Lokasi perangkat.
-- Reset untuk mengembalikan layer, filter, pilihan feature, dan posisi peta ke kondisi awal.
-- Panel katalog, legenda, dan informasi feature memiliki scroll internal agar layar peta tetap tersedia.
-
-## Cara menjalankan
-
-Pastikan Node.js sudah terpasang, kemudian dari folder project jalankan:
-
-```bash
-npm install
-npm run dev
-```
-
-Buka `http://localhost:3000` pada browser.
-
-Untuk mode production:
-
-```bash
-npm run build
-npm run start
-```
+- Katalog layer dengan pencarian dan filter kelompok.
+- Batas Administrasi dan Batas Kecamatan aktif secara default.
+- Label nama kecamatan ditampilkan pada peta.
+- Layer polygon, garis, dan titik dengan simbologi yang konsisten.
+- Ikon Tabler untuk layer titik, termasuk OPD dan Puskesmas.
+- Inspector universal untuk melihat atribut feature.
+- Zoom, Home, lokasi perangkat, dan Reset.
+- Panel katalog, legenda, dan inspector dengan scroll internal.
+- Loading screen saat aplikasi pertama kali dibuka.
+- Branding dan favicon menggunakan aset logo lokal Kabupaten Wajo.
+- SEO dasar, accessibility, print map, dan responsive layout.
 
 ## Teknologi
 
@@ -51,46 +32,50 @@ npm run start
 
 ```text
 app/
-  layout.jsx                 # metadata, font, global layout
-  page.jsx                   # halaman utama + structured data
-  globals.css                # reset, Leaflet, accessibility, basemap tint
-  loading.jsx
-  error.jsx
-  manifest.js
-  robots.js
-  sitemap.js
+  layout.jsx              # metadata, font, global layout
+  page.jsx                # halaman utama + structured data
+  globals.css             # global style, Leaflet, accessibility
+  loading.jsx             # loading screen
+  error.jsx               # error boundary
+  manifest.js             # PWA manifest
+  robots.js               # robots.txt
+  sitemap.js              # sitemap.xml
 
 components/
-  GeoPortal.jsx               # state dan orkestrasi aplikasi
+  GeoPortal.jsx           # state dan orkestrasi aplikasi
   geoportal/
-    GeoPortalHeader.jsx       # branding, pencarian, kontrol tampilan
-    LayerCatalog.jsx          # katalog dan filter layer
-    LayerRow.jsx              # satu item layer
-    LayerGlyph.jsx             # simbol kecil untuk katalog
-    MapCanvas.jsx              # lifecycle Leaflet + rendering GeoJSON
-    MapControls.jsx            # kontrol peta di atas canvas
-    IconButton.jsx             # tombol ikon reusable + tooltip
-    LegendPanel.jsx            # legenda layer aktif
-    FeatureInspector.jsx       # detail atribut feature
-    MapStatus.jsx              # status peta + koordinat
-    MobileActions.jsx          # aksi cepat mobile
+    GeoPortalHeader.jsx   # branding, pencarian, kontrol tampilan
+    LayerCatalog.jsx      # katalog dan filter layer
+    LayerRow.jsx          # item layer
+    LayerGlyph.jsx        # simbol katalog
+    MapCanvas.jsx         # lifecycle Leaflet + GeoJSON
+    MapControls.jsx       # kontrol peta
+    IconButton.jsx        # tombol ikon reusable + tooltip
+    LegendPanel.jsx       # legenda layer aktif
+    FeatureInspector.jsx  # detail atribut feature
+    MapStatus.jsx         # status peta + koordinat
+    MobileActions.jsx     # aksi cepat mobile
+    PrintLegend.jsx       # legenda untuk print
 
 lib/
-  layers.js                   # registry layer dan metadata
+  layers.js               # registry layer dan metadata
   geo/
-    format.js                 # label, formatting, legenda
-    markers.js                # pemetaan jenis sarana ke ikon
-    styles.js                 # simbologi geometry
+    format.js             # formatting dan legenda
+    markers.js            # pemetaan ikon point
+    styles.js             # simbologi GIS
 
-public/data/
-  *.geojson                   # dataset yang digunakan portal
+public/
+  brand/
+    logo-kabupaten-wajo.png
+  data/
+    *.geojson              # dataset portal
+
+PERFORMANCE_AUDIT.md       # catatan audit dan optimasi performa
 ```
 
-## Penamaan layer dan sumber data
+## Data dan penamaan
 
-Nama layer yang dilihat pengguna menggunakan istilah geografis/formal dan tidak memasukkan tahun dataset. Tahun tetap dicatat sebagai metadata jika tersedia.
-
-Contoh:
+Nama layer di UI menggunakan istilah geografis/formal tanpa tahun. Tahun dataset disimpan sebagai metadata pada `lib/layers.js` bila tersedia.
 
 ```text
 Jaringan Jalan
@@ -98,48 +83,73 @@ Sumber: Data Jaringan Jalan Kabupaten Wajo
 Tahun: 2020
 ```
 
-Nama file GeoJSON boleh tetap menggunakan nama teknis dari dataset sumber karena file tersebut tidak ditampilkan sebagai nama layer utama. Registry layer pada `lib/layers.js` menjadi satu tempat untuk mengatur nama tampilan, sumber data, tahun data, kelompok, geometry, dan metadata lainnya.
+File GeoJSON menggunakan konvensi `lowercase-kebab-case`, misalnya:
 
-Sumber data menggunakan pola nama yang seragam: `Data <nama dataset> Kabupaten Wajo`.
+```text
+batas-administrasi.geojson
+batas-kecamatan.geojson
+organisasi-perangkat-daerah.geojson
+puskesmas.geojson
+potensi-pertanian.geojson
+potensi-peternakan.geojson
+```
 
-## Prinsip pengembangan
+`lib/layers.js` menjadi registry utama untuk nama tampilan, file, kelompok, geometry, style, sumber, tahun data, dan konfigurasi inspector.
 
-### 1. Komponen kecil berdasarkan tanggung jawab
+Layer potensi hanya menampilkan wilayah yang memiliki nilai potensi. Record dengan nilai potensi kosong tidak dirender.
 
-`GeoPortal.jsx` hanya mengelola state global dan menghubungkan komponen. Logika Leaflet berada di `MapCanvas.jsx`, katalog berada di `LayerCatalog.jsx`, tombol reusable berada di `IconButton.jsx`, sedangkan aturan marker dan style GIS berada di folder `lib/geo`.
+## Performa
 
-Dengan pembagian ini, perubahan pada satu bagian tidak perlu membuka satu file besar. Contohnya, perubahan ikon sarana cukup dilakukan di `lib/geo/markers.js`, sedangkan perubahan warna polygon dilakukan di `lib/geo/styles.js`.
+GeoJSON dimuat secara lazy saat layer diaktifkan. Dataset telah dipadatkan untuk mengurangi ukuran transfer, vector layer menggunakan Canvas Leaflet, dan perubahan visibility diproses secara incremental agar layer lain tidak perlu dibangun ulang.
 
-### 2. Data dimuat saat dibutuhkan
+Ikon point menggunakan cache, sedangkan update koordinat kursor dibatasi agar tidak memicu render React berlebihan.
 
-GeoJSON tidak dimuat semuanya saat halaman dibuka. Layer diambil ketika pengguna mengaktifkannya. Ini membuat first load lebih ringan, terutama karena beberapa layer berisi banyak feature.
+Detail hasil audit tersedia di `PERFORMANCE_AUDIT.md`.
 
-### 3. Basemap tidak membutuhkan API key
+## Menjalankan project
 
-Basemap menggunakan OpenStreetMap. Di atas tile dasar digunakan pane Leaflet khusus dengan tint tipis sehingga layer geospasial utama lebih menonjol. Leaflet menyediakan pane dengan z-index berbeda, sehingga tint ditempatkan di antara tile dasar dan vector overlay.
+Gunakan Node.js yang sesuai dengan dependency project, lalu dari folder project jalankan:
 
-### 4. Accessibility
+```bash
+npm install
+npm run dev
+```
 
-Tombol memiliki nama yang dapat dibaca screen reader, tooltip saat hover/focus, focus state yang jelas, label form, skip link, dan landmark semantik. Map juga diberi label yang menjelaskan fungsinya.
+Buka `http://localhost:3000`.
 
-### 5. SEO
+Untuk production:
 
-Halaman memakai semantic heading, metadata title/description, canonical URL, Open Graph metadata, `robots.js`, `sitemap.js`, dan structured data. Next.js menyediakan Metadata API serta file khusus seperti robots dan sitemap untuk kebutuhan SEO.
+```bash
+npm run build
+npm run start
+```
 
-## Menambah layer baru
+Lint:
 
-1. Tambahkan file GeoJSON ke `public/data/`.
-2. Daftarkan metadata layer pada `lib/layers.js`.
-3. Tentukan kelompok, geometry, warna, dan mode style.
-4. Bila layer berupa point dan membutuhkan ikon khusus, tambahkan aturan pada `lib/geo/markers.js`.
-5. Bila perlu simbologi khusus untuk garis/polygon, tambahkan aturan pada `lib/geo/styles.js`.
+```bash
+npm run lint
+```
 
-Jangan menaruh aturan simbologi langsung di banyak komponen UI. Simpan aturan GIS di `lib/geo` agar konsisten.
+## Menambah layer
+
+1. Tambahkan GeoJSON ke `public/data/` dengan nama `lowercase-kebab-case.geojson`.
+2. Tambahkan metadata layer ke `lib/layers.js`.
+3. Tentukan kelompok, geometry, sumber data, dan style.
+4. Untuk point, tambahkan pemetaan ikon di `lib/geo/markers.js` bila diperlukan.
+5. Untuk simbologi khusus garis/polygon, tambahkan aturan di `lib/geo/styles.js`.
+
+Hindari menaruh aturan GIS langsung di banyak komponen UI agar simbologi tetap terpusat dan konsisten.
+
+## Accessibility dan SEO
+
+Aplikasi menggunakan label yang dapat dibaca screen reader, focus state, tooltip hover/focus, skip link, landmark semantik, metadata halaman, canonical URL, Open Graph, `robots.js`, `sitemap.js`, dan structured data.
+
+## Deployment
+
+Untuk deployment publik, isi `NEXT_PUBLIC_SITE_URL` dengan URL production agar canonical URL, sitemap, robots, dan structured data mengarah ke alamat yang benar.
+
+Pastikan seluruh file di `public/data/` dan `public/brand/` ikut dipublikasikan.
 
 ## Catatan data
 
-Project ini menggunakan GeoJSON hasil ekstraksi/konversi dari data geospasial yang tersedia pada project. Aplikasi tidak mengubah sumber data pada saat runtime; browser hanya membaca file GeoJSON yang sudah disiapkan.
-
-## Catatan deployment
-
-Untuk deployment publik, isi `NEXT_PUBLIC_SITE_URL` dengan URL portal sebenarnya agar canonical URL, sitemap, robots, dan structured data menggunakan alamat production.
+Portal membaca GeoJSON statis yang sudah disiapkan di project. Tidak ada proses perubahan sumber data saat runtime.
