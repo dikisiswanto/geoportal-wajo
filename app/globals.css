@@ -358,7 +358,7 @@ a:focus-visible {
   }
 
   .layer-catalog-sheet {
-    max-height: 90dvh;
+    max-height: 72dvh;
   }
 
   .layer-catalog-sheet .layer-scroll {
