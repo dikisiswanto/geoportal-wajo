@@ -1,4 +1,5 @@
 import { IconX } from "@tabler/icons-react";
+import LayerGlyph from "./LayerGlyph";
 
 export default function LegendPanel({ activeLayers, kecamatanLegend, open, onClose }) {
   if (!open) return null;
@@ -12,7 +13,13 @@ export default function LegendPanel({ activeLayers, kecamatanLegend, open, onClo
         {activeLayers.map((layer) => (
           <div key={layer.id} className="py-1.5">
             <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-              <span className="inline-block h-2.5 w-2.5 border border-slate-300" style={{ backgroundColor: layer.color }} aria-hidden="true" />
+              {layer.geometry === "Point" ? (
+                <span className="inline-flex size-4 items-center justify-center" aria-hidden="true">
+                  <LayerGlyph layer={layer} active />
+                </span>
+              ) : (
+                <span className="inline-block h-2.5 w-2.5 border border-slate-300" style={{ backgroundColor: layer.color }} aria-hidden="true" />
+              )}
               <span>{layer.title}</span>
             </div>
             {layer.id === "adm-kecamatan" && kecamatanLegend.length > 0 && (

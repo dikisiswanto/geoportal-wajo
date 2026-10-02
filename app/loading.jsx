@@ -10,7 +10,7 @@ export default function Loading() {
           </div>
         </div>
         <div className="mt-6 h-56 animate-pulse rounded-2xl bg-slate-100" />
-        <p className="mt-4 text-sm text-slate-500">Menyiapkan Geoportal Kabupaten Wajo…</p>
+        <p className="mt-4 text-sm text-slate-500">Menyiapkan Peta Interaktif Kabupaten Wajo…</p>
       </section>
     </main>
   );

@@ -490,12 +490,7 @@ const MapCanvas = forwardRef(function MapCanvas(
                 latlng
               ) => {
                 const isPointLayer =
-                  layer.group ===
-                    "Infrastruktur" ||
-                  layer.group ===
-                    "Pendidikan" ||
-                  layer.styleMode ===
-                    "toponym";
+                  layer.geometry === "Point";
 
                 if (isPointLayer) {
                   const kind =
@@ -1165,7 +1160,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         ref={mapNode}
         className="absolute inset-0"
         role="region"
-        aria-label="Peta interaktif Kabupaten Wajo"
+        aria-label="Peta Interaktif Kabupaten Wajo"
         aria-describedby="map-instructions"
       />
     </>

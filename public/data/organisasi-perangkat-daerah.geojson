@@ -1,0 +1,525 @@
+{
+  "type": "FeatureCollection",
+  "name": "OPD_Kabupaten_Wajo",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": 0,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.02744,
+          -4.112615
+        ]
+      },
+      "properties": {
+        "FID": 0,
+        "NO": 1,
+        "NAMA_OPD": "Sekretariat Daerah",
+        "Alamat": "Jl. Rusa No. 17 Sengkang 90911\nTelp. (0485) 21001",
+        "Latitude": -4.112615,
+        "Longitude": 120.02744
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 1,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.027828,
+          -4.111445
+        ]
+      },
+      "properties": {
+        "FID": 1,
+        "NO": 2,
+        "NAMA_OPD": "Sekretariat DPRD",
+        "Alamat": "Jl. Rusa No. 17 A Sengkang 90911\nTelp. (0485) 22431",
+        "Latitude": -4.111445,
+        "Longitude": 120.027828
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 2,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.032761,
+          -4.140024
+        ]
+      },
+      "properties": {
+        "FID": 2,
+        "NO": 3,
+        "NAMA_OPD": "Dinas Kesehatan",
+        "Alamat": "Jl.Jenderal Achmad Yani No.39 Sengkang 90914\nTelp. 0485 - 21038",
+        "Latitude": -4.140024,
+        "Longitude": 120.032761
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 3,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.033236,
+          -4.138732
+        ]
+      },
+      "properties": {
+        "FID": 3,
+        "NO": 4,
+        "NAMA_OPD": "Dinas Kependudukan Dan Pencacatan Sipil",
+        "Alamat": "JL. LONTAR NO.1 SENGKANG 90914\nTelp. (0485) 21240",
+        "Latitude": -4.138732,
+        "Longitude": 120.033236
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 4,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.02828,
+          -4.11286
+        ]
+      },
+      "properties": {
+        "FID": 4,
+        "NO": 5,
+        "NAMA_OPD": "Badan Perencanaan Pembangunan, Penelitian, Dan Pengembangan Daerah",
+        "Alamat": "Jln. Rusa Kompleks Kantor Bupati Wajo 90911\nTelp. 0485-3210639",
+        "Latitude": -4.11286,
+        "Longitude": 120.02828
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 5,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.034618,
+          -4.121966
+        ]
+      },
+      "properties": {
+        "FID": 5,
+        "NO": 6,
+        "NAMA_OPD": "Badan Kepegawaian Dan Pengembangan Sumber Daya Manusia",
+        "Alamat": "Jl. Kejaksaan No. 5B Sengkang 90911\nTelp. 0485-21021",
+        "Latitude": -4.121966,
+        "Longitude": 120.034618
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 6,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.027601,
+          -4.111953
+        ]
+      },
+      "properties": {
+        "FID": 6,
+        "NO": 7,
+        "NAMA_OPD": "Badan Kesatuan Bangsa Dan Politik",
+        "Alamat": "Jalan Rusa No. 17 Sengkang 90911\nTelp. (0485) 22330",
+        "Latitude": -4.111953,
+        "Longitude": 120.027601
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 7,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.033095,
+          -4.139204
+        ]
+      },
+      "properties": {
+        "FID": 7,
+        "NO": 8,
+        "NAMA_OPD": "Badan Penanggulangan Bencana Daerah",
+        "Alamat": "Jl Lontar No 2 Sengkang 90916\nTelp. 0485-210418",
+        "Latitude": -4.139204,
+        "Longitude": 120.033095
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 8,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.029699,
+          -4.110657
+        ]
+      },
+      "properties": {
+        "FID": 8,
+        "NO": 9,
+        "NAMA_OPD": "Satuan Polisi Pamong Praja, Damkar, Dan Penyelamatan",
+        "Alamat": "Jalan Rusa No. 17 Sengkang 90911\nTelp. (0485) 323812",
+        "Latitude": -4.110657,
+        "Longitude": 120.029699
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 9,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.028059,
+          -4.113275
+        ]
+      },
+      "properties": {
+        "FID": 9,
+        "NO": 10,
+        "NAMA_OPD": "Inspektorat Daerah",
+        "Alamat": "Jl. Rusa No. 17 Sengkang 90911\nTelp. (0485) 21269",
+        "Latitude": -4.113275,
+        "Longitude": 120.028059
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 10,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.415405,
+          -3.700747
+        ]
+      },
+      "properties": {
+        "FID": 10,
+        "NO": 11,
+        "NAMA_OPD": "Rumah Sakit Umum Daerah Siwa",
+        "Alamat": "Jalan Andi Djaja No.1 Siwa Kec. Pitumpanua Kab. Wajo 90992\nTelp. 0472 321 003",
+        "Latitude": -3.700747,
+        "Longitude": 120.415405
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 11,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.039487,
+          -4.148491
+        ]
+      },
+      "properties": {
+        "FID": 11,
+        "NO": 12,
+        "NAMA_OPD": "Rumah Sakit Umum Daerah Lamaddukelleng",
+        "Alamat": "Jl. Kartika Chandra Kirana No. 9 Sengkang 90915\nTelp. (0485) 21785",
+        "Latitude": -4.148491,
+        "Longitude": 120.039487
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 12,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.032161,
+          -4.140628
+        ]
+      },
+      "properties": {
+        "FID": 12,
+        "NO": 13,
+        "NAMA_OPD": "Badan Pengelolaan Keuangan dan Pendapatan Daerah",
+        "Alamat": "Jl. Rusa No. 17A Sengkang 90911\nTelp. 0485 323813",
+        "Latitude": -4.140628,
+        "Longitude": 120.032161
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 13,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.024068,
+          -4.074801
+        ]
+      },
+      "properties": {
+        "FID": 13,
+        "NO": 14,
+        "NAMA_OPD": "Dinas Pekerjaan Umum, Penataan Ruang dan Pertahanan",
+        "Alamat": "Jl. Andi Pawellangi Km. 8 Ujunge Kec. Tanasitolo 90951\nTelp. (0485) 21620",
+        "Latitude": -4.074801,
+        "Longitude": 120.024068
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 14,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.027274,
+          -4.112998
+        ]
+      },
+      "properties": {
+        "FID": 14,
+        "NO": 15,
+        "NAMA_OPD": "Dinas Komunikasi Informatika dan Statistik",
+        "Alamat": "Jl. Rusa No. 17 Sengkang 90911\nTelp. 0485-323524",
+        "Latitude": -4.112998,
+        "Longitude": 120.027274
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 15,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.031459,
+          -4.122507
+        ]
+      },
+      "properties": {
+        "FID": 15,
+        "NO": 16,
+        "NAMA_OPD": "Dinas Perindustrian, Perdagangan, Koperasi, Usaha Kecil dan Menengah",
+        "Alamat": "Jl. Bau Baharuddin No. 04, Sengkang 90912\nTelp. (0485) 21140",
+        "Latitude": -4.122507,
+        "Longitude": 120.031459
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 16,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.034827,
+          -4.122
+        ]
+      },
+      "properties": {
+        "FID": 16,
+        "NO": 17,
+        "NAMA_OPD": "Dinas Lingkungan Hidup",
+        "Alamat": "JL. KEJAKSAAN NO. 5 SENGKANG 90911\nTelp. (0485)21725",
+        "Latitude": -4.122,
+        "Longitude": 120.034827
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 17,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.033016,
+          -4.125112
+        ]
+      },
+      "properties": {
+        "FID": 17,
+        "NO": 18,
+        "NAMA_OPD": "Dinas Pemberdayaan Masyarakat dan Desa",
+        "Alamat": "Jl. Veteran No. 35 Sengkang 90911\nTelp. (0485) 21129",
+        "Latitude": -4.125112,
+        "Longitude": 120.033016
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 18,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.029694,
+          -4.111953
+        ]
+      },
+      "properties": {
+        "FID": 18,
+        "NO": 19,
+        "NAMA_OPD": "Dinas Pemuda, Olah Raga dan Pariwisata",
+        "Alamat": "Jl. Rusa ( Kompleks Stadion Andi Ninnong ) Sengkang 90911\nTelp.",
+        "Latitude": -4.111953,
+        "Longitude": 120.029694
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.032359,
+          -4.14081
+        ]
+      },
+      "properties": {
+        "FID": 19,
+        "NO": 20,
+        "NAMA_OPD": "Dinas Penanaman Modal dan Pelayanan Terpadu Satu Pintu",
+        "Alamat": "JL. JEND. AKHMAD YANI NO. 33 SENGKANG 90914\nTelp. (0485) 323549\t",
+        "Latitude": -4.14081,
+        "Longitude": 120.032359
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 20,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.032781,
+          -4.137399
+        ]
+      },
+      "properties": {
+        "FID": 20,
+        "NO": 21,
+        "NAMA_OPD": "Dinas Pendidikan dan Kebudayaan",
+        "Alamat": "Jl. Jenderal Akhmad Yani No.27 Sengkang 90914\nTelp. 0485 - 21566",
+        "Latitude": -4.137399,
+        "Longitude": 120.032781
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 21,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.0398,
+          -4.122777
+        ]
+      },
+      "properties": {
+        "FID": 21,
+        "NO": 22,
+        "NAMA_OPD": "Dinas Perhubungan",
+        "Alamat": "JL. SAWERIGADING NO. 1 90911\nTelp. 0485-22120",
+        "Latitude": -4.122777,
+        "Longitude": 120.0398
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 22,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.033227,
+          -4.124873
+        ]
+      },
+      "properties": {
+        "FID": 22,
+        "NO": 23,
+        "NAMA_OPD": "Dinas Perumahan dan Kawasan Permukiman",
+        "Alamat": "Jl.Veteran no. 17 , sengkang 90911\nTelp. 048522232",
+        "Latitude": -4.124873,
+        "Longitude": 120.033227
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 23,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.034511,
+          -4.122506
+        ]
+      },
+      "properties": {
+        "FID": 23,
+        "NO": 24,
+        "NAMA_OPD": "Dinas Sosial, Pengendalian Penduduk, KB, Pemberdayaan Perempuan, dan Perlindungan Anak",
+        "Alamat": "Jln. Kejaksaan Sengkang 90912\nTelp. -",
+        "Latitude": -4.122506,
+        "Longitude": 120.034511
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.034551,
+          -4.14478
+        ]
+      },
+      "properties": {
+        "FID": 24,
+        "NO": 25,
+        "NAMA_OPD": "Dinas Pertanian dan Ketahanan Pangan",
+        "Alamat": "Jl. Jambu No. 34 Sengkang\nTelp.",
+        "Latitude": -4.14478,
+        "Longitude": 120.034551
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 25,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.033693,
+          -4.122648
+        ]
+      },
+      "properties": {
+        "FID": 25,
+        "NO": 26,
+        "NAMA_OPD": "Dinas Ketenagakerjaan dan Transmigrasi",
+        "Alamat": "Jl. Bau Baharuddin No. 01 Sengkang 90911\nTelp. (0485) 21104",
+        "Latitude": -4.122648,
+        "Longitude": 120.033693
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 26,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.023552,
+          -4.120564
+        ]
+      },
+      "properties": {
+        "FID": 26,
+        "NO": 27,
+        "NAMA_OPD": "Dinas Perikanan",
+        "Alamat": "Jl. BUDI UTOMO NO. 2 SENGKANG KABUPATEN WAJO 90911\nTelp. (0485)21025",
+        "Latitude": -4.120564,
+        "Longitude": 120.023552
+      }
+    }
+  ]
+}

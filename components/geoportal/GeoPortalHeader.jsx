@@ -14,23 +14,21 @@ export default function GeoPortalHeader({
 }) {
   return (
     <header className="z-[1500] flex h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-4">
-      <div className="flex min-w-0 items-center gap-2.5">
-        <div className="grid size-9 shrink-0 place-items-center overflow-hidden border border-slate-200 bg-white">
-          <img
-            src={WAJO_COAT_OF_ARMS}
-            alt="Lambang Kabupaten Wajo"
-            width="36"
-            height="36"
-            className="size-full object-contain p-0.5"
-            referrerPolicy="no-referrer"
-          />
-        </div>
+      <div className="flex min-w-0 items-center gap-3">
+        <img
+          src={WAJO_COAT_OF_ARMS}
+          alt="Lambang Kabupaten Wajo"
+          width="46"
+          height="46"
+          className="block h-11 w-[46px] shrink-0 object-contain"
+          referrerPolicy="no-referrer"
+        />
         <div className="min-w-0 leading-tight">
           <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             Pemerintah Kabupaten Wajo
           </p>
           <h1 className="truncate text-[15px] font-semibold text-slate-900">
-            Geoportal
+            Peta Interaktif Kabupaten Wajo
           </h1>
         </div>
       </div>

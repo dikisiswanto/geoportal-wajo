@@ -1,4 +1,4 @@
-Geoportal Kabupaten Wajo — Data Manifest
+Peta Interaktif Kabupaten Wajo — Data Manifest
 
 Dataset yang digunakan portal disajikan sebagai GeoJSON EPSG:4326.
 Nama layer pada antarmuka menggunakan nama geografis/formal yang stabil.
@@ -6,7 +6,9 @@ Tahun data, jika tersedia, disimpan sebagai metadata dan tidak menjadi bagian da
 
 Kelompok data:
 - Administrasi: batas administrasi dan batas kecamatan.
+- Pemerintahan: lokasi kantor Organisasi Perangkat Daerah (OPD).
 - Pendidikan: satuan pendidikan.
+- Kesehatan: Puskesmas.
 - Jaringan: jaringan jalan, transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
 - Infrastruktur: sarana transportasi, prasarana, sumber daya air, telekomunikasi, dan energi.
 - Peta Tematik: penggunaan/tutupan lahan, badan air, sungai, dan kontur.
@@ -15,7 +17,8 @@ Kelompok data:
 Sumber data pada registry layer menggunakan nama formal yang seragam:
 "Data <nama dataset> Kabupaten Wajo".
 
-Catatan:
-- Nama file GeoJSON dipertahankan sebagai nama teknis untuk kompatibilitas data.
-- Tahun pada nama file sumber tidak ditampilkan sebagai nama layer; tahun yang diketahui dicatat pada metadata layer.
+Konvensi nama file:
+- Semua file GeoJSON menggunakan huruf kecil dengan format kebab-case.
+- Nama file mengikuti nama layer yang stabil dan tidak memasukkan tahun sumber.
+- Tahun data yang diketahui dicatat pada metadata layer, bukan pada nama file atau nama layer.
 - Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset tematik GeoJSON.

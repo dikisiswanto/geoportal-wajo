@@ -1,7 +1,9 @@
 import {
   IconAntenna,
   IconBolt,
+  IconBuildingBank,
   IconDroplet,
+  IconFirstAidKit,
   IconMapPin,
   IconRecycle,
   IconRoad,
@@ -30,7 +32,11 @@ export default function LayerGlyph({
                 ? IconRoad
                 : layer.pointCategory === "education"
                   ? IconSchool
-                  : IconMapPin;
+                  : layer.pointCategory === "health"
+                    ? IconFirstAidKit
+                    : layer.pointCategory === "opd"
+                      ? IconBuildingBank
+                      : IconMapPin;
 
     return (
       <Component

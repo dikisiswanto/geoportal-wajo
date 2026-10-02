@@ -1,7 +1,7 @@
 import GeoPortal from "../components/GeoPortal";
 
 export const metadata = {
-  title: "Peta Interaktif Wajo",
+  title: "Peta Interaktif Kabupaten Wajo",
   description: "Jelajah peta interaktif dan data geospasial Kabupaten Wajo: administrasi, jalan, jaringan, infrastruktur, dan peta tematik."
 };
 
@@ -9,7 +9,7 @@ export default function Home() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "Geoportal Kabupaten Wajo",
+    name: "Peta Interaktif Kabupaten Wajo",
     applicationCategory: "MappingApplication",
     operatingSystem: "Any",
     inLanguage: "id-ID",
