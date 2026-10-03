@@ -168,22 +168,20 @@ function restorePrintViewport(map, printLayoutRef) {
 function districtMatchesPrintScope(feature, scope) {
   if (!feature || !scope) return false;
   if (scope.type === "kecamatan") {
-    return featureAdministrativeCodes(feature, "kecamatan").some((code) =>
-      featureAdministrativeCodes(scope.feature, "kecamatan").includes(code)
-    );
+    return administrationFeatureMatchesTarget(feature, scope.feature, "kecamatan");
   }
   if (scope.type === "desa") {
-    return false;
+    const villageDistrictCode = featureAdministrativeCodes(scope.feature, "kecamatan")[0];
+    const districtCodes = featureAdministrativeCodes(feature, "kecamatan");
+    if (villageDistrictCode && districtCodes.includes(villageDistrictCode)) return true;
+    return normalizeRegionName(administrativeName(feature, "kecamatan")) === normalizeRegionName(administrativeName(scope.feature, "kecamatan"));
   }
-  return true;
+  return scope.type === "kabupaten";
 }
 
 function villageMatchesPrintScope(feature, scope) {
   if (!feature || !scope || scope.type !== "desa") return false;
-  const targetCodes = featureAdministrativeCodes(scope.feature, "desa");
-  const codes = featureAdministrativeCodes(feature, "desa");
-  if (targetCodes.length && codes.length) return codes.some((code) => targetCodes.includes(code));
-  return false;
+  return administrationFeatureMatchesTarget(feature, scope.feature, "desa");
 }
 
 function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
@@ -459,6 +457,96 @@ function selectedStyleFor(layer, baseStyle, isPolygon) {
   };
 }
 
+function isAdministrativeLayerId(layerId) {
+  return layerId === "adm-kabupaten" || layerId === "adm-kecamatan" || layerId === "adm-desa";
+}
+
+function administrativeName(feature, type) {
+  const properties = feature?.properties ?? {};
+  if (type === "desa") {
+    return String(
+      properties.Desa ??
+      properties.WADMKD ??
+      properties.nama_desa ??
+      properties.NAMOBJ ??
+      ""
+    ).trim();
+  }
+
+  return String(
+    properties.Kecamatan ??
+    properties.WADMKC ??
+    properties.nama_kecamatan ??
+    properties.kecamatan ??
+    properties.NAMOBJ ??
+    ""
+  ).trim();
+}
+
+function administrationFeatureMatchesTarget(feature, targetFeature, type) {
+  if (!feature || !targetFeature || !type) return false;
+
+  const targetCodes = featureAdministrativeCodes(targetFeature, type);
+  const featureCodes = featureAdministrativeCodes(feature, type);
+
+  if (targetCodes.length && featureCodes.length) {
+    return featureCodes.some((code) => targetCodes.includes(code));
+  }
+
+  const targetName = administrativeName(targetFeature, type);
+  const featureName = administrativeName(feature, type);
+  return Boolean(targetName && featureName) &&
+    normalizeRegionName(targetName) === normalizeRegionName(featureName);
+}
+
+function applyActiveAdministrationStyles(layerRefs, loadedData, { focusAdmin, regionFilter } = {}) {
+  const districtGroup = layerRefs?.["adm-kecamatan"];
+  const districtData = loadedData?.["adm-kecamatan"];
+  const districtTarget = focusAdmin?.type === "kecamatan"
+    ? focusAdmin.feature
+    : null;
+  const activeRegion = String(regionFilter ?? "").trim();
+
+  if (districtGroup && districtData?.features?.length) {
+    districtGroup.eachLayer?.((featureLayer) => {
+      const feature = featureLayer?.__wajoFeature;
+      if (!feature) return;
+      const base = featureLayer.__wajoBaseStyle || styleFor({ styleMode: "admin" }, feature);
+      const selectedByFeature = districtTarget
+        ? administrationFeatureMatchesTarget(feature, districtTarget, "kecamatan")
+        : false;
+      const selectedByRegion = !selectedByFeature && activeRegion
+        ? normalizeRegionName(administrativeName(feature, "kecamatan")) === normalizeRegionName(activeRegion)
+        : false;
+      const selected = selectedByFeature || selectedByRegion;
+      featureLayer.__wajoActiveAdmin = selected;
+
+      featureLayer.setStyle?.(selected
+        ? selectedStyleFor({ styleMode: "admin" }, base, true)
+        : base
+      );
+    });
+  }
+
+  const villageGroup = layerRefs?.["adm-desa"];
+  const villageData = loadedData?.["adm-desa"];
+  if (villageGroup && villageData?.features?.length) {
+    villageGroup.eachLayer?.((featureLayer) => {
+      const feature = featureLayer?.__wajoFeature;
+      if (!feature) return;
+      const base = featureLayer.__wajoBaseStyle || styleFor({ styleMode: "admin-village" }, feature);
+      const selected = focusAdmin?.type === "desa"
+        ? administrationFeatureMatchesTarget(feature, focusAdmin.feature, "desa")
+        : false;
+      featureLayer.__wajoActiveAdmin = selected;
+      featureLayer.setStyle?.(selected
+        ? selectedStyleFor({ styleMode: "admin-village" }, base, true)
+        : base
+      );
+    });
+  }
+}
+
 function hoverStyleFor(layer, baseStyle) {
   if (layer?.styleMode === "admin-county-outline") {
     return {
@@ -528,6 +616,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   const printStyleRef = useRef(false);
   const printScopeRef = useRef(null);
   const visibleRef = useRef(visible);
+  const regionFilterRef = useRef(regionFilter);
+  const focusAdminRef = useRef(focusAdmin);
   const handledDomEventsRef = useRef(new WeakSet());
 
   const [errors, setErrors] = useState({});
@@ -577,6 +667,11 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     visibleRef.current = visible;
   }, [visible]);
+
+  useEffect(() => {
+    regionFilterRef.current = regionFilter;
+    focusAdminRef.current = focusAdmin;
+  }, [regionFilter, focusAdmin]);
 
   const loadLayerData = useCallback(
     async (layer) => {
@@ -867,8 +962,8 @@ const MapCanvas = forwardRef(function MapCanvas(
         }
 
         const scope = printScopeRef.current || getPrintScope(L, {
-          regionFilter,
-          focusAdmin,
+          regionFilter: regionFilterRef.current,
+          focusAdmin: focusAdminRef.current,
           countyData: loadedData.current["adm-kabupaten"],
           districtData: loadedData.current["adm-kecamatan"],
           villageData: loadedData.current["adm-desa"]
@@ -893,7 +988,18 @@ const MapCanvas = forwardRef(function MapCanvas(
         const view = printViewRef.current;
 
         window.requestAnimationFrame(() => {
+          const printedScope = printScopeRef.current;
           restorePrintAdministrationStyles(layerRefs.current);
+          if (printedScope?.type === "kecamatan" || printedScope?.type === "desa") {
+            applyActiveAdministrationStyles(
+              layerRefs.current,
+              loadedData.current,
+              {
+                focusAdmin: { type: printedScope.type, feature: printedScope.feature },
+                regionFilter: printedScope.type === "kecamatan" ? administrativeName(printedScope.feature, "kecamatan") : ""
+              }
+            );
+          }
           printStyleRef.current = false;
           printScopeRef.current = null;
           restorePrintViewport(map, printLayoutRef);
@@ -1085,7 +1191,10 @@ const MapCanvas = forwardRef(function MapCanvas(
           vectorRenderersRef.current.get(paneName);
 
         if (!vectorRenderer) {
-          vectorRenderer = L.canvas({ padding: 0.45 });
+          vectorRenderer = L.canvas({
+            pane: paneName,
+            padding: 0.45
+          });
           vectorRenderersRef.current.set(
             paneName,
             vectorRenderer
@@ -1210,6 +1319,7 @@ const MapCanvas = forwardRef(function MapCanvas(
 
                 featureLayer.__wajoFeatureKey = featureKey(layer, feature);
                 featureLayer.__wajoFeature = feature;
+                featureLayer.__wajoLayerId = layer.id;
 
                 /*
                  * Universal feature selection.
@@ -1224,11 +1334,14 @@ const MapCanvas = forwardRef(function MapCanvas(
                       handledDomEventsRef.current.add(event.originalEvent);
                     }
 
-                    selectedRef.current?.setStyle?.(
-                      selectedRef.current
-                        ?.__wajoBaseStyle ||
-                        {}
-                    );
+                    const previousSelected = selectedRef.current;
+                    if (previousSelected && previousSelected !== featureLayer) {
+                      const previousIsAdmin = isAdministrativeLayerId(previousSelected.__wajoLayerId);
+                      const nextIsAdmin = isAdministrativeLayerId(layer.id);
+                      if (!(previousIsAdmin && !nextIsAdmin)) {
+                        previousSelected.setStyle?.(previousSelected.__wajoBaseStyle || {});
+                      }
+                    }
 
                     selectedRef.current =
                       featureLayer;
@@ -1271,7 +1384,8 @@ const MapCanvas = forwardRef(function MapCanvas(
                     () => {
                       if (
                         selectedRef.current ===
-                        featureLayer
+                        featureLayer ||
+                        featureLayer.__wajoActiveAdmin
                       ) {
                         return;
                       }
@@ -1292,6 +1406,17 @@ const MapCanvas = forwardRef(function MapCanvas(
                         selectedRef.current ===
                         featureLayer
                       ) {
+                        return;
+                      }
+
+                      if (featureLayer.__wajoActiveAdmin) {
+                        featureLayer.setStyle(
+                          selectedStyleFor(
+                            layer,
+                            baseStyle,
+                            true
+                          )
+                        );
                         return;
                       }
 
@@ -1555,6 +1680,15 @@ const MapCanvas = forwardRef(function MapCanvas(
           layer.id
         ] = geoLayer;
       });
+
+      applyActiveAdministrationStyles(
+        layerRefs.current,
+        loadedData.current,
+        {
+          focusAdmin,
+          regionFilter
+        }
+      );
 
       /*
        * Initial map fit hanya sekali

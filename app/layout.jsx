@@ -7,6 +7,8 @@ import { withAssetVersion } from "../lib/assetVersion";
 
 const WAJO_ICON = withAssetVersion("/icon.png");
 const WAJO_OG = withAssetVersion("/seo/geoportal-wajo-og.png");
+const BUILD_VERSION = process.env.NEXT_PUBLIC_ASSET_VERSION?.trim() || "dev";
+void BUILD_VERSION;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -92,6 +94,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={inter.variable}>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(async()=>{try{const expected=new URL(${JSON.stringify(withAssetVersion("/sw.js"))},location.origin).href;const regs=await navigator.serviceWorker?.getRegistrations?.()||[];const stale=regs.some(r=>r.active&&r.active.scriptURL!==expected);if(stale){await Promise.all(regs.map(r=>r.unregister()));location.reload();}}catch{}})();`
+          }}
+        />
         {children}
         <PwaRegister />
       </body>

@@ -759,14 +759,17 @@
   "deployment_cache_busting": {
     "status": "implemented",
     "scope": [
+      "Next.js HTML routes",
+      "Next.js JavaScript/CSS static assets",
       "GeoJSON /geo-data/*",
       "service worker",
       "PWA icons",
       "branding assets",
       "Open Graph images"
     ],
-    "strategy": "Setiap build menghasilkan NEXT_PUBLIC_ASSET_VERSION baru; URL aset dan GeoJSON memakai ?v=... sehingga browser dan service worker menggunakan resource deployment terbaru.",
-    "service_worker": "URL /sw.js juga diberi ?v dan nama cache mengikuti versi deployment."
+    "strategy": "NEXT_PUBLIC_ASSET_VERSION berubah pada setiap build. Aset milik aplikasi dan GeoJSON menggunakan ?v=versi deployment; HTML dan service worker selalu direvalidasi; service worker tidak lagi cache-first untuk JavaScript/CSS Next.js tetapi network-first dengan cache sebagai fallback offline.",
+    "service_worker": "URL /sw.js diberi ?v, cache name mengikuti versi deployment, registration.update() dipanggil setiap load, dan cache JavaScript/CSS direvalidasi dengan cache:no-cache sebelum menggunakan salinan lama sebagai fallback.",
+    "next_static": "JavaScript/CSS di /_next/static/ diberi Cache-Control no-cache, must-revalidate pada konfigurasi Next sehingga browser tidak mengunci bundle lama ketika nama resource tetap sama."
   },
   "map_visual_priority": {
     "status": "implemented",
@@ -785,8 +788,9 @@
       "line": "dedicated pane/renderer above thematic polygons and administrative boundaries; z-index 600+",
       "point": "dedicated pane/renderer above thematic lines and administrative boundaries; z-index 700+"
     },
-    "interaction": "Thematic polygon, line, and point features use separate Leaflet panes and renderers so administrative boundaries do not block click/hover hit-testing.",
-    "note": "Within the same thematic priority, overlapping features remain subject to normal map layer order; users can toggle layers to isolate dense overlaps."
+    "interaction": "Thematic polygon, line, and point features memakai pane dan renderer Leaflet terpisah. Renderer diberi pane eksplisit sehingga z-index benar-benar mengikuti hierarchy Kabupaten → Kecamatan → Desa → Tematik.",
+    "note": "Within the same thematic priority, overlapping features remain subject to normal map layer order; users can toggle layers to isolate dense overlaps.",
+    "focused_administration": "Sorotan Kecamatan/Desa diterapkan ulang setelah filter, toggling layer, dan setelah pencetakan selesai; pemilihan feature tematik tidak menghapus sorotan wilayah aktif."
   },
   "ui_region_sync": {
     "status": "Lulus pemeriksaan",
@@ -827,6 +831,7 @@
       "Data tematik jaringan/garis",
       "Data tematik lokasi/titik"
     ],
-    "catatan": "preparePrint menunggu data layer aktif yang belum selesai dimuat, menentukan scope dari focusAdmin/regionFilter, memusatkan peta ke bounds scope, menerapkan style administrasi khusus cetak, lalu memulihkan state setelah afterprint."
+    "catatan": "preparePrint menunggu data layer aktif yang belum selesai dimuat, menentukan scope dari focusAdmin/regionFilter, memusatkan peta ke bounds scope, menerapkan style administrasi khusus cetak, lalu memulihkan state setelah afterprint.",
+    "focused_administration": "Kecamatan yang menjadi konteks cetak tetap memiliki fill dan garis tegas meskipun layer tematik seperti jalan, sarana, atau jaringan aktif."
   }
 }

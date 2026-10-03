@@ -107,8 +107,27 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Next static chunks are safe to cache after first successful request.
+  // Next JavaScript/CSS must always revalidate on deployment.
+  // Browser/CDN cache is still used efficiently through conditional requests,
+  // while an older cached copy remains an offline fallback only.
   if (url.pathname.startsWith("/_next/static/")) {
+    const isCodeAsset = /\.(?:js|css)$/i.test(url.pathname);
+
+    if (isCodeAsset) {
+      event.respondWith(
+        fetch(request, { cache: "no-cache" })
+          .then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+          .catch(() => caches.match(request))
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(request).then((cached) =>
         cached || fetch(request).then((response) => {
