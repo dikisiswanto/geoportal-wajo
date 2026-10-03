@@ -56,7 +56,7 @@ function StatRow({ item, onClick }) {
 
   if (!onClick) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-3">
         {content}
       </div>
     );
@@ -66,7 +66,7 @@ function StatRow({ item, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+      className="group flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
       title={`Tampilkan ${item.label} di wilayah ini`}
     >
       {content}
@@ -76,7 +76,7 @@ function StatRow({ item, onClick }) {
 
 function MetricCard({ item }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3.5">
       <p className="text-lg font-semibold tabular-nums text-slate-900">{Number(item.value).toLocaleString("id-ID")}</p>
       <p className="mt-0.5 map-text-micro font-medium uppercase tracking-wide text-slate-500">{item.label}</p>
     </div>
@@ -158,7 +158,7 @@ export default function FeatureInspector({
   const statisticsContent = hasAdminStats ? (
     <div className="px-3 py-3">
       {adminStats.metrics?.length > 0 && (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
           {adminStats.metrics.map((item) => <MetricCard key={item.label} item={item} />)}
         </div>
       )}
@@ -171,7 +171,7 @@ export default function FeatureInspector({
         </div>
       </div>
 
-      <div className="mt-2 space-y-1.5">
+      <div className="mt-2.5 space-y-2">
         {adminStats.layers.map((item) => (
           <StatRow
             key={item.layerId}

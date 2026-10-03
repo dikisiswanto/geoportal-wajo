@@ -57,10 +57,23 @@ export default function LayerCatalog({
   const summaryFor = (layer) => regionSummary?.[layer.file];
 
   const countFor = (layer) => {
-    if (!regionFilter) return layerData?.[layer.id]?.features?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary?.[layer.file]?.mappedCount || dataSummary?.[layer.file]?.total || 0;
+    const loaded = layerData?.[layer.id]?.features;
+    if (!regionFilter) return loaded?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary?.[layer.file]?.mappedCount || dataSummary?.[layer.file]?.total || 0;
+
+    const districtIndex = regionSummary?.["batas-kecamatan.geojson"]?.regions?.find(
+      (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
+    );
+
+    if (loaded && districtIndex?.code) {
+      return loaded.filter((feature) => {
+        if (!feature?.geometry) return false;
+        const codes = feature?.properties?.wilayah_kecamatan_kode;
+        return Array.isArray(codes) ? codes.includes(districtIndex.code) : String(codes ?? "") === districtIndex.code;
+      }).length;
+    }
+
     const scoped = summaryFor(layer);
-    if (!scoped) return layerData?.[layer.id]?.features?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary?.[layer.file]?.mappedCount || dataSummary?.[layer.file]?.total || 0;
-    return scoped.regions?.find(
+    return scoped?.regions?.find(
       (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
     )?.count || 0;
   };

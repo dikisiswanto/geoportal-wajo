@@ -428,9 +428,8 @@ async function readLocalFallback(kind, label) {
     const data = JSON.parse(text);
     if (!Array.isArray(data.features) || !data.features.length) throw new Error("FeatureCollection kosong.");
     const enriched = kind === "kecamatan" ? enrichKecamatanRows(data.features) : enrichDesaRows(data.features);
-    return dedupeByAdminCode(enriched, kind);
     console.warn(`${label}: BIG tidak dapat dihubungi; memakai data lokal ${filename} yang sudah divalidasi terhadap master Kemendagri + BPS.`);
-    return enriched;
+    return dedupeByAdminCode(enriched, kind);
   } catch (error) {
     throw new Error(`${label}: fallback lokal gagal — ${error.message}`);
   }

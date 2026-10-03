@@ -41,14 +41,14 @@ a:focus-visible {
 }
 
 .leaflet-tile-pane {
-  opacity: 0.42;
+  opacity: 0.36;
 }
 
 
 .leaflet-basemap-tint {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.28);
   pointer-events: none;
 }
 
@@ -81,7 +81,12 @@ a:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.leaflet-tooltip.leaflet-kecamatan-label {
+.leaflet-wajo-data-pane path,
+.leaflet-wajo-data-pane .leaflet-marker-icon {
+  cursor: pointer;
+}
+
+.leaflet-kecamatan-label {
   border: 0;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.16);
   padding: 2px 6px;

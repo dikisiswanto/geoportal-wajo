@@ -10,7 +10,8 @@
     "sync:admin": "node scripts/sync-big-admin-boundaries.mjs",
     "sync:admin:desa": "node scripts/sync-big-admin-boundaries.mjs --desa --apply",
     "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.mjs",
-    "validate:admin": "node scripts/validate-admin.mjs"
+    "validate:admin": "node scripts/validate-admin.mjs",
+    "validate:data:region": "node scripts/validate-geo-membership.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",

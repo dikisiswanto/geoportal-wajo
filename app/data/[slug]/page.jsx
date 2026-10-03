@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { layers } from "../../../lib/layers";
+import { withAssetVersion } from "../../../lib/assetVersion";
 import { getLayerStatistics } from "../../../lib/geo/statistics";
 import { humanGeometryLabel } from "../../../lib/geo/format";
 import fs from "node:fs";
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }) {
       url,
       images: [
         {
-          url: SOCIAL_IMAGE,
+          url: withAssetVersion(SOCIAL_IMAGE),
           width: 1200,
           height: 630,
           alt: seo.title
@@ -64,7 +65,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: `${seo.title} | Geoportal Wajo`,
       description: seo.description,
-      images: [SOCIAL_IMAGE]
+      images: [withAssetVersion(SOCIAL_IMAGE)]
     }
   };
 }

@@ -1,4 +1,5 @@
-const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
+import { withAssetVersion } from "../lib/assetVersion";
+const WAJO_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
 
 export default function Loading() {
   return (

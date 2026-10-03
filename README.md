@@ -179,3 +179,15 @@ Layer **Batas Kabupaten Wajo** menggunakan referensi Badan Informasi Geospasial 
 `npm run sync:admin:desa` memperbarui batas kecamatan dan desa/kelurahan dari BIG. Script menggunakan koneksi IPv4 terlebih dahulu, retry untuk gangguan jaringan seperti `ECONNRESET`, `EAI_AGAIN`, timeout, dan kegagalan socket, lalu memeriksa hasil terhadap master Kemendagri + BPS. **Identitas/uniqueness feature selalu berdasarkan kode administrasi (`kode_kecamatan` / `kode_desa`), bukan nama.** Nama hanya digunakan untuk mencocokkan nomenklatur BPS setelah kecamatan/lokasi ditentukan oleh kode BIG. Karena itu desa dengan nama sama di kecamatan berbeda tetap tersimpan sebagai feature yang berbeda. Saat `--apply`, script juga mencegah hasil BIG yang lebih sedikit menimpa data lokal; pakai `--allow-shrink` hanya bila pengurangan kode memang disengaja.
 
 Jika layanan BIG sedang tidak dapat dijangkau, script otomatis memakai GeoJSON lokal terakhir yang sudah ada sebagai fallback dan tetap menjalankan validasi sebelum menulis hasil. Gunakan `--remote-only` atau `BIG_ALLOW_LOCAL_FALLBACK=0` bila proses harus gagal ketika BIG tidak tersedia. Timeout dan jumlah retry dapat diatur melalui `BIG_TIMEOUT_MS` dan `BIG_RETRIES`.
+
+### Penyaringan berdasarkan wilayah
+
+Data tematik, fasilitas, satuan pendidikan, sarana, dan jaringan memiliki pemetaan wilayah tambahan pada setiap feature melalui `wilayah_kecamatan_kode` dan `wilayah_desa_kode`. Kode tersebut dipakai untuk penyaringan kecamatan/desa sehingga data tidak lagi bergantung pada pencarian nama atau perhitungan titik-di-poligon berulang di browser. Untuk objek jaringan atau area yang melintasi beberapa wilayah, seluruh kode wilayah yang dilewati tetap disimpan.
+
+Setelah data administrasi atau GeoJSON tematik diperbarui, jalankan:
+
+```bash
+npm run validate:data:region
+```
+
+Pemetaan hanya disimpan bila dapat ditentukan dari kode sumber atau hubungan spasial yang dapat dipertanggungjawabkan. Data tanpa lokasi yang dapat dipastikan tetap dipertahankan, tetapi tidak dipaksakan menjadi titik perkiraan.

@@ -56,6 +56,9 @@ Aturan data pendidikan:
 Optimasi data:
 - GeoJSON dipadatkan tanpa whitespace.
 - Data dimuat lazy: browser mengambil GeoJSON hanya ketika layer diaktifkan.
+- Data tematik/fasilitas/jaringan memiliki `wilayah_kecamatan_kode` dan `wilayah_desa_kode` untuk penyaringan berbasis kode administrasi.
+- Objek jaringan/area yang melintasi beberapa wilayah menyimpan seluruh kode wilayah yang dilewati.
+- Penyaringan wilayah di browser menggunakan kode yang sudah dipetakan, bukan hitung spasial berulang.
 - Tidak ada GeoJSON pendidikan duplikat.
 
 Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset GeoJSON.

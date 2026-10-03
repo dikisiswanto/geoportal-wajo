@@ -1,4 +1,5 @@
 import GeoPortal from "../components/GeoPortal";
+import { withAssetVersion } from "../lib/assetVersion";
 import { absoluteUrl, DEFAULT_DESCRIPTION, PUBLISHER_NAME, SITE_NAME, SOCIAL_IMAGE } from "../lib/seo";
 
 export const metadata = {
@@ -18,7 +19,7 @@ export const metadata = {
     url: absoluteUrl("/"),
     images: [
       {
-        url: SOCIAL_IMAGE,
+        url: withAssetVersion(SOCIAL_IMAGE),
         width: 1200,
         height: 630,
         alt: "Peta Interaktif Kabupaten Wajo"
@@ -30,7 +31,7 @@ export const metadata = {
     title: SITE_NAME,
     description:
       "Peta digital Kabupaten Wajo untuk melihat batas administrasi, jaringan jalan, fasilitas publik, pendidikan, kesehatan, dan potensi wilayah.",
-    images: [SOCIAL_IMAGE]
+    images: [withAssetVersion(SOCIAL_IMAGE)]
   }
 };
 
@@ -42,7 +43,7 @@ export default function Home() {
       "@id": `${absoluteUrl("/")}#organization`,
       name: "Pemerintah Kabupaten Wajo",
       alternateName: "Pemkab Wajo",
-      logo: absoluteUrl("/brand/logo-kabupaten-wajo.png"),
+      logo: absoluteUrl(withAssetVersion("/brand/logo-kabupaten-wajo.png")),
       url: absoluteUrl("/")
     },
     {

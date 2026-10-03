@@ -21,6 +21,7 @@ import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
 import MapHint from "./geoportal/MapHint";
 import Image from "next/image";
+import { withAssetVersion } from "../lib/assetVersion";
 
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
@@ -443,7 +444,7 @@ export default function GeoPortal() {
         >
           <div className="flex flex-col items-center text-center px-6">
             <Image
-              src="/brand/logo-kabupaten-wajo.png"
+              src={withAssetVersion("/brand/logo-kabupaten-wajo.png")}
               alt="Lambang Kabupaten Wajo"
               width={82}
               height={82}

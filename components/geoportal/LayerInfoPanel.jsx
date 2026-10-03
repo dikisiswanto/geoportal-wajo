@@ -1,6 +1,7 @@
 import { IconChartBar, IconDatabase, IconInfoCircle, IconLink, IconX } from "@tabler/icons-react";
 import LayerGlyph from "./LayerGlyph";
 import { getLayerInsight, getLayerStatistics } from "../../lib/geo/statistics";
+import { featureAdministrativeCodes } from "../../lib/geo/region";
 import SourceBadge from "./SourceBadge";
 import { useEffect, useState } from "react";
 import useSheetPresence from "./useSheetPresence";
@@ -15,7 +16,7 @@ const SOURCE_HELP = {
 function StatNumber({ value, label }) {
   const formatted = typeof value === "number" ? value.toLocaleString("id-ID") : value;
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5">
       <p className="map-text-compact font-semibold tabular-nums text-slate-900">{formatted}</p>
       <p className="mt-0.5 map-text-micro font-medium uppercase tracking-wide text-slate-500">{label}</p>
     </div>
@@ -31,7 +32,7 @@ function Distribution({ title, items }) {
         <IconChartBar size={15} className="text-slate-400" aria-hidden="true" />
         <h3 className="map-text-compact font-semibold text-slate-900">{title}</h3>
       </div>
-      <div className="mt-2 space-y-2">
+      <div className="mt-2.5 space-y-2.5">
         {items.map((item) => (
           <div key={item.label}>
             <div className="mb-1 flex items-center justify-between gap-3 map-text-micro">
@@ -60,12 +61,21 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
   if (!rendered || !renderLayer) return null;
 
   const currentLayer = renderLayer;
-  const stats = getLayerStatistics(currentLayer, data, summary);
+  const selectedRegionSummary = regionFilter
+    ? regionSummary?.regions?.find((item) => item.name.toLowerCase() === regionFilter.toLowerCase())
+    : null;
+  const scopedData = regionFilter && selectedRegionSummary?.code && Array.isArray(data?.features)
+    ? {
+        ...data,
+        features: data.features.filter((feature) =>
+          featureAdministrativeCodes(feature, "kecamatan").includes(selectedRegionSummary.code)
+        )
+      }
+    : data;
+  const stats = getLayerStatistics(currentLayer, scopedData, summary);
   const sourceType = currentLayer.sourceType || "Sumber terbuka / ArcGIS";
   const coverageCount = stats.kecamatanDistribution?.length || 0;
-  const contextCount = regionFilter
-    ? regionSummary?.regions?.find((item) => item.name.toLowerCase() === regionFilter.toLowerCase())?.count ?? null
-    : null;
+  const contextCount = regionFilter ? stats.mappedCount : null;
   const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Keterangan sumber mengikuti informasi yang tersedia pada data.";
 
   return (

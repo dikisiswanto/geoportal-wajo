@@ -2,14 +2,17 @@
   "validation_date": "2026-10-03",
   "language": "id-ID",
   "scope": "Seluruh GeoJSON non-pendidikan yang benar-benar disertakan pada folder public/geo-data baseline ini.",
-  "summary": "31 dataset non-pendidikan diperiksa. Batas kabupaten yang dipakai peta berasal dari BIG edisi Juni 2026 dan ditampilkan hanya sebagai garis acuan paling bawah agar data tematik, jaringan, dan titik tetap terlihat.",
+  "summary": "31 dataset non-pendidikan diperiksa. Batas kabupaten yang dipakai peta berasal dari BIG edisi Juni 2026 dan ditampilkan hanya sebagai garis acuan paling bawah agar data tematik, jaringan, dan titik tetap terlihat. Data tematik kini dipetakan menggunakan kode wilayah administrasi, sehingga pemfilteran kecamatan dan desa tidak bergantung pada kemiripan nama.",
   "method": [
     "Memeriksa struktur JSON dan FeatureCollection.",
     "Memeriksa tipe, geometri kosong, dan validitas geometri.",
     "Memeriksa titik representatif terhadap gabungan 14 kecamatan untuk menemukan anomali posisi.",
     "Meninjau kelengkapan dan makna atribut penting.",
     "Melakukan pencocokan terhadap sumber resmi BIG atau sumber tematik yang tersedia pada metadata.",
-    "Audit khusus satuan pendidikan mencakup jumlah rekaman, lokasi terpetakan, bentuk pendidikan, status sekolah, dan akreditasi."
+    "Audit khusus satuan pendidikan mencakup jumlah rekaman, lokasi terpetakan, bentuk pendidikan, status sekolah, dan akreditasi.",
+    "Menambahkan pemetaan wilayah berbasis kode administrasi untuk data titik, jaringan, dan area.",
+    "Untuk objek yang melintasi lebih dari satu desa/kecamatan, seluruh kode wilayah yang terkena dicatat agar objek tidak hilang saat penyaringan wilayah.",
+    "Nama wilayah tidak digunakan sebagai kunci unik; kode Kemendagri menjadi identitas administrasi."
   ],
   "important_boundary_note": "Dataset batas administrasi lama tidak lagi digunakan pada peta. Batas kabupaten, kecamatan, dan desa/kelurahan menggunakan basis BIG edisi Juni 2026.",
   "datasets": [
@@ -573,5 +576,249 @@
       "Pengidentifikasi teknis seperti FID, OBJECTID, FCODE, KDCPUM, dan KDEPUM tetap tersedia di data internal tetapi tidak ditampilkan pada panel pengguna.",
       "Informasi pendidikan tetap mempertahankan NPSN karena merupakan identitas sekolah yang lazim digunakan pengguna, sementara koordinat ditampilkan sebagai Bujur/Lintang bila memang relevan."
     ]
+  },
+  "administrative_mapping": {
+    "basis": "Kode administrasi Kemendagri/BIG sebagai identitas wilayah; kode BPS dipertahankan pada master administrasi.",
+    "kecamatan": 14,
+    "desa_kelurahan": 190,
+    "field_kecamatan": "wilayah_kecamatan_kode",
+    "field_desa": "wilayah_desa_kode",
+    "datasets": {
+      "danau.geojson": {
+        "features": 59,
+        "terpetakan_kecamatan": 58,
+        "terpetakan_desa": 58,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "jaringan-energi.geojson": {
+        "features": 2492,
+        "terpetakan_kecamatan": 2492,
+        "terpetakan_desa": 2492,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "jaringan-jalan.geojson": {
+        "features": 298,
+        "terpetakan_kecamatan": 298,
+        "terpetakan_desa": 298,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "jaringan-prasarana-lainnya.geojson": {
+        "features": 852,
+        "terpetakan_kecamatan": 851,
+        "terpetakan_desa": 851,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "jaringan-sumber-daya-air.geojson": {
+        "features": 340,
+        "terpetakan_kecamatan": 340,
+        "terpetakan_desa": 340,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "jaringan-telekomunikasi.geojson": {
+        "features": 425,
+        "terpetakan_kecamatan": 424,
+        "terpetakan_desa": 424,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "jaringan-transportasi.geojson": {
+        "features": 2136,
+        "terpetakan_kecamatan": 2134,
+        "terpetakan_desa": 2134,
+        "belum_terpetakan_kecamatan": 2,
+        "belum_terpetakan_desa": 2
+      },
+      "kawasan-alang-alang.geojson": {
+        "features": 642,
+        "terpetakan_kecamatan": 629,
+        "terpetakan_desa": 629,
+        "belum_terpetakan_kecamatan": 13,
+        "belum_terpetakan_desa": 13
+      },
+      "kawasan-hutan-lahan-basah.geojson": {
+        "features": 24,
+        "terpetakan_kecamatan": 24,
+        "terpetakan_desa": 24,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "kawasan-hutan-lahan-kering.geojson": {
+        "features": 16,
+        "terpetakan_kecamatan": 16,
+        "terpetakan_desa": 16,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "kawasan-perkebunan.geojson": {
+        "features": 104,
+        "terpetakan_kecamatan": 102,
+        "terpetakan_desa": 102,
+        "belum_terpetakan_kecamatan": 2,
+        "belum_terpetakan_desa": 2
+      },
+      "kawasan-permukiman.geojson": {
+        "features": 940,
+        "terpetakan_kecamatan": 935,
+        "terpetakan_desa": 935,
+        "belum_terpetakan_kecamatan": 5,
+        "belum_terpetakan_desa": 5
+      },
+      "kawasan-persawahan.geojson": {
+        "features": 323,
+        "terpetakan_kecamatan": 323,
+        "terpetakan_desa": 323,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "kawasan-pertanian-lahan-kering.geojson": {
+        "features": 403,
+        "terpetakan_kecamatan": 397,
+        "terpetakan_desa": 397,
+        "belum_terpetakan_kecamatan": 6,
+        "belum_terpetakan_desa": 6
+      },
+      "kawasan-semak-belukar.geojson": {
+        "features": 2064,
+        "terpetakan_kecamatan": 2063,
+        "terpetakan_desa": 2063,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "kawasan-tambak.geojson": {
+        "features": 217,
+        "terpetakan_kecamatan": 216,
+        "terpetakan_desa": 216,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "kontur-topografi.geojson": {
+        "features": 768,
+        "terpetakan_kecamatan": 757,
+        "terpetakan_desa": 757,
+        "belum_terpetakan_kecamatan": 11,
+        "belum_terpetakan_desa": 11
+      },
+      "organisasi-perangkat-daerah.geojson": {
+        "features": 27,
+        "terpetakan_kecamatan": 27,
+        "terpetakan_desa": 27,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "potensi-pertanian.geojson": {
+        "features": 44,
+        "terpetakan_kecamatan": 44,
+        "terpetakan_desa": 44,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "potensi-peternakan.geojson": {
+        "features": 21,
+        "terpetakan_kecamatan": 21,
+        "terpetakan_desa": 21,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "puskesmas.geojson": {
+        "features": 23,
+        "terpetakan_kecamatan": 23,
+        "terpetakan_desa": 23,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "sarana-energi.geojson": {
+        "features": 8,
+        "terpetakan_kecamatan": 7,
+        "terpetakan_desa": 7,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "sarana-prasarana-lainnya.geojson": {
+        "features": 94,
+        "terpetakan_kecamatan": 94,
+        "terpetakan_desa": 94,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "sarana-sumber-daya-air.geojson": {
+        "features": 55,
+        "terpetakan_kecamatan": 55,
+        "terpetakan_desa": 55,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "sarana-telekomunikasi.geojson": {
+        "features": 58,
+        "terpetakan_kecamatan": 58,
+        "terpetakan_desa": 58,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "sarana-transportasi.geojson": {
+        "features": 257,
+        "terpetakan_kecamatan": 256,
+        "terpetakan_desa": 256,
+        "belum_terpetakan_kecamatan": 1,
+        "belum_terpetakan_desa": 1
+      },
+      "satuan-pendidikan.geojson": {
+        "features": 1049,
+        "terpetakan_kecamatan": 1049,
+        "terpetakan_desa": 935,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 114
+      },
+      "sungai.geojson": {
+        "features": 51,
+        "terpetakan_kecamatan": 51,
+        "terpetakan_desa": 51,
+        "belum_terpetakan_kecamatan": 0,
+        "belum_terpetakan_desa": 0
+      },
+      "toponimi.geojson": {
+        "features": 1216,
+        "terpetakan_kecamatan": 1207,
+        "terpetakan_desa": 1207,
+        "belum_terpetakan_kecamatan": 9,
+        "belum_terpetakan_desa": 9
+      }
+    }
+  },
+  "deployment_cache_busting": {
+    "status": "implemented",
+    "scope": [
+      "GeoJSON /geo-data/*",
+      "service worker",
+      "PWA icons",
+      "branding assets",
+      "Open Graph images"
+    ],
+    "strategy": "Setiap build menghasilkan NEXT_PUBLIC_ASSET_VERSION baru; URL aset dan GeoJSON memakai ?v=... sehingga browser dan service worker menggunakan resource deployment terbaru.",
+    "service_worker": "URL /sw.js juga diberi ?v dan nama cache mengikuti versi deployment."
+  },
+  "map_visual_priority": {
+    "status": "implemented",
+    "basemap": "OpenStreetMap diredupkan dengan opacity tile 0.36 dan lapisan putih transparan 0.28.",
+    "district_boundaries": "Polygon kecamatan memakai palette berbeda berbasis kode kecamatan, fill 0.34, outline lebih tegas, hover/selection tetap lebih kuat."
+  },
+  "map_rendering_layer_hierarchy": {
+    "status": "validated",
+    "administrative_layers": {
+      "kabupaten": "outline-only; z-index 320",
+      "kecamatan": "colored polygon boundary; z-index 330",
+      "desa_kelurahan": "boundary only; z-index 340"
+    },
+    "thematic_layers": {
+      "polygon": "dedicated pane/renderer above administrative boundaries; z-index 500+",
+      "line": "dedicated pane/renderer above thematic polygons and administrative boundaries; z-index 600+",
+      "point": "dedicated pane/renderer above thematic lines and administrative boundaries; z-index 700+"
+    },
+    "interaction": "Thematic polygon, line, and point features use separate Leaflet panes and renderers so administrative boundaries do not block click/hover hit-testing.",
+    "note": "Within the same thematic priority, overlapping features remain subject to normal map layer order; users can toggle layers to isolate dense overlaps."
   }
 }

@@ -3,8 +3,9 @@ import Link from "next/link";
 import PwaInstallButton from "./geoportal/PwaInstallButton";
 import { IconSearch } from "@tabler/icons-react";
 import MobileNav from "./geoportal/MobileNav";
+import { withAssetVersion } from "../lib/assetVersion";
 
-const WAJO_LOGO = "/brand/logo-kabupaten-wajo.png";
+const WAJO_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
 
 const NAV_ITEMS = [
   { href: "/", label: "Peta", key: "map" },

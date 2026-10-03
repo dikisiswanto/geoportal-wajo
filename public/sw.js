@@ -1,4 +1,5 @@
-const CACHE_NAME = "geoportal-wajo-v3";
+const SW_VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+const CACHE_NAME = `geoportal-wajo-${SW_VERSION}`;
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",

@@ -3,9 +3,10 @@ import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import PwaRegister from "../components/PwaRegister";
 import { absoluteUrl, DEFAULT_DESCRIPTION, PUBLISHER_NAME, SITE_NAME, getSiteUrl } from "../lib/seo";
+import { withAssetVersion } from "../lib/assetVersion";
 
-const WAJO_ICON = "/icon.png";
-const WAJO_OG = "/seo/geoportal-wajo-og.png";
+const WAJO_ICON = withAssetVersion("/icon.png");
+const WAJO_OG = withAssetVersion("/seo/geoportal-wajo-og.png");
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,7 +41,7 @@ export const metadata = {
   icons: {
     icon: WAJO_ICON,
     shortcut: WAJO_ICON,
-    apple: "/apple-icon.png"
+    apple: withAssetVersion("/apple-icon.png")
   },
   alternates: {
     canonical: "/"

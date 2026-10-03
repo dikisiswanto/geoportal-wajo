@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { withAssetVersion } from "../lib/assetVersion";
 
 export default function PwaRegister() {
   useEffect(() => {
@@ -9,7 +10,7 @@ export default function PwaRegister() {
     }
 
     const register = () => {
-      navigator.serviceWorker.register("/sw.js", {
+      navigator.serviceWorker.register(withAssetVersion("/sw.js"), {
         scope: "/"
       }).catch(() => {
         // PWA is progressive enhancement; the portal remains fully usable

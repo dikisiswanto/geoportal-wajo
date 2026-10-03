@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withAssetVersion } from "../lib/assetVersion";
 import { absoluteUrl, PUBLISHER_NAME, SITE_NAME, SOCIAL_IMAGE } from "../../lib/seo";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
@@ -16,14 +17,14 @@ export const metadata = {
     description:
       "Kenali Peta Interaktif Kabupaten Wajo, cara data disajikan, sumber data yang digunakan, dan pengelola portal.",
     url: absoluteUrl("/tentang"),
-    images: [{ url: SOCIAL_IMAGE, width: 1200, height: 630, alt: "Tentang Geoportal Kabupaten Wajo" }]
+    images: [{ url: withAssetVersion(SOCIAL_IMAGE), width: 1200, height: 630, alt: "Tentang Geoportal Kabupaten Wajo" }]
   },
   twitter: {
     card: "summary_large_image",
     title: "Tentang Geoportal Kabupaten Wajo",
     description:
       "Kenali Peta Interaktif Kabupaten Wajo, cara data disajikan, sumber data yang digunakan, dan pengelola portal.",
-    images: [SOCIAL_IMAGE]
+    images: [withAssetVersion(SOCIAL_IMAGE)]
   }
 };
 
@@ -34,7 +35,7 @@ export default function AboutPage() {
     "@id": `${absoluteUrl("/tentang")}#organization`,
     name: "Pemerintah Kabupaten Wajo",
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/brand/logo-kabupaten-wajo.png"),
+    logo: absoluteUrl(withAssetVersion("/brand/logo-kabupaten-wajo.png")),
     description:
       "Pemerintah Kabupaten Wajo sebagai penyelenggara pemerintahan daerah dan layanan informasi publik."
   };

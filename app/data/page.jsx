@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { layers } from "../../lib/layers";
+import { withAssetVersion } from "../../lib/assetVersion";
 import { absoluteUrl, datasetSlug, getDatasetSeo, PUBLISHER_NAME, SITE_NAME, SOCIAL_IMAGE } from "../../lib/seo";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
@@ -22,7 +23,7 @@ export const metadata = {
     url: absoluteUrl("/data"),
     images: [
       {
-        url: SOCIAL_IMAGE,
+        url: withAssetVersion(SOCIAL_IMAGE),
         width: 1200,
         height: 630,
         alt: "Data Geospasial Kabupaten Wajo"
@@ -34,7 +35,7 @@ export const metadata = {
     title: "Data Geospasial Kabupaten Wajo",
     description:
       "Katalog data geospasial Kabupaten Wajo yang memuat peta administrasi, jaringan, fasilitas publik, pendidikan, kesehatan, dan data potensi wilayah.",
-    images: [SOCIAL_IMAGE]
+    images: [withAssetVersion(SOCIAL_IMAGE)]
   }
 };
 

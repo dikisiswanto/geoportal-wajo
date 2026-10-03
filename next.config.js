@@ -1,7 +1,22 @@
+const ASSET_VERSION =
+  process.env.BUILD_VERSION?.trim() ||
+  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
+  new Date().toISOString().replace(/[-:.TZ]/g, "");
+
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_ASSET_VERSION: ASSET_VERSION
+  },
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  images: {
+    localPatterns: [
+      {
+        pathname: "/brand/logo-kabupaten-wajo.png"
+      }
+    ]
+  },
   async headers() {
     return [
       {
@@ -9,7 +24,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800"
+            value: "public, max-age=31536000, immutable"
           },
           {
             key: "X-Robots-Tag",
@@ -22,7 +37,7 @@ const nextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=604800, stale-while-revalidate=2592000"
+            value: "public, max-age=31536000, immutable"
           }
         ]
       },

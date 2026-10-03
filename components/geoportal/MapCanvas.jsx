@@ -22,10 +22,13 @@ import {
 import {
   styleFor
 } from "../../lib/geo/styles";
+import { withAssetVersion } from "../../lib/assetVersion";
 
 import {
   featureMatchesRegion,
   featureMatchesAdministrativeFeature,
+  featureAdministrativeCodes,
+  regionCodeFromBoundaryName,
   featureRegionName
 } from "../../lib/geo/region";
 
@@ -66,18 +69,14 @@ function fitWajoBounds(map, L, data) {
 
 const REGION_MEMBERSHIP_CACHE = new WeakMap();
 
-function getRegionMembership(data, boundaryData) {
-  if (!data?.features?.length || !boundaryData?.features?.length) {
-    return null;
-  }
+function getRegionMembership(data) {
+  if (!data?.features?.length) return null;
 
   const cached = REGION_MEMBERSHIP_CACHE.get(data);
-  if (cached?.boundaryData === boundaryData && cached.membership.length === data.features.length) {
-    return cached.membership;
-  }
+  if (cached?.length === data.features.length) return cached;
 
-  const membership = data.features.map((feature) => featureRegionName(feature, boundaryData));
-  REGION_MEMBERSHIP_CACHE.set(data, { boundaryData, membership });
+  const membership = data.features.map((feature) => featureAdministrativeCodes(feature, "kecamatan"));
+  REGION_MEMBERSHIP_CACHE.set(data, membership);
   return membership;
 }
 
@@ -85,16 +84,18 @@ function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdm
   const filter = layer?.featureFilter;
   const hasRegionFilter = Boolean(regionFilter);
 
-  if (!filter && !hasRegionFilter) return data;
+  if (!filter && !hasRegionFilter && !focusAdmin) return data;
   if (!Array.isArray(data?.features)) return data;
 
   const excluded = new Set(
     (filter?.excludeValues ?? []).map((value) => String(value ?? "").trim().toLowerCase())
   );
   const membership = hasRegionFilter && !["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)
-    ? getRegionMembership(data, boundaryData)
+    ? getRegionMembership(data)
     : null;
-  const targetRegion = String(regionFilter ?? "").trim().toLowerCase();
+  const targetRegionCode = hasRegionFilter
+    ? regionCodeFromBoundaryName(regionFilter, boundaryData)
+    : "";
 
   const filtered = data.features.filter((feature, index) => {
     if (filter) {
@@ -104,27 +105,56 @@ function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdm
       if (excluded.has(normalized.toLowerCase())) return false;
     }
 
-    if (focusAdmin?.type === "desa" && focusAdmin.feature && layer?.geometry === "Point") {
+    if (focusAdmin?.feature && (focusAdmin.type === "desa" || focusAdmin.type === "kecamatan")) {
       return featureMatchesAdministrativeFeature(feature, focusAdmin.feature);
     }
 
-    if (!hasRegionFilter || layer?.id === "adm-kecamatan" || layer?.id === "adm-kabupaten" || layer?.id === "adm-desa") {
+    if (!hasRegionFilter || ["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)) {
       return true;
     }
 
-    const region = membership?.[index];
-    return region ? String(region).trim().toLowerCase() === targetRegion : featureMatchesRegion(feature, regionFilter, boundaryData);
+    const regionCodes = membership?.[index] ?? featureAdministrativeCodes(feature, "kecamatan");
+    if (targetRegionCode && regionCodes.length) return regionCodes.includes(targetRegionCode);
+
+    return featureMatchesRegion(feature, regionFilter, boundaryData);
   });
 
   if (filtered.length === data.features.length) return data;
   return { ...data, features: filtered };
 }
 
-function layerPane(layer) {
+function layerPaneName(layer) {
   if (layer?.styleMode === "admin-county-outline") return "adminCounty";
   if (layer?.styleMode === "admin") return "adminDistrict";
   if (layer?.styleMode === "admin-village") return "adminVillage";
-  return "wajoData";
+  return `wajoData-${String(layer?.id ?? "layer").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function dataPaneZIndex(layer, index) {
+  const geometry = String(layer?.geometry ?? "").toLowerCase();
+
+  // Semua data tematik berada di atas batas administrasi. Di dalam data tematik,
+  // titik berada paling atas, kemudian jaringan, lalu area/polygon.
+  const base = geometry.includes("point")
+    ? 700
+    : geometry.includes("line")
+      ? 600
+      : 500;
+
+  return String(base + Math.min(index, 99));
+}
+
+function ensureLayerPane(map, layer, index) {
+  const paneName = layerPaneName(layer);
+  const existing = map.getPane?.(paneName);
+
+  if (existing) return paneName;
+
+  const pane = map.createPane(paneName);
+  pane.classList.add("leaflet-wajo-data-pane");
+  pane.style.zIndex = dataPaneZIndex(layer, index);
+  pane.style.pointerEvents = "auto";
+  return paneName;
 }
 
 function selectedStyleFor(layer, baseStyle, isPolygon) {
@@ -148,9 +178,9 @@ function selectedStyleFor(layer, baseStyle, isPolygon) {
   if (layer?.styleMode === "admin") {
     return {
       ...baseStyle,
-      weight: 2.4,
-      color: "#334155",
-      fillOpacity: 0.34
+      weight: 2.5,
+      color: "#1e293b",
+      fillOpacity: 0.46
     };
   }
 
@@ -184,9 +214,9 @@ function hoverStyleFor(layer, baseStyle) {
   if (layer?.styleMode === "admin") {
     return {
       ...baseStyle,
-      weight: 1.8,
-      color: "#475569",
-      fillOpacity: 0.28
+      weight: 2.1,
+      color: "#334155",
+      fillOpacity: 0.38
     };
   }
 
@@ -235,7 +265,7 @@ const MapCanvas = forwardRef(function MapCanvas(
   const selectedRef = useRef(null);
   const printViewRef = useRef(null);
   const markerIconCacheRef = useRef(new Map());
-  const vectorRendererRef = useRef(null);
+  const vectorRenderersRef = useRef(new Map());
 
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
@@ -297,7 +327,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       );
 
       const request = fetch(
-        `/geo-data/${encodeURIComponent(layer.file)}`,
+        withAssetVersion(`/geo-data/${encodeURIComponent(layer.file)}`),
         {
           cache: "force-cache"
         }
@@ -423,8 +453,6 @@ const MapCanvas = forwardRef(function MapCanvas(
       const adminVillagePane = map.createPane("adminVillage");
       adminVillagePane.style.zIndex = "340";
 
-      const dataPane = map.createPane("wajoData");
-      dataPane.style.zIndex = "400";
 
       L.DomUtil.create(
         "div",
@@ -651,7 +679,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       mapRef.current = null;
       tileRef.current = null;
       printViewRef.current = null;
-      vectorRendererRef.current = null;
+      vectorRenderersRef.current.clear();
       markerIconCacheRef.current.clear();
     };
   }, []);
@@ -728,14 +756,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         selectedRef.current = null;
         previousRegionFilterRef.current = regionFilter;
       }
-      const vectorRenderer =
-        vectorRendererRef.current ||
-        L.canvas({ padding: 0.35 });
-
-      vectorRendererRef.current =
-        vectorRenderer;
-
-      layers.forEach((layer) => {
+      layers.forEach((layer, layerIndex) => {
         const existing =
           layerRefs.current[layer.id];
 
@@ -768,12 +789,28 @@ const MapCanvas = forwardRef(function MapCanvas(
             focusAdmin
           );
 
+        const paneName =
+          ensureLayerPane(map, layer, layerIndex);
+
+        let vectorRenderer =
+          vectorRenderersRef.current.get(paneName);
+
+        if (!vectorRenderer) {
+          vectorRenderer = L.canvas({ padding: 0.45 });
+          vectorRenderersRef.current.set(
+            paneName,
+            vectorRenderer
+          );
+        }
+
         const geoLayer =
           L.geoJSON(
             renderData,
             {
               renderer: vectorRenderer,
-              pane: layerPane(layer),
+              pane: paneName,
+              interactive: true,
+              bubblingMouseEvents: true,
               style: (feature) =>
                 styleFor(
                   layer,
@@ -846,7 +883,11 @@ const MapCanvas = forwardRef(function MapCanvas(
 
                   return L.marker(
                     latlng,
-                    { icon }
+                    {
+                      icon,
+                      pane: layerPaneName(layer),
+                      keyboard: true
+                    }
                   );
                 }
 
