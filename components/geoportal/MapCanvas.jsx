@@ -373,58 +373,123 @@ function findFeatureLayerAtLatLng(group, latlng) {
 
 const REGION_MEMBERSHIP_CACHE = new WeakMap();
 
-function getRegionMembership(data) {
+function getRegionMembershipIndex(data) {
   if (!data?.features?.length) return null;
 
   const cached = REGION_MEMBERSHIP_CACHE.get(data);
-  if (cached?.length === data.features.length) return cached;
+  if (cached?.featureCount === data.features.length) return cached;
 
-  const membership = data.features.map((feature) => featureAdministrativeCodes(feature, "kecamatan"));
-  REGION_MEMBERSHIP_CACHE.set(data, membership);
-  return membership;
+  const byKecamatan = new Map();
+  const byDesa = new Map();
+  const withoutKecamatanCode = [];
+  const withoutDesaCode = [];
+
+  data.features.forEach((feature) => {
+    const kecamatanCodes = featureAdministrativeCodes(feature, "kecamatan");
+    const desaCodes = featureAdministrativeCodes(feature, "desa");
+
+    if (kecamatanCodes.length) {
+      kecamatanCodes.forEach((code) => {
+        const bucket = byKecamatan.get(code);
+        if (bucket) bucket.push(feature);
+        else byKecamatan.set(code, [feature]);
+      });
+    } else {
+      withoutKecamatanCode.push(feature);
+    }
+
+    if (desaCodes.length) {
+      desaCodes.forEach((code) => {
+        const bucket = byDesa.get(code);
+        if (bucket) bucket.push(feature);
+        else byDesa.set(code, [feature]);
+      });
+    } else {
+      withoutDesaCode.push(feature);
+    }
+  });
+
+  const index = {
+    featureCount: data.features.length,
+    byKecamatan,
+    byDesa,
+    withoutKecamatanCode,
+    withoutDesaCode
+  };
+  REGION_MEMBERSHIP_CACHE.set(data, index);
+  return index;
 }
 
 const FILTERED_DATA_CACHE = new WeakMap();
 
-function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdmin) {
-  const hasRegionFilter = Boolean(regionFilter);
-
-  if (!hasRegionFilter && !focusAdmin && !layer?.featureFilter) return data;
-  if (!Array.isArray(data?.features)) return data;
-
-  const focusCode = focusAdmin?.feature
-    ? featureAdministrativeCodes(focusAdmin.feature, focusAdmin.type === "desa" ? "desa" : "kecamatan")[0] || ""
-    : "";
-  const targetRegionCode = hasRegionFilter
-    ? regionCodeFromBoundaryName(regionFilter, boundaryData)
-    : "";
-  const cacheKey = `${layer?.id ?? "layer"}|${targetRegionCode}|${focusAdmin?.type ?? ""}|${focusCode}`;
+function getFilteredDataCache(data) {
   let layerCache = FILTERED_DATA_CACHE.get(data);
   if (!layerCache) {
     layerCache = new Map();
     FILTERED_DATA_CACHE.set(data, layerCache);
   }
+  return layerCache;
+}
+
+function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdmin) {
+  const hasRegionFilter = Boolean(regionFilter);
+  if (!Array.isArray(data?.features)) return data;
+
+  const isVillageBoundary = layer?.id === "adm-desa";
+  const isAdministrativeLayer = isAdministrativeLayerId(layer?.id);
+  if (!hasRegionFilter && !focusAdmin && !layer?.featureFilter) return data;
+
+  const focusType = focusAdmin?.type === "desa" ? "desa" : focusAdmin?.type === "kecamatan" ? "kecamatan" : "";
+  const focusCode = focusAdmin?.feature && focusType
+    ? administrativeFeatureCode(focusAdmin.feature, focusType)
+    : "";
+  const targetRegionCode = hasRegionFilter
+    ? regionCodeFromBoundaryName(regionFilter, boundaryData)
+    : "";
+  const cacheKey = `${layer?.id ?? "layer"}|${targetRegionCode}|${focusType}|${focusCode}`;
+  const layerCache = getFilteredDataCache(data);
   if (layerCache.has(cacheKey)) return layerCache.get(cacheKey);
-  const membership = hasRegionFilter && !["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)
-    ? getRegionMembership(data)
-    : null;
 
-  const filtered = data.features.filter((feature, index) => {
-    if (!featurePassesLayerFilter(layer, feature)) return false;
+  const membershipIndex = getRegionMembershipIndex(data);
+  let filtered;
 
-    if (focusAdmin?.feature && (focusAdmin.type === "desa" || focusAdmin.type === "kecamatan")) {
-      return featureMatchesAdministrativeFeature(feature, focusAdmin.feature);
+  if (isVillageBoundary && focusType === "desa" && focusCode) {
+    const indexed = membershipIndex?.byDesa.get(focusCode) ?? [];
+    const candidates = indexed.length ? indexed : membershipIndex?.withoutDesaCode ?? [];
+    filtered = candidates.filter((feature) => featureAdministrativeCodes(feature, "desa").includes(focusCode) || featureMatchesAdministrativeFeature(feature, focusAdmin.feature));
+  } else if (isVillageBoundary && (focusType === "kecamatan" || targetRegionCode)) {
+    const regionCode = focusType === "kecamatan" && focusCode ? focusCode : targetRegionCode;
+    const indexed = membershipIndex?.byKecamatan.get(regionCode) ?? [];
+    const fallback = membershipIndex?.withoutKecamatanCode ?? [];
+    filtered = indexed.slice();
+    if (fallback.length) {
+      const extra = fallback.filter((feature) => featureMatchesRegion(feature, regionFilter, boundaryData));
+      if (extra.length) filtered.push(...extra);
     }
-
-    if (!hasRegionFilter || ["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)) {
-      return true;
-    }
-
-    const regionCodes = membership?.[index] ?? featureAdministrativeCodes(feature, "kecamatan");
-    if (targetRegionCode && regionCodes.length) return regionCodes.includes(targetRegionCode);
-
-    return featureMatchesRegion(feature, regionFilter, boundaryData);
-  });
+  } else if (focusType === "desa" && focusCode) {
+    const indexed = membershipIndex?.byDesa.get(focusCode) ?? [];
+    const candidates = indexed.length ? indexed : membershipIndex?.withoutDesaCode ?? [];
+    filtered = candidates.filter((feature) => featureMatchesAdministrativeFeature(feature, focusAdmin.feature));
+  } else if (focusType === "kecamatan" && focusCode) {
+    const indexed = membershipIndex?.byKecamatan.get(focusCode) ?? [];
+    const candidates = indexed.length ? indexed : membershipIndex?.withoutKecamatanCode ?? [];
+    filtered = candidates.filter((feature) => featureMatchesAdministrativeFeature(feature, focusAdmin.feature));
+  } else if (hasRegionFilter && !isAdministrativeLayer) {
+    const indexed = targetRegionCode ? membershipIndex?.byKecamatan.get(targetRegionCode) ?? [] : [];
+    const candidates = indexed.length
+      ? indexed
+      : membershipIndex?.withoutKecamatanCode ?? data.features;
+    filtered = candidates.filter((feature) => {
+      if (!featurePassesLayerFilter(layer, feature)) return false;
+      if (targetRegionCode) {
+        const codes = featureAdministrativeCodes(feature, "kecamatan");
+        if (codes.length) return codes.includes(targetRegionCode);
+      }
+      return featureMatchesRegion(feature, regionFilter, boundaryData);
+    });
+  } else {
+    filtered = data.features.filter((feature) => featurePassesLayerFilter(layer, feature));
+  }
 
   const result = filtered.length === data.features.length ? data : { ...data, features: filtered };
   layerCache.set(cacheKey, result);
@@ -511,6 +576,10 @@ function selectedStyleFor(layer, baseStyle, isPolygon) {
 
 function isAdministrativeLayerId(layerId) {
   return layerId === "adm-kabupaten" || layerId === "adm-kecamatan" || layerId === "adm-desa";
+}
+
+function isContextPromotableLineLayer(layer) {
+  return layer?.group === "Jaringan" || layer?.styleMode === "contour";
 }
 
 function administrativeName(feature, type) {
@@ -1031,10 +1100,17 @@ const MapCanvas = forwardRef(function MapCanvas(
         const handled = handledDomEventsRef.current.has(originalEvent);
         const currentFocus = focusAdminRef.current;
         const selectedLayerId = selectedRef.current?.__wajoLayerId;
+        const selectedLayer = layersRefForImperative.current.find(
+          (layer) => layer.id === selectedLayerId
+        );
 
-        // A direct administrative click has already selected the correct
-        // feature. Do not replay it through the map-level hit test.
-        if (handled && isAdministrativeLayerId(selectedLayerId)) return;
+        // Direct administrative clicks and Jaringan/Kontur clicks already
+        // resolved their own context in the feature handler. Do not replay
+        // them through the map-level hit test and override the selection.
+        if (handled && (
+          isAdministrativeLayerId(selectedLayerId) ||
+          isContextPromotableLineLayer(selectedLayer)
+        )) return;
 
         const navigationType = currentFocus?.type === "desa" ? "desa" : "kecamatan";
         const priority = navigationType === "desa"
@@ -1332,11 +1408,11 @@ const MapCanvas = forwardRef(function MapCanvas(
         return;
       }
 
-      // Administrative boundaries do not need to be rebuilt when context
-      // changes. Their active style is synchronized below.
-      const renderKey = isAdministrativeLayerId(layer.id)
-        ? `admin:${layer.id}`
-        : `${layer.id}:${contextKey}`;
+      // Kabupaten dan kecamatan tetap mounted. Batas desa bersifat
+      // context-sensitive karena isi feature dan label mengikuti wilayah aktif.
+      const renderKey = layer.id === "adm-desa" || !isAdministrativeLayerId(layer.id)
+        ? `${layer.id}:${contextKey}`
+        : `admin:${layer.id}`;
 
       if (existing) {
         if (existing.__wajoRenderKey !== renderKey) {
@@ -1454,6 +1530,19 @@ const MapCanvas = forwardRef(function MapCanvas(
             selectedRef.current = featureLayer;
             setFeatureSelectedVisual(featureLayer, layer, baseStyle, isPolygon, true);
 
+            let contextAdminFeature = null;
+            let contextRegion = null;
+            if (isContextPromotableLineLayer(layer) && event?.latlng) {
+              const districtTarget = findFeatureLayerAtLatLng(
+                layerRefs.current["adm-kecamatan"],
+                event.latlng
+              );
+              contextAdminFeature = districtTarget?.__wajoFeature ?? null;
+              if (contextAdminFeature) {
+                contextRegion = administrativeName(contextAdminFeature, "kecamatan") || null;
+              }
+            }
+
             onFeatureSelectRef.current?.({
               layer,
               feature,
@@ -1461,7 +1550,9 @@ const MapCanvas = forwardRef(function MapCanvas(
               regionName: featureRegionName(
                 feature,
                 loadedData.current["adm-kecamatan"]
-              )
+              ),
+              contextRegion,
+              contextAdminFeature
             });
           });
 

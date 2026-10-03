@@ -89,6 +89,10 @@ export default function GeoPortal() {
       const region = REGIONS.find((item) => normalizeRegionName(item) === normalizeRegionName(requestedRegion));
       window.requestAnimationFrame(() => {
         setRegionFilter(region || "");
+        setVisible((previous) => ({
+          ...previous,
+          "adm-desa": true
+        }));
         setHasInteracted(true);
       });
     }
@@ -256,13 +260,24 @@ export default function GeoPortal() {
       properties.Kecamatan ?? properties.WADMKC ?? properties.nama_kecamatan ?? properties.kecamatan ?? ""
     ).trim();
 
+    const contextRegion = String(payload.contextRegion ?? "").trim();
+    const contextAdminFeature = payload.contextAdminFeature;
+    const hasContextPromotion = Boolean(contextRegion && contextAdminFeature);
+
     let shouldSetRegion = false;
-    if (adminLayerId === "adm-kecamatan" && selectedKecamatan) {
+    if (hasContextPromotion) {
+      setFocusAdmin({ type: "kecamatan", feature: contextAdminFeature });
+      setRegionFilter(contextRegion);
+      setVisible((previous) => ({ ...previous, "adm-desa": true }));
+      shouldSetRegion = true;
+    } else if (adminLayerId === "adm-kecamatan" && selectedKecamatan) {
       shouldSetRegion = REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
       setFocusAdmin({ type: "kecamatan", feature: payload.feature });
+      setVisible((previous) => ({ ...previous, "adm-desa": true }));
       if (shouldSetRegion) setRegionFilter(selectedKecamatan);
     } else if (adminLayerId === "adm-desa") {
       setFocusAdmin({ type: "desa", feature: payload.feature });
+      setVisible((previous) => ({ ...previous, "adm-desa": true }));
       if (selectedKecamatan) {
         shouldSetRegion = REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
         if (shouldSetRegion) setRegionFilter(selectedKecamatan);
@@ -272,13 +287,17 @@ export default function GeoPortal() {
       setRegionFilter("");
     }
 
-    const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
+    const activeIds = layers
+      .filter((layer) => visible[layer.id] || (hasContextPromotion && layer.id === "adm-desa"))
+      .map((layer) => layer.id);
     const currentRegion = new URL(window.location.href).searchParams.get("region");
     updateMapQuery({
       layers: activeIds.join(","),
       layer: payload.layer.id,
       feature: payload.featureKey || null,
-      region: shouldSetRegion ? selectedKecamatan : currentRegion
+      region: shouldSetRegion
+        ? (hasContextPromotion ? contextRegion : selectedKecamatan)
+        : currentRegion
     });
   }, [updateMapQuery, visible]);
 
@@ -325,6 +344,9 @@ export default function GeoPortal() {
   const handleRegionFilter = useCallback((region) => {
     setHasInteracted(true);
     setSelected(null);
+    if (region) {
+      setVisible((previous) => ({ ...previous, "adm-desa": true }));
+    }
     setInspectOpen(false);
     setLayerInfo(null);
     mapApi.current?.clearSelection?.();
@@ -365,7 +387,11 @@ export default function GeoPortal() {
     setInspectOpen(false);
     setLayerInfo(null);
     setRegionFilter(region);
-    setVisible((previous) => ({ ...previous, [layer.id]: true }));
+    setVisible((previous) => ({
+      ...previous,
+      [layer.id]: true,
+      "adm-desa": true
+    }));
     setStatus(`Menampilkan ${layer.title} di ${regionDisplayName(region)}…`);
     const activeIds = layers.filter((item) => visible[item.id] || item.id === layer.id).map((item) => item.id);
     updateMapQuery({ layers: activeIds.join(","), layer: layer.id, region, feature: null });
@@ -386,10 +412,16 @@ export default function GeoPortal() {
     setSelected(null);
     setInspectOpen(false);
     setFocusAdmin(adminLayerId === "adm-desa" ? { type: "desa", feature: selection.feature } : null);
-    setVisible((previous) => ({ ...previous, [layer.id]: true }));
+    setVisible((previous) => ({
+      ...previous,
+      [layer.id]: true,
+      ...(adminLayerId === "adm-kecamatan" || adminLayerId === "adm-desa"
+        ? { "adm-desa": true }
+        : {})
+    }));
 
     const activeIds = layers
-      .filter((item) => visible[item.id] || item.id === layer.id)
+      .filter((item) => visible[item.id] || item.id === layer.id || ((adminLayerId === "adm-kecamatan" || adminLayerId === "adm-desa") && item.id === "adm-desa"))
       .map((item) => item.id);
 
     if (selectedKecamatan && adminLayerId === "adm-desa") {
