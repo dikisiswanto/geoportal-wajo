@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { withAssetVersion } from "../lib/assetVersion";
+import { withAssetVersion } from "../../lib/assetVersion";
 import { absoluteUrl, PUBLISHER_NAME, SITE_NAME, SOCIAL_IMAGE } from "../../lib/seo";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
