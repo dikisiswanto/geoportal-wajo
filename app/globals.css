@@ -374,3 +374,194 @@ a:focus-visible {
 
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+
+/* Map UI typography scale: keep the map visually quiet and information-dense.
+   micro 11px  = labels, counts, status, source badges
+   compact 13px = controls, rows, panel body, actions
+   body 14px = only for supporting/public copy that needs extra readability
+   16px+ is reserved for page-level editorial headings, not map chrome. */
+.map-text-micro {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.map-text-source {
+  font-size: 0.5625rem;
+  line-height: 1.2;
+}
+
+.map-text-compact {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.map-text-body {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* Typography contract for map UI: compact and role-based at every breakpoint.
+   Body UI starts at 14px; labels/metadata stay at 12px. Desktop only scales
+   elements that explicitly opt into a larger public-content style. */
+.sheet-panel {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* Smooth, native-feeling sheet motion. Desktop uses a horizontal slide; mobile uses a vertical sheet. */
+.sheet-panel {
+  will-change: transform, opacity;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+.sheet-panel-right.sheet-panel-hidden {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  pointer-events: none;
+}
+
+.sheet-panel-right.sheet-panel-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.sheet-panel-left.sheet-panel-hidden {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  pointer-events: none;
+}
+
+.sheet-panel-left.sheet-panel-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (min-width: 1024px) {
+  .sheet-panel-right.sheet-panel-hidden {
+    transform: translate3d(24px, 0, 0);
+  }
+
+  .sheet-panel-left.sheet-panel-hidden {
+    transform: translate3d(-24px, 0, 0);
+  }
+
+  .sheet-panel-right,
+  .sheet-panel-left {
+    transition-duration: 220ms, 170ms;
+  }
+}
+
+@media (max-width: 639px) {
+  .sheet-panel {
+    scrollbar-gutter: stable;
+  }
+
+  .layer-catalog-sheet {
+    animation: layer-sheet-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .mobile-actions-safe {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes layer-sheet-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-panel {
+    transition: none !important;
+  }
+
+  .layer-catalog-sheet {
+    animation: none !important;
+  }
+}
+
+.sheet-backdrop {
+  animation: sheet-backdrop-in 180ms ease both;
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+}
+
+@keyframes sheet-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop {
+    animation: none !important;
+  }
+}
+
+
+@media (max-width: 639px) {
+  .site-header {
+    min-height: 3.5rem;
+  }
+
+  .layer-catalog-sheet {
+    max-height: 72dvh;
+  }
+
+  .layer-catalog-sheet .layer-scroll {
+    padding-top: 0.375rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Map UI layering contract: map overlays < actions < sheets < global navigation/loading. */
+
+/* Compact map chrome spacing; preserve touch targets through height/padding, not oversized type. */
+.map-ui-compact-button {
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+@media (min-width: 1024px) {
+  .map-ui-compact-button {
+    min-height: 2.125rem;
+  }
+}
+
+.layer-catalog-focus {
+  position: relative;
+  scroll-margin-block: 1rem;
+  border-radius: 0.5rem;
+  animation: layer-focus-pulse 1.8s ease-out both;
+}
+
+@keyframes layer-focus-pulse {
+  0% { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.16); }
+  100% { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer-catalog-focus { animation: none; }
+}
+
+.active-layers-scroll {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+}
+
+.active-layers-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.catalog-card-body {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
