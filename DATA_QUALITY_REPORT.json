@@ -770,7 +770,7 @@
   },
   "map_visual_priority": {
     "status": "implemented",
-    "basemap": "OpenStreetMap diredupkan dengan opacity tile 0.36 dan lapisan putih transparan 0.28.",
+    "basemap": "OSM tetap redup; pada mode cetak opacity tile diturunkan agar batas dan data tematik menjadi fokus.",
     "district_boundaries": "Polygon kecamatan memakai palette berbeda berbasis kode kecamatan, fill 0.34, outline lebih tegas, hover/selection tetap lebih kuat."
   },
   "map_rendering_layer_hierarchy": {
@@ -797,5 +797,36 @@
     "village_count_mismatches": 0,
     "missing_region_summary_layers": 0,
     "principle": "Angka panel menggunakan feature yang dapat dirender dan lolos filter layer; kode wilayah menjadi kunci pencocokan."
+  },
+  "print_map_audit": {
+    "status": "diperbaiki",
+    "temuan_visual": [
+      "Pratinjau cetak harus mengikuti wilayah yang sedang dipilih, bukan selalu kembali ke seluruh Kabupaten Wajo.",
+      "Peta harus berada di tengah halaman cetak dengan pusat dan zoom mengikuti Kabupaten, Kecamatan, atau Desa/Kelurahan.",
+      "Legenda harus mengikuti layer yang aktif dan tidak menampilkan daftar kecamatan yang tidak relevan pada cetak terfokus."
+    ],
+    "perbaikan": [
+      "Viewport cetak dikunci ke seluruh area kertas sebelum penghitungan zoom.",
+      "Skala cetak mengikuti konteks saat ini: Kabupaten Wajo, Kecamatan, atau Desa/Kelurahan yang dipilih.",
+      "Jika Kecamatan dipilih, hanya polygon kecamatan aktif yang diberi warna; kecamatan lain tetap berupa batas tanpa isian.",
+      "Jika Desa/Kelurahan dipilih, hanya polygon desa yang aktif yang diberi warna; batas kecamatan tetap tanpa isian.",
+      "Layer tematik yang sedang aktif tetap dicetak sesuai filter wilayah yang sedang digunakan.",
+      "Legenda cetak hanya menampilkan layer yang aktif dan warna kecamatan yang relevan dengan konteks cetak.",
+      "Posisi peta dipulihkan ke pusat dan zoom pengguna setelah dialog cetak selesai."
+    ],
+    "konteks_cetak": {
+      "kabupaten": "bounds Kabupaten Wajo",
+      "kecamatan": "bounds feature kecamatan terpilih atau regionFilter",
+      "desa": "bounds feature desa/kelurahan terpilih melalui kode wilayah"
+    },
+    "urutan_layer": [
+      "Batas Kabupaten",
+      "Batas Kecamatan",
+      "Batas Desa/Kelurahan",
+      "Data tematik area/polygon",
+      "Data tematik jaringan/garis",
+      "Data tematik lokasi/titik"
+    ],
+    "catatan": "preparePrint menunggu data layer aktif yang belum selesai dimuat, menentukan scope dari focusAdmin/regionFilter, memusatkan peta ke bounds scope, menerapkan style administrasi khusus cetak, lalu memulihkan state setelah afterprint."
   }
 }

@@ -149,6 +149,45 @@ export default function GeoPortal() {
     [layerData]
   );
 
+  const printKecamatanLegend = useMemo(() => {
+    if (!visible["adm-kecamatan"]) return [];
+
+    if (focusAdmin?.type === "kecamatan") {
+      const selectedCode = String(
+        focusAdmin.feature?.properties?.KDCPUM ??
+        focusAdmin.feature?.properties?.kode_kecamatan ??
+        focusAdmin.feature?.properties?.Kecamatan ??
+        ""
+      ).trim();
+      return kecamatanLegend.filter((item) => {
+        const label = String(item.name || "").trim();
+        return normalizeRegionName(label) === normalizeRegionName(focusAdmin.feature?.properties?.Kecamatan ?? label) || String(item.id).includes(selectedCode);
+      }).slice(0, 1);
+    }
+
+    if (focusAdmin?.type === "desa") {
+      return [];
+    }
+
+    if (regionFilter) {
+      return kecamatanLegend.filter((item) => normalizeRegionName(item.name) === normalizeRegionName(regionFilter)).slice(0, 1);
+    }
+
+    return kecamatanLegend;
+  }, [focusAdmin, kecamatanLegend, regionFilter, visible]);
+
+  const printScopeTitle = useMemo(() => {
+    if (focusAdmin?.type === "desa") {
+      const village = String(focusAdmin.feature?.properties?.Desa ?? focusAdmin.feature?.properties?.WADMKD ?? focusAdmin.feature?.properties?.nama_desa ?? "").trim();
+      return village ? `Desa/Kelurahan ${village}` : "Wilayah terpilih";
+    }
+    if (focusAdmin?.type === "kecamatan") {
+      return regionDisplayName(focusAdmin.feature?.properties?.Kecamatan ?? focusAdmin.feature?.properties?.WADMKC ?? "");
+    }
+    if (regionFilter) return regionDisplayName(regionFilter);
+    return "Kabupaten Wajo";
+  }, [focusAdmin, regionFilter]);
+
   const handleLayerDataLoaded = useCallback((layer, data) => {
     setLayerData((previous) => ({ ...previous, [layer.id]: data }));
     setLoading((previous) => ({ ...previous, [layer.id]: false }));
@@ -193,23 +232,40 @@ export default function GeoPortal() {
   const handleFeatureSelect = useCallback((payload) => {
     setHasInteracted(true);
     setStatus(`${payload.layer.title} · dipilih`);
-    if (window.matchMedia("(max-width: 1023px)").matches) {
-      setSidebarOpen(false);
-    }
+    if (window.matchMedia("(max-width: 1023px)").matches) setSidebarOpen(false);
     setLayerInfo(null);
     setSelected(payload);
     setInspectOpen(true);
-    const shouldSetRegion = payload.regionName &&
-      payload.layer.id === "adm-kecamatan" &&
-      WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(payload.regionName));
-    if (shouldSetRegion) setRegionFilter(payload.regionName);
+
+    const properties = payload.feature?.properties ?? {};
+    const adminLayerId = payload.layer?.id;
+    const selectedKecamatan = String(
+      properties.Kecamatan ?? properties.WADMKC ?? properties.nama_kecamatan ?? properties.kecamatan ?? ""
+    ).trim();
+
+    let shouldSetRegion = false;
+    if (adminLayerId === "adm-kecamatan" && selectedKecamatan) {
+      shouldSetRegion = WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
+      setFocusAdmin({ type: "kecamatan", feature: payload.feature });
+      if (shouldSetRegion) setRegionFilter(selectedKecamatan);
+    } else if (adminLayerId === "adm-desa") {
+      setFocusAdmin({ type: "desa", feature: payload.feature });
+      if (selectedKecamatan) {
+        shouldSetRegion = WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
+        if (shouldSetRegion) setRegionFilter(selectedKecamatan);
+      }
+    } else if (adminLayerId === "adm-kabupaten") {
+      setFocusAdmin({ type: "kabupaten", feature: payload.feature });
+      setRegionFilter("");
+    }
+
     const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
     const currentRegion = new URL(window.location.href).searchParams.get("region");
     updateMapQuery({
       layers: activeIds.join(","),
       layer: payload.layer.id,
       feature: payload.featureKey || null,
-      region: shouldSetRegion ? payload.regionName : currentRegion
+      region: shouldSetRegion ? selectedKecamatan : currentRegion
     });
   }, [updateMapQuery, visible]);
 
@@ -400,7 +456,11 @@ export default function GeoPortal() {
   const handlePrint = useCallback(async () => {
     if (typeof window === "undefined") return;
     setStatus("Menyiapkan peta untuk dicetak…");
-    await mapApi.current?.preparePrint?.();
+    const prepared = await mapApi.current?.preparePrint?.();
+    if (prepared === false) {
+      setStatus("Peta belum siap dicetak");
+      return;
+    }
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => window.print());
     });
@@ -538,7 +598,8 @@ export default function GeoPortal() {
           />
           <PrintLegend
             activeLayers={activeLayers}
-            kecamatanLegend={kecamatanLegend}
+            kecamatanLegend={printKecamatanLegend}
+            scopeTitle={printScopeTitle}
           />
           <MapControls
             mapReady={mapReady}

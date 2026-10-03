@@ -20,7 +20,8 @@ import {
 } from "../../lib/geo/format";
 
 import {
-  styleFor
+  styleFor,
+  kecamatanColor
 } from "../../lib/geo/styles";
 import { withAssetVersion } from "../../lib/assetVersion";
 import { featurePassesLayerFilter } from "../../lib/geo/dataFilter";
@@ -30,7 +31,8 @@ import {
   featureMatchesAdministrativeFeature,
   featureAdministrativeCodes,
   regionCodeFromBoundaryName,
-  featureRegionName
+  featureRegionName,
+  normalizeRegionName
 } from "../../lib/geo/region";
 
 const DEFAULT_VIEW = [-4.13, 120.03];
@@ -65,6 +67,197 @@ function fitWajoBounds(map, L, data) {
 
   map.invalidateSize({ pan: false, debounceMoveend: true });
   map.fitBounds(bounds, getResponsiveHomeFitOptions(map));
+  return true;
+}
+
+function getFeatureBounds(L, feature) {
+  if (!feature) return null;
+  const bounds = L.geoJSON(feature).getBounds();
+  return bounds.isValid() ? bounds : null;
+}
+
+function getPrintScope(L, { regionFilter, focusAdmin, countyData, districtData, villageData }) {
+  if (focusAdmin?.feature) {
+    const bounds = getFeatureBounds(L, focusAdmin.feature);
+    if (bounds) {
+      return {
+        type: focusAdmin.type || "wilayah",
+        feature: focusAdmin.feature,
+        bounds
+      };
+    }
+  }
+
+  const target = normalizeRegionName(regionFilter);
+  if (target && districtData?.features?.length) {
+    const feature = districtData.features.find((item) => {
+      const properties = item?.properties ?? {};
+      const name = String(
+        properties.Kecamatan ?? properties.WADMKC ?? properties.nama_kecamatan ?? properties.NAMOBJ ?? ""
+      ).trim();
+      return normalizeRegionName(name) === target;
+    });
+    const bounds = getFeatureBounds(L, feature);
+    if (bounds) {
+      return { type: "kecamatan", feature, bounds };
+    }
+  }
+
+  const villageTarget = String(focusAdmin?.feature?.properties?.Desa ?? "").trim();
+  if (villageTarget && villageData?.features?.length) {
+    const feature = villageData.features.find((item) =>
+      String(item?.properties?.Desa ?? item?.properties?.WADMKD ?? item?.properties?.nama_desa ?? "").trim().toLowerCase() === villageTarget.toLowerCase()
+    );
+    const bounds = getFeatureBounds(L, feature);
+    if (bounds) return { type: "desa", feature, bounds };
+  }
+
+  if (countyData?.features?.length) {
+    const bounds = L.geoJSON(countyData).getBounds();
+    if (bounds.isValid()) return { type: "kabupaten", feature: countyData.features[0], bounds };
+  }
+
+  return null;
+}
+
+function lockPrintViewport(map, printLayoutRef) {
+  const mapContainer = map?.getContainer?.();
+  const printRoot = mapContainer?.closest?.("#map") || mapContainer?.parentElement;
+  if (!printRoot || !mapContainer) return null;
+
+  if (!printLayoutRef.current) {
+    printLayoutRef.current = {
+      root: printRoot,
+      rootStyle: printRoot.getAttribute("style"),
+      mapStyle: mapContainer.getAttribute("style")
+    };
+  }
+
+  printRoot.style.position = "fixed";
+  printRoot.style.inset = "0";
+  printRoot.style.width = "100vw";
+  printRoot.style.height = "100vh";
+  printRoot.style.margin = "0";
+  printRoot.style.padding = "0";
+  printRoot.style.overflow = "hidden";
+
+  mapContainer.style.width = "100%";
+  mapContainer.style.height = "100%";
+  mapContainer.style.position = "absolute";
+  mapContainer.style.inset = "0";
+
+  return { printRoot, mapContainer };
+}
+
+function restorePrintViewport(map, printLayoutRef) {
+  const snapshot = printLayoutRef.current;
+  if (!snapshot) return;
+
+  if (snapshot.rootStyle == null) snapshot.root.removeAttribute("style");
+  else snapshot.root.setAttribute("style", snapshot.rootStyle);
+
+  const mapContainer = map?.getContainer?.();
+  if (mapContainer) {
+    if (snapshot.mapStyle == null) mapContainer.removeAttribute("style");
+    else mapContainer.setAttribute("style", snapshot.mapStyle);
+  }
+
+  printLayoutRef.current = null;
+}
+
+function districtMatchesPrintScope(feature, scope) {
+  if (!feature || !scope) return false;
+  if (scope.type === "kecamatan") {
+    return featureAdministrativeCodes(feature, "kecamatan").some((code) =>
+      featureAdministrativeCodes(scope.feature, "kecamatan").includes(code)
+    );
+  }
+  if (scope.type === "desa") {
+    return false;
+  }
+  return true;
+}
+
+function villageMatchesPrintScope(feature, scope) {
+  if (!feature || !scope || scope.type !== "desa") return false;
+  const targetCodes = featureAdministrativeCodes(scope.feature, "desa");
+  const codes = featureAdministrativeCodes(feature, "desa");
+  if (targetCodes.length && codes.length) return codes.some((code) => targetCodes.includes(code));
+  return false;
+}
+
+function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
+  const districtGroup = layerRefs?.["adm-kecamatan"];
+  const districtData = loadedData?.["adm-kecamatan"];
+  if (districtGroup && districtData?.features?.length) {
+    districtGroup.eachLayer?.((featureLayer) => {
+      const feature = featureLayer?.__wajoFeature;
+      if (!feature) return;
+      const base = featureLayer.__wajoBaseStyle || styleFor({ styleMode: "admin" }, feature);
+      const selected = districtMatchesPrintScope(feature, scope);
+      featureLayer.__wajoPrintStyleSnapshot = base;
+      featureLayer.setStyle?.({
+        ...base,
+        fillColor: selected ? kecamatanColor(
+          feature?.properties?.KDCPUM ??
+          feature?.properties?.kode_kecamatan ??
+          feature?.properties?.Kecamatan ??
+          feature?.properties?.WADMKC ??
+          feature?.properties?.NAMOBJ
+        ) : "#cbd5e1",
+        fillOpacity: selected ? 0.36 : 0,
+        weight: selected ? 2 : 1,
+        color: selected ? "#334155" : "#94a3b8"
+      });
+    });
+  }
+
+  const villageGroup = layerRefs?.["adm-desa"];
+  const villageData = loadedData?.["adm-desa"];
+  if (villageGroup && villageData?.features?.length) {
+    villageGroup.eachLayer?.((featureLayer) => {
+      const feature = featureLayer?.__wajoFeature;
+      if (!feature) return;
+      const base = featureLayer.__wajoBaseStyle || styleFor({ styleMode: "admin-village" }, feature);
+      const selected = villageMatchesPrintScope(feature, scope);
+      featureLayer.__wajoPrintStyleSnapshot = base;
+      featureLayer.setStyle?.({
+        ...base,
+        fillColor: selected ? "#64748b" : "#cbd5e1",
+        fillOpacity: selected ? 0.28 : 0,
+        weight: selected ? 1.6 : 0.7,
+        color: selected ? "#475569" : "#94a3b8"
+      });
+    });
+  }
+}
+
+function restorePrintAdministrationStyles(layerRefs) {
+  ["adm-kecamatan", "adm-desa"].forEach((id) => {
+    layerRefs?.[id]?.eachLayer?.((featureLayer) => {
+      const snapshot = featureLayer?.__wajoPrintStyleSnapshot;
+      if (!snapshot) return;
+      featureLayer.setStyle?.(snapshot);
+      delete featureLayer.__wajoPrintStyleSnapshot;
+    });
+  });
+}
+
+function fitMapForPrint(map, scope, printLayoutRef) {
+  if (!map || !scope?.bounds) return false;
+  lockPrintViewport(map, printLayoutRef);
+  map.invalidateSize({ pan: false, debounceMoveend: false });
+
+  const size = map.getSize();
+  const shortest = Math.max(1, Math.min(size.x, size.y));
+  const edgePadding = Math.round(Math.min(84, Math.max(42, shortest * 0.065)));
+  const padding = [edgePadding, edgePadding];
+  const maxZoom = scope.type === "desa" ? 17 : scope.type === "kecamatan" ? 15 : 13;
+  const zoom = map.getBoundsZoom(scope.bounds, false, padding);
+  const safeZoom = Number.isFinite(zoom) ? Math.min(zoom, maxZoom) : 12;
+
+  map.setView(scope.bounds.getCenter(), safeZoom, { animate: false });
+  map.invalidateSize({ pan: false, debounceMoveend: false });
   return true;
 }
 
@@ -329,8 +522,11 @@ const MapCanvas = forwardRef(function MapCanvas(
   const tileRef = useRef(null);
   const selectedRef = useRef(null);
   const printViewRef = useRef(null);
+  const printLayoutRef = useRef(null);
   const markerIconCacheRef = useRef(new Map());
   const vectorRenderersRef = useRef(new Map());
+  const printStyleRef = useRef(false);
+  const printScopeRef = useRef(null);
   const visibleRef = useRef(visible);
   const handledDomEventsRef = useRef(new WeakSet());
 
@@ -670,60 +866,46 @@ const MapCanvas = forwardRef(function MapCanvas(
           };
         }
 
-        map.invalidateSize({ pan: false, debounceMoveend: true });
+        const scope = printScopeRef.current || getPrintScope(L, {
+          regionFilter,
+          focusAdmin,
+          countyData: loadedData.current["adm-kabupaten"],
+          districtData: loadedData.current["adm-kecamatan"],
+          villageData: loadedData.current["adm-desa"]
+        });
 
-        const countyData = loadedData.current["adm-kabupaten"];
-        if (countyData) {
-          const bounds = L.geoJSON(countyData).getBounds();
-          if (bounds.isValid()) {
-            map.fitBounds(bounds, {
-              padding: [40, 40],
-              maxZoom: 12,
-              animate: false
-            });
-          }
+        if (scope) {
+          applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
+          printStyleRef.current = true;
+          fitMapForPrint(map, scope, printLayoutRef);
         }
       };
 
       const afterPrint = () => {
-        if (
-          !mapRef.current ||
-          !printViewRef.current
-        ) {
+        if (!mapRef.current || !printViewRef.current) {
+          restorePrintAdministrationStyles(layerRefs.current);
+          printStyleRef.current = false;
+          printScopeRef.current = null;
+          restorePrintViewport(map, printLayoutRef);
           return;
         }
 
-        const view =
-          printViewRef.current;
+        const view = printViewRef.current;
 
-        window.requestAnimationFrame(
-          () => {
-            map.invalidateSize({
-              pan: false,
-              debounceMoveend: true
-            });
+        window.requestAnimationFrame(() => {
+          restorePrintAdministrationStyles(layerRefs.current);
+          printStyleRef.current = false;
+          printScopeRef.current = null;
+          restorePrintViewport(map, printLayoutRef);
+          map.invalidateSize({ pan: false, debounceMoveend: false });
 
-            map.setView(
-              [
-                view.lat,
-                view.lng
-              ],
-              view.zoom,
-              {
-                animate: false
-              }
-            );
+          map.setView([view.lat, view.lng], view.zoom, { animate: false });
 
-            window.requestAnimationFrame(
-              () => {
-                map.invalidateSize({
-                  pan: false
-                });
-                printViewRef.current = null;
-              }
-            );
-          }
-        );
+          window.requestAnimationFrame(() => {
+            map.invalidateSize({ pan: false });
+            printViewRef.current = null;
+          });
+        });
       };
 
       window.addEventListener(
@@ -782,6 +964,10 @@ const MapCanvas = forwardRef(function MapCanvas(
       mapRef.current = null;
       tileRef.current = null;
       printViewRef.current = null;
+      restorePrintAdministrationStyles(layerRefs.current);
+      printStyleRef.current = false;
+      printScopeRef.current = null;
+      restorePrintViewport(map, printLayoutRef);
       vectorRenderersRef.current.clear();
       markerIconCacheRef.current.clear();
     };
@@ -1526,52 +1712,50 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       },
 
-      preparePrint: () => {
+      preparePrint: async () => {
         const map = mapRef.current;
+        if (!map) return false;
 
-        if (!map) {
-          return Promise.resolve(false);
+        const L = await import("leaflet");
+
+        if (!printViewRef.current) {
+          const center = map.getCenter();
+          printViewRef.current = { lat: center.lat, lng: center.lng, zoom: map.getZoom() };
         }
 
-        return import("leaflet").then((L) => {
-          if (!printViewRef.current) {
-            const center = map.getCenter();
-            printViewRef.current = {
-              lat: center.lat,
-              lng: center.lng,
-              zoom: map.getZoom()
-            };
-          }
+        const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
+        const startedAt = performance.now();
+        while (activeIds.some((id) => !loadedData.current[id] && !errors[id]) && performance.now() - startedAt < 5000) {
+          await new Promise((resolve) => window.setTimeout(resolve, 80));
+        }
 
-          const fitForPrint = () => {
-            map.invalidateSize({ pan: false, debounceMoveend: true });
+        const scope = getPrintScope(L, {
+          regionFilter,
+          focusAdmin,
+          countyData: loadedData.current["adm-kabupaten"],
+          districtData: loadedData.current["adm-kecamatan"],
+          villageData: loadedData.current["adm-desa"]
+        });
 
-            const countyData = loadedData.current["adm-kabupaten"];
-            if (!countyData) return false;
+        if (!scope) return false;
 
-            const bounds = L.geoJSON(countyData).getBounds();
-            if (!bounds.isValid()) return false;
+        restorePrintAdministrationStyles(layerRefs.current);
+        printScopeRef.current = scope;
+        applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
+        printStyleRef.current = true;
+        fitMapForPrint(map, scope, printLayoutRef);
 
-            map.fitBounds(bounds, {
-              padding: [40, 40],
-              maxZoom: 12,
-              animate: false
-            });
-            return true;
-          };
-
-          fitForPrint();
-
-          return new Promise((resolve) => {
+        await new Promise((resolve) => {
+          window.requestAnimationFrame(() => {
             window.requestAnimationFrame(() => {
-              window.requestAnimationFrame(() => {
-                fitForPrint();
-                map.invalidateSize({ pan: false, debounceMoveend: true });
-                resolve(true);
-              });
+              fitMapForPrint(map, scope, printLayoutRef);
+              map.invalidateSize({ pan: false, debounceMoveend: false });
+              resolve();
             });
           });
         });
+
+        return true;
       },
 
       zoomToLayer: (layerId) => {
@@ -1659,7 +1843,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           null;
       }
     }),
-    [onStatus, regionFilter, focusAdmin, layers]
+    [onStatus, regionFilter, focusAdmin, layers, visible, errors]
   );
 
   return (

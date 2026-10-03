@@ -1,4 +1,30 @@
-export default function PrintLegend({ activeLayers, kecamatanLegend }) {
+function LegendSwatch({ kind, color }) {
+  const safeColor = color || "#64748b";
+
+  if (kind === "line") {
+    return (
+      <svg className="print-only-swatch-svg" viewBox="0 0 24 12" aria-hidden="true" focusable="false">
+        <line x1="2" y1="6" x2="22" y2="6" stroke={safeColor} strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "point") {
+    return (
+      <svg className="print-only-swatch-svg" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+        <circle cx="7" cy="7" r="4.5" fill={safeColor} stroke="#334155" strokeWidth="1" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="print-only-swatch-svg" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+      <rect x="1" y="1" width="12" height="12" rx="2" fill={safeColor} fillOpacity="0.62" stroke={safeColor} strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle }) {
   return (
     <aside className="print-only-legend" aria-label="Legenda peta untuk cetak">
       <div className="print-only-header">
@@ -6,7 +32,7 @@ export default function PrintLegend({ activeLayers, kecamatanLegend }) {
           <p className="print-only-kicker">Pemerintah Kabupaten Wajo</p>
           <h2>Legenda Peta</h2>
         </div>
-        <p className="print-only-note">Data yang sedang ditampilkan</p>
+        <p className="print-only-note">{scopeTitle || "Tampilan saat ini"}</p>
       </div>
 
       <div className="print-only-legend-items">
@@ -20,11 +46,7 @@ export default function PrintLegend({ activeLayers, kecamatanLegend }) {
 
           return (
             <div key={layer.id} className="print-only-legend-item">
-              <span
-                className={`print-only-swatch print-only-swatch-${swatchKind}`}
-                style={{ backgroundColor: layer.color, borderColor: layer.color }}
-                aria-hidden="true"
-              />
+              <LegendSwatch kind={swatchKind} color={layer.color} />
               <span>{layer.title}</span>
             </div>
           );
@@ -37,11 +59,7 @@ export default function PrintLegend({ activeLayers, kecamatanLegend }) {
           <div className="print-only-kecamatan-grid">
             {kecamatanLegend.map((item) => (
               <div key={`print-kec-${item.id}`} className="print-only-legend-item">
-                <span
-                  className="print-only-swatch print-only-swatch-area"
-                  style={{ backgroundColor: item.color, borderColor: item.color }}
-                  aria-hidden="true"
-                />
+                <LegendSwatch kind="area" color={item.color} />
                 <span>{item.name}</span>
               </div>
             ))}
