@@ -578,10 +578,6 @@ function isAdministrativeLayerId(layerId) {
   return layerId === "adm-kabupaten" || layerId === "adm-kecamatan" || layerId === "adm-desa";
 }
 
-function isContextPromotableLineLayer(layer) {
-  return layer?.group === "Jaringan" || layer?.styleMode === "contour";
-}
-
 function administrativeName(feature, type) {
   const properties = feature?.properties ?? {};
   if (type === "desa") {
@@ -1099,18 +1095,11 @@ const MapCanvas = forwardRef(function MapCanvas(
         const visibleNow = visibleRef.current || {};
         const handled = handledDomEventsRef.current.has(originalEvent);
         const currentFocus = focusAdminRef.current;
-        const selectedLayerId = selectedRef.current?.__wajoLayerId;
-        const selectedLayer = layersRefForImperative.current.find(
-          (layer) => layer.id === selectedLayerId
-        );
-
-        // Direct administrative clicks and Jaringan/Kontur clicks already
-        // resolved their own context in the feature handler. Do not replay
-        // them through the map-level hit test and override the selection.
-        if (handled && (
-          isAdministrativeLayerId(selectedLayerId) ||
-          isContextPromotableLineLayer(selectedLayer)
-        )) return;
+        // Feature-level handlers own clicks that already landed on an
+        // interactive layer. Administrative context promotion for thematic
+        // features is resolved in that feature handler, so the map-level
+        // hit-test must not replay the same DOM event and replace selection.
+        if (handled) return;
 
         const navigationType = currentFocus?.type === "desa" ? "desa" : "kecamatan";
         const priority = navigationType === "desa"
@@ -1144,12 +1133,11 @@ const MapCanvas = forwardRef(function MapCanvas(
               )
             : false;
 
-          // With a thematic feature on top, keep that feature's click when
-          // it belongs to the current administrative context. When the user
-          // is already inside another context, promote a click landing in a
-          // different administrative region so navigation remains available.
-          const canPromoteHandled = handled && Boolean(currentFocus) && !sameFeature;
-          if (!handled || canPromoteHandled) {
+          // The map-level hit-test handles only bare map clicks here. A
+          // thematic feature click is promoted to administrative context by
+          // its own feature handler while keeping that thematic feature
+          // selected.
+          if (!sameFeature) {
             target.fire("click", { originalEvent, latlng });
             return;
           }
@@ -1532,7 +1520,7 @@ const MapCanvas = forwardRef(function MapCanvas(
 
             let contextAdminFeature = null;
             let contextRegion = null;
-            if (isContextPromotableLineLayer(layer) && event?.latlng) {
+            if (!isAdministrativeLayerId(layer.id) && event?.latlng) {
               const districtTarget = findFeatureLayerAtLatLng(
                 layerRefs.current["adm-kecamatan"],
                 event.latlng
