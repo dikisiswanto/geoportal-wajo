@@ -1,0 +1,437 @@
+{
+  "validation_date": "2026-10-02",
+  "scope": "All non-education GeoJSON datasets in the current Geoportal Wajo baseline.",
+  "method": [
+    "JSON/FeatureCollection structure",
+    "geometry validity",
+    "empty/null geometry",
+    "coordinate/representative-point sanity against local 14-kecamatan union",
+    "attribute completeness sampling",
+    "duplicate geometry review",
+    "semantic/source-field review",
+    "official source cross-check where available"
+  ],
+  "important_boundary_note": "The local Wajo mask is derived from the package boundary layer. Current BIG service metadata shows a June 2026 national administrative edition, so local boundary freshness should be refreshed from BIG before asserting current administrative geometry.",
+  "datasets": [
+    {
+      "dataset": "batas-administrasi.geojson",
+      "features": 679,
+      "geometry_types": {
+        "LineString": 679
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 34,
+      "status": "review",
+      "note": "Boundary linework itself crosses the local 14-kecamatan mask in several segments; do not clip because it contains district/village/county boundaries and coastline."
+    },
+    {
+      "dataset": "batas-kecamatan.geojson",
+      "features": 15,
+      "geometry_types": {
+        "Polygon": 15
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "corrected",
+      "note": "Trimmed leading spaces; preserved source name; explicitly marked Danau Tempe as Perairan. Local geometry has 14 kecamatan + Danau Tempe. Current BIG service is June 2026, while this local geometry is older and should be refreshed from the authoritative edition before claiming currentness."
+    },
+    {
+      "dataset": "danau.geojson",
+      "features": 59,
+      "geometry_types": {
+        "Polygon": 57,
+        "MultiPolygon": 2
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 2,
+      "status": "review",
+      "note": "A small number of water polygons extend beyond the local land-administration union; retain because water bodies can cross administrative/marine edges."
+    },
+    {
+      "dataset": "jaringan-energi.geojson",
+      "features": 2492,
+      "geometry_types": {
+        "MultiLineString": 6,
+        "LineString": 2486
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 3,
+      "status": "review",
+      "note": "A few network segments cross/approach the local administrative mask; retain because network infrastructure is linear and may traverse boundaries."
+    },
+    {
+      "dataset": "jaringan-jalan.geojson",
+      "features": 298,
+      "geometry_types": {
+        "LineString": 271,
+        "MultiLineString": 27
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "corrected",
+      "note": "Two records have blank/zero road-source attributes but valid geometry; retained and flagged for source-level handling rather than deleting or inventing attributes."
+    },
+    {
+      "dataset": "jaringan-prasarana-lainnya.geojson",
+      "features": 852,
+      "geometry_types": {
+        "LineString": 851,
+        "MultiLineString": 1
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 3,
+      "status": "review",
+      "note": "A few linear features cross the local mask; six exact geometry matches represent different named network overlays and were retained."
+    },
+    {
+      "dataset": "jaringan-sumber-daya-air.geojson",
+      "features": 340,
+      "geometry_types": {
+        "LineString": 340
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "review",
+      "note": "One irrigation/control line approaches/crosses the local mask; retained as source linework."
+    },
+    {
+      "dataset": "jaringan-telekomunikasi.geojson",
+      "features": 425,
+      "geometry_types": {
+        "LineString": 425
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 2,
+      "status": "review",
+      "note": "A few linear features approach/cross the local mask; retained as network source linework."
+    },
+    {
+      "dataset": "jaringan-transportasi.geojson",
+      "features": 2136,
+      "geometry_types": {
+        "LineString": 2134,
+        "MultiLineString": 2
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 9,
+      "status": "review",
+      "note": "Some transport routes cross administrative edges and include broader/corridor routes; not clipped automatically."
+    },
+    {
+      "dataset": "kawasan-alang-alang.geojson",
+      "features": 642,
+      "geometry_types": {
+        "Polygon": 638,
+        "MultiPolygon": 4
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 5,
+      "status": "semantic-review",
+      "note": "REMARK values are mostly Tanah Kosong/Gundul plus Padang Rumput; layer title should not imply all features are literal alang-alang."
+    },
+    {
+      "dataset": "kawasan-hutan-lahan-basah.geojson",
+      "features": 24,
+      "geometry_types": {
+        "MultiPolygon": 18,
+        "Polygon": 6
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "review",
+      "note": "Some thematic polygons touch/approach administrative edges; no invalid geometry."
+    },
+    {
+      "dataset": "kawasan-hutan-lahan-kering.geojson",
+      "features": 16,
+      "geometry_types": {
+        "Polygon": 13,
+        "MultiPolygon": 3
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "review",
+      "note": "Some thematic polygons touch/approach administrative edges; no invalid geometry."
+    },
+    {
+      "dataset": "kawasan-perkebunan.geojson",
+      "features": 104,
+      "geometry_types": {
+        "Polygon": 97,
+        "MultiPolygon": 7
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 4,
+      "status": "review",
+      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+    },
+    {
+      "dataset": "kawasan-permukiman.geojson",
+      "features": 940,
+      "geometry_types": {
+        "Polygon": 935,
+        "MultiPolygon": 5
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 6,
+      "status": "review",
+      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+    },
+    {
+      "dataset": "kawasan-persawahan.geojson",
+      "features": 323,
+      "geometry_types": {
+        "Polygon": 312,
+        "MultiPolygon": 11
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 2,
+      "status": "review",
+      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+    },
+    {
+      "dataset": "kawasan-pertanian-lahan-kering.geojson",
+      "features": 403,
+      "geometry_types": {
+        "Polygon": 395,
+        "MultiPolygon": 8
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 12,
+      "status": "review",
+      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+    },
+    {
+      "dataset": "kawasan-semak-belukar.geojson",
+      "features": 2064,
+      "geometry_types": {
+        "Polygon": 2030,
+        "MultiPolygon": 34
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 11,
+      "status": "review",
+      "note": "Some thematic polygons extend beyond the local administrative mask; retain as source land-cover polygons rather than clipping."
+    },
+    {
+      "dataset": "kawasan-tambak.geojson",
+      "features": 217,
+      "geometry_types": {
+        "Polygon": 216,
+        "MultiPolygon": 1
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "review",
+      "note": "Coastal/tambak polygons approach administrative and water boundaries; retain source geometry."
+    },
+    {
+      "dataset": "kontur-topografi.geojson",
+      "features": 768,
+      "geometry_types": {
+        "LineString": 724,
+        "MultiLineString": 44
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 3,
+      "status": "review",
+      "note": "Contour lines can legitimately cross administrative boundaries; no invalid geometry or zero-length lines found."
+    },
+    {
+      "dataset": "organisasi-perangkat-daerah.geojson",
+      "features": 27,
+      "geometry_types": {
+        "Point": 27
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "corrected",
+      "note": "Six clear spelling/nomenclature corrections applied and original names preserved; coordinates are inside local Wajo administrative union."
+    },
+    {
+      "dataset": "potensi-pertanian.geojson",
+      "features": 44,
+      "geometry_types": {
+        "Polygon": 44
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "corrected",
+      "note": "Normalized Sabangparu → Kec. Sabbang Paru while retaining source spelling. Dataset covers 13 of 14 kecamatan; missing coverage should not be fabricated."
+    },
+    {
+      "dataset": "potensi-peternakan.geojson",
+      "features": 21,
+      "geometry_types": {
+        "Polygon": 21
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "review",
+      "note": "Dataset explicitly covers 7 of 14 kecamatan in its KECAMATAN attribute. Treat as partial coverage; do not extrapolate missing kecamatan."
+    },
+    {
+      "dataset": "puskesmas.geojson",
+      "features": 23,
+      "geometry_types": {
+        "Point": 22
+      },
+      "null_geometry": 1,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "corrected",
+      "note": "23 records retained; 22 mapped, 1 without usable coordinates. Missing point is flagged, not guessed."
+    },
+    {
+      "dataset": "sarana-energi.geojson",
+      "features": 8,
+      "geometry_types": {
+        "Point": 8
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "review",
+      "note": "One facility is very near/outside the local polygon mask; source WADMKK says Kabupaten Wajo. Retain and review boundary precision."
+    },
+    {
+      "dataset": "sarana-prasarana-lainnya.geojson",
+      "features": 94,
+      "geometry_types": {
+        "Point": 94
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "pass",
+      "note": "94 point features; no geometry/point invalidity found and all mapped points fall within local Wajo administrative union."
+    },
+    {
+      "dataset": "sarana-sumber-daya-air.geojson",
+      "features": 55,
+      "geometry_types": {
+        "Point": 55
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 1,
+      "status": "review",
+      "note": "One point is outside the local polygon mask; source attributes say Kabupaten Wajo and the feature is an infrastructure/water feature. Retain, do not move by assumption."
+    },
+    {
+      "dataset": "sarana-telekomunikasi.geojson",
+      "features": 58,
+      "geometry_types": {
+        "Point": 58
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "pass",
+      "note": "58 point features; no geometry invalidity and all points fall within local Wajo administrative union."
+    },
+    {
+      "dataset": "sarana-transportasi.geojson",
+      "features": 257,
+      "geometry_types": {
+        "Point": 257
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 3,
+      "status": "review",
+      "note": "A few points lie just outside the local polygon mask, including Pelabuhan Siwa; retain because port/marine features can sit outside the terrestrial administrative union."
+    },
+    {
+      "dataset": "sungai.geojson",
+      "features": 51,
+      "geometry_types": {
+        "Polygon": 40,
+        "MultiPolygon": 11
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 4,
+      "status": "review",
+      "note": "Waterway polygons can touch/cross administrative edges; retain source geometry. Geometry is valid."
+    },
+    {
+      "dataset": "toponimi.geojson",
+      "features": 1216,
+      "geometry_types": {
+        "Point": 1216
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 16,
+      "status": "review",
+      "note": "A small number of place-name points lie outside the local terrestrial polygon mask; retain because names can represent rivers/water/edge features."
+    }
+  ],
+  "changes": [
+    "Normalized two leading-space kecamatan names in batas-kecamatan.geojson and marked Danau Tempe as Perairan while retaining original values.",
+    "Normalized two Sabangparu spellings in potensi-pertanian.geojson while preserving source spelling.",
+    "Normalized six clear OPD spelling/nomenclature issues while retaining original names.",
+    "Flagged two road records with incomplete source attributes without changing their valid geometry.",
+    "Flagged one puskesmas record with no usable geometry; no point was invented.",
+    "Updated layer metadata semantics for kawasan-alang-alang to reflect actual REMARK values."
+  ],
+  "non_changes": [
+    "No clipping of boundary/network/water/land-cover geometries based only on the local mask.",
+    "No inferred points or centroid fallbacks were introduced.",
+    "No duplicate GeoJSON was created."
+  ],
+  "validation_timestamp": "2026-10-03 06:55 WITA"
+}

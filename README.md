@@ -68,10 +68,9 @@ lib/
 public/
   brand/
     logo-kabupaten-wajo.png
-  data/
+  geo-data/
     *.geojson              # dataset portal
 
-PERFORMANCE_AUDIT.md       # catatan audit dan optimasi performa
 ```
 
 ## Data dan penamaan
@@ -104,8 +103,6 @@ Layer potensi hanya menampilkan wilayah yang memiliki nilai potensi. Record deng
 GeoJSON dimuat secara lazy saat layer diaktifkan. Dataset telah dipadatkan untuk mengurangi ukuran transfer, vector layer menggunakan Canvas Leaflet, dan perubahan visibility diproses secara incremental agar layer lain tidak perlu dibangun ulang.
 
 Ikon point menggunakan cache, sedangkan update koordinat kursor dibatasi agar tidak memicu render React berlebihan.
-
-Detail hasil audit tersedia di `PERFORMANCE_AUDIT.md`.
 
 ## PWA
 
@@ -158,3 +155,6 @@ Pastikan seluruh file di `public/geo-data/` dan `public/brand/` ikut dipublikasi
 ## Catatan data
 
 Portal membaca GeoJSON statis yang sudah disiapkan di project. Tidak ada proses perubahan sumber data saat runtime.
+### Batas Kabupaten Wajo
+
+Layer **Batas Kabupaten Wajo** menggunakan referensi Badan Informasi Geospasial (BIG), edisi Juni 2026. Paket ini menyediakan geometri awal hasil penggabungan 14 batas kecamatan BIG 2026 agar peta dapat langsung digunakan. Untuk mengambil feature kabupaten secara langsung dari layanan `BATAS_KABKOTA_AR_2026`, jalankan `npm run sync:admin:kab`.

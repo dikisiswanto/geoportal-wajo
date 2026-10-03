@@ -17,7 +17,7 @@ export default function LegendPanel({ activeLayers, kecamatanLegend, open, onClo
         {visibleLayers.map((layer) => (
           <div key={layer.id} className="py-1.5">
             <div className="flex items-center gap-2 map-text-compact font-medium text-slate-700">
-              {layer.geometry === "Point" ? (
+              {String(layer.geometry || "").includes("Point") ? (
                 <span className="inline-flex size-4 items-center justify-center" aria-hidden="true">
                   <LayerGlyph layer={layer} active />
                 </span>

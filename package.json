@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:admin": "node scripts/sync-big-admin-boundaries.mjs",
+    "sync:admin:desa": "node scripts/sync-big-admin-boundaries.mjs --desa --apply",
+    "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",

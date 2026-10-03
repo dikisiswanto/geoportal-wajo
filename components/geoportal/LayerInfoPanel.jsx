@@ -48,7 +48,7 @@ function Distribution({ title, items }) {
   );
 }
 
-export default function LayerInfoPanel({ layer, data, summary, regionSummary = null, regionFilter = "", active = false, open, onClose, onShowOnMap, onZoomToLayer, onShare }) {
+export default function LayerInfoPanel({ layer, data, summary, regionSummary = null, regionFilter = "", active = false, loading = false, error = "", open, onClose, onShowOnMap, onZoomToLayer, onShare }) {
   const [renderLayer, setRenderLayer] = useState(layer);
   const { rendered, visible } = useSheetPresence(Boolean(open && layer));
   const { swipeHandlers, swipeStyle } = useSheetSwipe(onClose, Boolean(open && layer));
@@ -66,17 +66,18 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
   const contextCount = regionFilter
     ? regionSummary?.regions?.find((item) => item.name.toLowerCase() === regionFilter.toLowerCase())?.count ?? null
     : null;
-  const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Sumber data mengikuti metadata dataset.";
+  const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Keterangan sumber mengikuti informasi yang tersedia pada data.";
 
   return (
     <aside
       className={`map-ui-chrome sheet-panel sheet-panel-right absolute inset-x-0 bottom-0 top-auto z-[1500] flex h-[min(72dvh,560px)] w-full max-w-none flex-col border-t border-slate-200 bg-white shadow-[0_-8px_24px_rgba(15,23,42,0.06)] sm:inset-y-0 sm:left-auto sm:right-0 sm:h-auto sm:w-[360px] sm:max-w-[92vw] sm:border-l sm:border-t-0 sm:shadow-[-8px_0_24px_rgba(15,23,42,0.06)] ${visible ? "sheet-panel-visible" : "sheet-panel-hidden"}`}
       aria-label={`Informasi layer ${currentLayer.title}`}
+      style={swipeStyle}
     >
       <div className="mx-auto mb-1 mt-2 h-1 w-10 rounded-full bg-slate-200 sm:hidden touch-none" aria-hidden="true" {...swipeHandlers} />
       <div className="flex items-start gap-3 border-b border-slate-200 px-3 py-2 sm:pt-2.5">
         <div className="grid size-9 shrink-0 place-items-center border border-slate-200 bg-slate-50" aria-hidden="true">
-          <LayerGlyph layer={layer} active />
+          <LayerGlyph layer={currentLayer} active />
         </div>
         <div className="min-w-0 flex-1">
           <p className="map-text-micro font-semibold uppercase tracking-[0.14em] text-slate-400">Informasi layer</p>
@@ -93,8 +94,8 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
         <p className="mt-2.5 rounded-lg bg-slate-50 px-3 py-2 map-text-body leading-5 text-slate-600">{getLayerInsight(currentLayer, data, stats)}</p>
 
         <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-          <StatNumber value={contextCount != null ? contextCount : stats.loaded ? stats.total : "—"} label={contextCount != null ? "Objek di wilayah" : "Objek"} />
-          <StatNumber value={stats.loaded ? (coverageCount || stats.geometryCounts.length) : "—"} label={coverageCount ? "Kecamatan" : "Tipe geometri"} />
+          <StatNumber value={contextCount != null ? contextCount : currentLayer.geometry?.includes("Point") ? stats.mappedCount : stats.total} label={contextCount != null ? "Objek di wilayah" : currentLayer.geometry?.includes("Point") && stats.unmappedCount > 0 ? "Lokasi terpetakan" : "Objek"} />
+          <StatNumber value={stats.unmappedCount > 0 ? stats.total : (coverageCount || stats.geometryCounts.length)} label={stats.unmappedCount > 0 ? "Total rekaman" : (coverageCount ? "Kecamatan" : "Tipe geometri")} />
         </div>
         {regionFilter && contextCount == null && (
           <p className="mt-2 map-text-micro leading-4 text-slate-500">Dataset ini belum memiliki ringkasan per kecamatan; tampilan peta tetap mengikuti cakupan dataset.</p>
@@ -115,8 +116,8 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
               <dd className="map-text-compact font-medium leading-5 text-slate-800">{sourceType}</dd>
             </div>
             <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
-              <dt className="map-text-micro text-slate-500">Publisher</dt>
-              <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.publisher || (sourceType === "Ina-Geoportal BIG" ? "Badan Informasi Geospasial (BIG)" : sourceType === "Kemendikdasmen" ? "Kementerian Pendidikan Dasar dan Menengah" : "Mengikuti sumber dataset")}</dd>
+              <dt className="map-text-micro text-slate-500">Instansi sumber</dt>
+              <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.publisher || (sourceType === "Ina-Geoportal BIG" ? "Badan Informasi Geospasial (BIG)" : sourceType === "Kemendikdasmen" ? "Kementerian Pendidikan Dasar dan Menengah" : "Sesuai keterangan sumber data")}</dd>
             </div>
             <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
               <dt className="map-text-micro text-slate-500">Geometri</dt>
@@ -124,12 +125,24 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
             </div>
             <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
               <dt className="map-text-micro text-slate-500">Format</dt>
-              <dd className="map-text-compact font-medium leading-5 text-slate-800">Data peta internal</dd>
+              <dd className="map-text-compact font-medium leading-5 text-slate-800">Digunakan untuk menampilkan peta</dd>
             </div>
             <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
               <dt className="map-text-micro text-slate-500">Tahun data</dt>
               <dd className="map-text-compact font-medium leading-5 text-slate-800">{currentLayer.dataYear || "Belum dicantumkan"}</dd>
             </div>
+            {currentLayer.latestDataYear && currentLayer.latestDataYear !== currentLayer.dataYear && (
+              <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+                <dt className="map-text-micro text-slate-500">Pembaruan sumber</dt>
+                <dd className="map-text-compact font-medium leading-5 text-slate-800">BIG · Edisi Juni {currentLayer.latestDataYear}</dd>
+              </div>
+            )}
+            {currentLayer.localDataStatus && (
+              <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+                <dt className="map-text-micro text-slate-500">Perhatian</dt>
+                <dd className="map-text-compact font-medium leading-5 text-amber-700">{currentLayer.localDataStatus}</dd>
+              </div>
+            )}
             <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
               <dt className="map-text-micro text-slate-500">Cakupan</dt>
               <dd className="map-text-compact font-medium leading-5 text-slate-800">Kabupaten Wajo, Sulawesi Selatan</dd>
@@ -139,9 +152,9 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
 
         <p className="mt-3 map-text-micro leading-4 text-slate-500">{sourceNote}</p>
 
-        {!stats.loaded && (
+        {!stats.loaded && stats.unmappedCount > 0 && (
           <div className="mt-3.5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 map-text-compact leading-5 text-slate-500">
-            Statistik detail akan dihitung setelah data layer dimuat untuk peta.
+            Perhatian: {stats.unmappedCount.toLocaleString("id-ID")} data belum memiliki lokasi yang bisa ditampilkan karena koordinat belum tersedia atau belum dapat dipastikan.
           </div>
         )}
 
@@ -176,11 +189,15 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
         )}
       </div>
 
+      {error && !loading && (
+        <div className="border-t border-amber-100 bg-amber-50 px-4 py-2 map-text-micro text-amber-800" role="status">Data layer gagal dimuat. Periksa koneksi lalu coba lagi.</div>
+      )}
+
       <div className="border-t border-slate-200 bg-white px-4 py-3">
         <div className="flex gap-2">
-          <button type="button" onClick={onShowOnMap} className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 map-text-compact font-semibold text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+          <button type="button" onClick={onShowOnMap} disabled={loading} className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md bg-slate-900 px-3 py-2 map-text-compact font-semibold text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
             <IconDatabase size={15} aria-hidden="true" />
-            {active ? "Sembunyikan dari peta" : stats.loaded ? "Tampilkan di peta" : "Muat layer"}
+            {loading ? "Memuat…" : error ? "Coba lagi" : active ? "Sembunyikan dari peta" : stats.loaded ? "Tampilkan di peta" : "Muat layer"}
           </button>
           {stats.loaded && (
             <button type="button" onClick={() => onZoomToLayer?.(currentLayer)} className="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-300 px-3 py-2 map-text-compact font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Zoom ke seluruh data layer">

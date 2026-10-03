@@ -14,7 +14,7 @@ export default function PrintLegend({ activeLayers, kecamatanLegend }) {
         <div className="print-only-kecamatan">
           <p>Administrasi Kecamatan</p>
           {kecamatanLegend.map((item) => (
-            <div key={item.id} className="print-only-legend-item">
+            <div key={`print-kec-${item.id}`} className="print-only-legend-item">
               <span className="print-only-swatch" style={{ backgroundColor: item.color }} />
               <span>{item.name}</span>
             </div>

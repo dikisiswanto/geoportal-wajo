@@ -14,7 +14,7 @@ export default function ActiveLayersBar({
   if (!activeLayers?.length) return null;
 
   const countFor = (layer) => {
-    if (!regionFilter) return layerData[layer.id]?.features?.length || dataSummary[layer.file]?.total || 0;
+    if (!regionFilter) return layerData[layer.id]?.features?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary[layer.file]?.mappedCount || dataSummary[layer.file]?.total || 0;
     return regionSummary[layer.file]?.regions?.find(
       (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
     )?.count || 0;

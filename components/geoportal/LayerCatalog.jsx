@@ -57,9 +57,9 @@ export default function LayerCatalog({
   const summaryFor = (layer) => regionSummary?.[layer.file];
 
   const countFor = (layer) => {
-    if (!regionFilter) return layerData?.[layer.id]?.features?.length || dataSummary?.[layer.file]?.total || 0;
+    if (!regionFilter) return layerData?.[layer.id]?.features?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary?.[layer.file]?.mappedCount || dataSummary?.[layer.file]?.total || 0;
     const scoped = summaryFor(layer);
-    if (!scoped) return layerData?.[layer.id]?.features?.length || dataSummary?.[layer.file]?.total || 0;
+    if (!scoped) return layerData?.[layer.id]?.features?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary?.[layer.file]?.mappedCount || dataSummary?.[layer.file]?.total || 0;
     return scoped.regions?.find(
       (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
     )?.count || 0;
@@ -126,25 +126,30 @@ export default function LayerCatalog({
             <section key={group} className="mb-3 last:mb-1">
               <h2 className="px-2 py-1 map-text-micro font-semibold uppercase tracking-[0.14em] text-slate-400">{group}</h2>
               <div className="divide-y divide-slate-100 border-y border-slate-100">
-                {groupLayers.map((layer) => (
-                  <div
-                    key={layer.id}
-                    data-layer-id={layer.id}
-                    className={focusLayerId === layer.id ? "layer-catalog-focus" : ""}
-                  >
-                    <LayerRow
-                      layer={layer}
-                      active={!!visible[layer.id]}
-                    busy={!!loading[layer.id]}
-                    error={errors[layer.id]}
-                    featureCount={countFor(layer)}
-                    regionFilter={regionFilter}
-                    regionScoped={Boolean(summaryFor(layer))}
-                    onToggle={onToggle}
-                      onInfo={onInfo}
-                    />
-                  </div>
-                ))}
+                {groupLayers.map((layer) => {
+                  const layerSummary = dataSummary?.[layer.file];
+                  return (
+                    <div
+                      key={layer.id}
+                      data-layer-id={layer.id}
+                      className={focusLayerId === layer.id ? "layer-catalog-focus" : ""}
+                    >
+                      <LayerRow
+                        layer={layer}
+                        active={!!visible[layer.id]}
+                        busy={!!loading[layer.id]}
+                        error={errors[layer.id]}
+                        featureCount={countFor(layer)}
+                        totalCount={layerSummary?.total ?? null}
+                        unmappedCount={layerSummary?.unmappedCount ?? 0}
+                        regionFilter={regionFilter}
+                        regionScoped={Boolean(summaryFor(layer))}
+                        onToggle={onToggle}
+                        onInfo={onInfo}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </section>
           );

@@ -3,9 +3,13 @@ import LayerGlyph from "./LayerGlyph";
 import SourceBadge from "./SourceBadge";
 import { regionDisplayName } from "../../lib/geo/region";
 
-export default function LayerRow({ layer, active, busy, error, onToggle, onInfo, featureCount, regionFilter, regionScoped = false }) {
+export default function LayerRow({ layer, active, busy, error, onToggle, onInfo, featureCount, regionFilter, regionScoped = false, totalCount = null, unmappedCount = 0 }) {
+  const objectLabel = layer.geometry?.includes("Point") ? "lokasi" : "objek";
+  const hasUnmapped = !regionFilter && Number(unmappedCount) > 0 && Number(totalCount) > Number(featureCount);
   const countLabel = featureCount > 0
-    ? `${featureCount.toLocaleString("id-ID")} ${regionFilter && regionScoped ? "objek di " + regionDisplayName(regionFilter) : "objek"}`
+    ? (hasUnmapped
+      ? `${Number(totalCount).toLocaleString("id-ID")} rekaman · ${Number(featureCount).toLocaleString("id-ID")} ${objectLabel}`
+      : `${featureCount.toLocaleString("id-ID")} ${regionFilter && regionScoped ? objectLabel + " di " + regionDisplayName(regionFilter) : objectLabel}`)
     : regionFilter && regionScoped ? `Belum ada objek di ${regionDisplayName(regionFilter)}` : "";
 
   return (

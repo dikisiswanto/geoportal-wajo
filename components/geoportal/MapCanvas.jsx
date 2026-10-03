@@ -117,7 +117,8 @@ const MapCanvas = forwardRef(function MapCanvas(
     onStatus,
     onCoords,
     onViewChange,
-    regionFilter
+    regionFilter,
+    retryTokens = {}
   },
   ref
 ) {
@@ -136,6 +137,7 @@ const MapCanvas = forwardRef(function MapCanvas(
 
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
+  const retryTokensRef = useRef({});
 
   const onStatusRef = useRef(onStatus);
   const onCoordsRef = useRef(onCoords);
@@ -540,6 +542,21 @@ const MapCanvas = forwardRef(function MapCanvas(
     };
   }, []);
 
+  useEffect(() => {
+    const changedIds = layers
+      .map((layer) => layer.id)
+      .filter((id) => (retryTokens[id] || 0) !== (retryTokensRef.current[id] || 0));
+
+    if (!changedIds.length) return;
+
+    retryTokensRef.current = { ...retryTokens };
+    setErrors((previous) => {
+      const next = { ...previous };
+      changedIds.forEach((id) => delete next[id]);
+      return next;
+    });
+  }, [layers, retryTokens]);
+
   /*
    * Load data hanya ketika layer aktif.
    */
@@ -842,15 +859,14 @@ const MapCanvas = forwardRef(function MapCanvas(
                  * Label kecamatan permanen.
                  */
                 if (
-                  layer.styleMode ===
-                    "admin" &&
-                  feature.properties
-                    ?.Kecamatan
+                  layer.styleMode === "admin" &&
+                  (feature.properties?.Kecamatan ?? feature.properties?.WADMKC ?? feature.properties?.NAMOBJ)
                 ) {
                   featureLayer.bindTooltip(
                     String(
-                      feature.properties
-                        .Kecamatan
+                      feature.properties.Kecamatan ??
+                      feature.properties.WADMKC ??
+                      feature.properties.NAMOBJ
                     ),
                     {
                       permanent:
@@ -1153,7 +1169,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         if (!adminData?.features?.length) return;
         import("leaflet").then((L) => {
           const feature = adminData.features.find((item) =>
-            String(item?.properties?.Kecamatan || "").trim().toLowerCase() === String(regionName).trim().toLowerCase()
+            String(item?.properties?.Kecamatan ?? item?.properties?.WADMKC ?? item?.properties?.NAMOBJ ?? "").trim().toLowerCase() === String(regionName).trim().toLowerCase()
           );
           if (!feature) return;
           const bounds = L.geoJSON(feature).getBounds();

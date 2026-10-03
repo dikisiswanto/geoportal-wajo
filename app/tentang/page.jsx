@@ -112,8 +112,8 @@ export default function AboutPage() {
                     </p>
                     <p>
                       Dataset sektoral lainnya dihimpun dari sumber data terbuka dan layanan ArcGIS.
-                      Sumber dan publisher dicantumkan pada halaman dataset agar asal data dapat
-                      dibaca sesuai konteksnya, bukan dianggap berasal dari satu sumber yang sama.
+                      Sumber dan instansi asal dicantumkan pada halaman dataset agar pengguna dapat
+                      memahami dari mana setiap data berasal.
                     </p>
                     <p>
                       Portal ini menyajikan data untuk membantu eksplorasi dan pemahaman wilayah.

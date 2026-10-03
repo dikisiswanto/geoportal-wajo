@@ -7,6 +7,7 @@ import { kecamatanColor } from "../lib/geo/styles";
 import { DATA_SUMMARY } from "../lib/geo/dataSummary";
 import { REGION_SUMMARY, WAJO_REGIONS } from "../lib/geo/regionSummary";
 import { getRelatedLayerIds, getRegionCount, regionDisplayName } from "../lib/geo/relations";
+import { normalizeRegionName } from "../lib/geo/region";
 import { featureKey } from "../lib/geo/format";
 import GeoPortalHeader from "./geoportal/GeoPortalHeader";
 import LayerCatalog from "./geoportal/LayerCatalog";
@@ -46,6 +47,7 @@ export default function GeoPortal() {
   const [regionFilter, setRegionFilter] = useState("");
   const [requestedFeature, setRequestedFeature] = useState("");
   const [catalogLayerId, setCatalogLayerId] = useState("");
+  const [retryTokens, setRetryTokens] = useState({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -77,8 +79,8 @@ export default function GeoPortal() {
       }
     }
 
-    if (requestedRegion && WAJO_REGIONS.some((region) => region.toLowerCase() === requestedRegion.toLowerCase())) {
-      const region = WAJO_REGIONS.find((item) => item.toLowerCase() === requestedRegion.toLowerCase());
+    if (requestedRegion && WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(requestedRegion))) {
+      const region = WAJO_REGIONS.find((item) => normalizeRegionName(item) === normalizeRegionName(requestedRegion));
       setRegionFilter(region || "");
       setHasInteracted(true);
     }
@@ -194,7 +196,9 @@ export default function GeoPortal() {
     setLayerInfo(null);
     setSelected(payload);
     setInspectOpen(true);
-    const shouldSetRegion = payload.regionName && (payload.layer.id === "adm-kecamatan" || payload.layer.group === "Administrasi");
+    const shouldSetRegion = payload.regionName &&
+      (payload.layer.id === "adm-kecamatan" || payload.layer.group === "Administrasi") &&
+      WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(payload.regionName));
     if (shouldSetRegion) setRegionFilter(payload.regionName);
     const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
     const currentRegion = new URL(window.location.href).searchParams.get("region");
@@ -223,6 +227,13 @@ export default function GeoPortal() {
 
   const showLayerOnMap = useCallback((layer) => {
     setHasInteracted(true);
+    setErrors((previous) => {
+      if (!previous[layer.id]) return previous;
+      const next = { ...previous };
+      delete next[layer.id];
+      return next;
+    });
+    setRetryTokens((previous) => ({ ...previous, [layer.id]: (previous[layer.id] || 0) + 1 }));
     setVisible((previous) => ({ ...previous, [layer.id]: true }));
     const activeIds = layers.filter((item) => visible[item.id] || item.id === layer.id).map((item) => item.id);
     updateMapQuery({ layers: activeIds.join(","), layer: layer.id, feature: null });
@@ -481,6 +492,7 @@ export default function GeoPortal() {
             onCoords={handleMapCoords}
             onViewChange={handleMapViewChange}
             regionFilter={regionFilter}
+            retryTokens={retryTokens}
           />
           <MapControls
             mapReady={mapReady}
@@ -518,6 +530,8 @@ export default function GeoPortal() {
             regionSummary={layerInfo ? REGION_SUMMARY[layerInfo.file] : null}
             regionFilter={regionFilter}
             active={layerInfo ? !!visible[layerInfo.id] : false}
+            loading={layerInfo ? !!loading[layerInfo.id] : false}
+            error={layerInfo ? errors[layerInfo.id] || "" : ""}
             open={Boolean(layerInfo)}
             onClose={closeLayerInfo}
             onShowOnMap={() => layerInfo && showLayerOnMap(layerInfo)}

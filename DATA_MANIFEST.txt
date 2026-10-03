@@ -6,13 +6,14 @@ Nama file menggunakan lowercase-kebab-case dan tidak memasukkan tahun sumber.
 Kelompok data:
 - Administrasi:
   - batas-administrasi.geojson — 679 feature
-  - batas-kecamatan.geojson — 15 feature
+  - batas-kecamatan.geojson — 15 feature (14 kecamatan + 1 Danau Tempe)
 - Pemerintahan:
   - organisasi-perangkat-daerah.geojson — 27 feature
 - Pendidikan:
-  - satuan-pendidikan.geojson — 807 feature
+  - satuan-pendidikan.geojson — 1.049 record (806 lokasi terpetakan; 243 belum dapat dipetakan)
+    Satu file kanonik memuat seluruh NPSN. Record tanpa koordinat valid tetap dipertahankan dengan geometry null.
 - Kesehatan:
-  - puskesmas.geojson — 23 feature
+  - puskesmas.geojson — 23 feature (22 lokasi terpetakan; 1 butuh penanganan)
 - Jaringan:
   - jaringan-energi.geojson — 2492 feature
   - jaringan-jalan.geojson — 298 feature
@@ -44,14 +45,28 @@ Kelompok data:
 - Referensi:
   - toponimi.geojson — 1216 feature
 
-Aturan data tematik:
-- Potensi Pertanian dan Potensi Peternakan hanya menyimpan feature yang memiliki nilai potensi.
-- Data Angka Nilai tidak menjadi bagian dari portal.
+Aturan data pendidikan:
+- Seluruh 1.049 NPSN hasil ekstraksi Kemendikdasmen dipertahankan dalam satu file kanonik.
+- Koordinat hanya dipakai sebagai geometry bila valid dan, untuk koordinat raw yang baru dimasukkan pada audit ini, lolos pemeriksaan spasial terhadap batas kecamatan yang digunakan portal.
+- Tiga record dikoreksi karena urutan latitude/longitude tertukar dan hasil pertukarannya konsisten dengan wilayah resmi sekolah. Lima koreksi sekunder yang sudah ada dari audit sebelumnya dipertahankan.
+- Record tanpa koordinat valid tidak dipindahkan ke centroid dan tidak diberi titik perkiraan.
+- Sumber website HTTP-only/URL invalid tidak disajikan sebagai tautan aktif; nilai asal disimpan untuk audit.
 
 Optimasi data:
 - GeoJSON dipadatkan tanpa whitespace.
-- Koordinat dibulatkan maksimum 6 angka desimal WGS84.
-- Dataset potensi duplikat dengan suffix `-kecamatan` dihapus karena tidak digunakan.
 - Data dimuat lazy: browser mengambil GeoJSON hanya ketika layer diaktifkan.
+- Tidak ada GeoJSON pendidikan duplikat.
 
 Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset GeoJSON.
+
+
+Validasi seluruh dataset non-pendidikan
+- Tanggal validasi: 2026-10-03 06:55 WITA
+- 30/30 dataset non-pendidikan lulus pemeriksaan struktur FeatureCollection dan geometry validity.
+- Tidak ada geometry invalid atau empty pada dataset non-pendidikan.
+- Anomali di luar mask administrasi lokal tidak otomatis dianggap salah pada jaringan, perairan, batas, dan polygon tematik; fitur dipertahankan kecuali ada bukti koreksi.
+- Koreksi aman: normalisasi nama wilayah/OPD, penandaan dua record jaringan jalan beratribut sumber tidak lengkap, dan penandaan 1 Puskesmas tanpa koordinat.
+- Tidak ada GeoJSON duplikat yang dibuat.
+
+
+Batas Desa/Kelurahan: 190 feature, sumber Ina-Geoportal BIG edisi Juni 2026.

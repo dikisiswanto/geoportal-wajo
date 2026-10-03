@@ -14,6 +14,8 @@ export default function LayerGlyph({
   layer,
   active
 }) {
+  if (!layer) return null;
+
   const muted = active
     ? "text-slate-800"
     : "text-slate-400";
@@ -48,7 +50,7 @@ export default function LayerGlyph({
     );
   }
 
-  if (layer.geometry === "LineString") {
+  if (String(layer.geometry || "").includes("LineString")) {
     return (
       <span
         aria-hidden

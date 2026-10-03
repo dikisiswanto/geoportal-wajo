@@ -123,7 +123,7 @@ export default async function DatasetPage({ params }) {
       inLanguage: "id-ID",
       alternateName: seo.keywords.slice(0, 3),
         isAccessibleForFree: true,
-      creator: sourceMeta.publisher !== "Mengikuti publisher pada sumber data"
+      creator: sourceMeta.publisher !== "Sesuai keterangan sumber data"
         ? {
             "@type": "Organization",
             name: sourceMeta.publisher
@@ -201,7 +201,7 @@ export default async function DatasetPage({ params }) {
               <dd className="mt-1 text-sm tabular-nums text-slate-900">{stats.total.toLocaleString("id-ID")}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Publisher</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Instansi sumber</dt>
               <dd className="mt-1 text-sm text-slate-900">{sourceMeta.publisher}</dd>
             </div>
           </dl>
