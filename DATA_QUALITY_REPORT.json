@@ -833,5 +833,21 @@
     ],
     "catatan": "preparePrint menunggu data layer aktif yang belum selesai dimuat, menentukan scope dari focusAdmin/regionFilter, memusatkan peta ke bounds scope, menerapkan style administrasi khusus cetak, lalu memulihkan state setelah afterprint.",
     "focused_administration": "Kecamatan yang menjadi konteks cetak tetap memiliki fill dan garis tegas meskipun layer tematik seperti jalan, sarana, atau jaringan aktif."
+  },
+  "ui_print": {
+    "administration_renderer": "SVG khusus untuk batas kabupaten, kecamatan, dan desa agar garis/polygon stabil saat browser mencetak.",
+    "village_labels": "Nama desa/kelurahan ditampilkan langsung pada peta ketika layer batas desa aktif; tidak dibuat daftar 190 desa di legenda.",
+    "layer_order": [
+      "Batas Kabupaten BIG",
+      "Batas Kecamatan",
+      "Batas Desa/Kelurahan",
+      "Polygon tematik",
+      "Jaringan tematik",
+      "Lokasi/titik tematik"
+    ],
+    "print_context_rebuild": "Perpindahan konteks kabupaten/kecamatan/desa mengubah render key dan membangun ulang layer tematik yang aktif dari data yang sudah dimuat."
+  },
+  "cache": {
+    "service_worker": "Registrasi worker menggunakan updateViaCache=none; navigasi dan bundle JS/CSS direquest dengan cache no-store; cache shell worker baru diisi dari network tanpa HTTP cache; cache lama dihapus saat activate; GeoJSON tetap menggunakan URL versioned ?v=BUILD_VERSION."
   }
 }

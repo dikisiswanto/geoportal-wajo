@@ -30,6 +30,7 @@ import {
   featureMatchesRegion,
   featureMatchesAdministrativeFeature,
   featureAdministrativeCodes,
+  administrativeFeatureCode,
   regionCodeFromBoundaryName,
   featureRegionName,
   normalizeRegionName
@@ -74,6 +75,27 @@ function getFeatureBounds(L, feature) {
   if (!feature) return null;
   const bounds = L.geoJSON(feature).getBounds();
   return bounds.isValid() ? bounds : null;
+}
+
+function getAdminContextKey(regionFilter, focusAdmin) {
+  const type = String(focusAdmin?.type ?? "").trim();
+  const feature = focusAdmin?.feature;
+  const code = feature
+    ? administrativeFeatureCode(
+        feature,
+        type === "desa" ? "desa" : type === "kecamatan" ? "kecamatan" : "kabupaten"
+      )
+    : "";
+  const name = feature
+    ? administrativeName(feature, type === "desa" ? "desa" : "kecamatan")
+    : "";
+
+  return [
+    normalizeRegionName(regionFilter),
+    type,
+    code,
+    normalizeRegionName(name)
+  ].join("|");
 }
 
 function getPrintScope(L, { regionFilter, focusAdmin, countyData, districtData, villageData }) {
@@ -185,6 +207,24 @@ function villageMatchesPrintScope(feature, scope) {
 }
 
 function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
+  const countyGroup = layerRefs?.["adm-kabupaten"];
+  const countyData = loadedData?.["adm-kabupaten"];
+  if (countyGroup && countyData?.features?.length) {
+    countyGroup.eachLayer?.((featureLayer) => {
+      const feature = featureLayer?.__wajoFeature;
+      if (!feature) return;
+      const base = featureLayer.__wajoBaseStyle || styleFor({ styleMode: "admin-county-outline" }, feature);
+      featureLayer.__wajoPrintStyleSnapshot = base;
+      featureLayer.setStyle?.({
+        ...base,
+        color: "#1e293b",
+        weight: 2.35,
+        opacity: 0.98,
+        fillOpacity: 0
+      });
+    });
+  }
+
   const districtGroup = layerRefs?.["adm-kecamatan"];
   const districtData = loadedData?.["adm-kecamatan"];
   if (districtGroup && districtData?.features?.length) {
@@ -196,16 +236,19 @@ function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
       featureLayer.__wajoPrintStyleSnapshot = base;
       featureLayer.setStyle?.({
         ...base,
-        fillColor: selected ? kecamatanColor(
-          feature?.properties?.KDCPUM ??
-          feature?.properties?.kode_kecamatan ??
-          feature?.properties?.Kecamatan ??
-          feature?.properties?.WADMKC ??
-          feature?.properties?.NAMOBJ
-        ) : "#cbd5e1",
+        fillColor: selected
+          ? kecamatanColor(
+              feature?.properties?.KDCPUM ??
+              feature?.properties?.kode_kecamatan ??
+              feature?.properties?.Kecamatan ??
+              feature?.properties?.WADMKC ??
+              feature?.properties?.NAMOBJ
+            )
+          : "#cbd5e1",
         fillOpacity: selected ? 0.36 : 0,
-        weight: selected ? 2 : 1,
-        color: selected ? "#334155" : "#94a3b8"
+        weight: selected ? 2.15 : 1.15,
+        color: selected ? "#1e293b" : "#64748b",
+        opacity: selected ? 0.98 : 0.88
       });
     });
   }
@@ -222,16 +265,17 @@ function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
       featureLayer.setStyle?.({
         ...base,
         fillColor: selected ? "#64748b" : "#cbd5e1",
-        fillOpacity: selected ? 0.28 : 0,
-        weight: selected ? 1.6 : 0.7,
-        color: selected ? "#475569" : "#94a3b8"
+        fillOpacity: selected ? 0.24 : 0,
+        weight: selected ? 1.55 : 0.9,
+        color: selected ? "#334155" : "#94a3b8",
+        opacity: selected ? 0.96 : 0.8
       });
     });
   }
 }
 
 function restorePrintAdministrationStyles(layerRefs) {
-  ["adm-kecamatan", "adm-desa"].forEach((id) => {
+  ["adm-kabupaten", "adm-kecamatan", "adm-desa"].forEach((id) => {
     layerRefs?.[id]?.eachLayer?.((featureLayer) => {
       const snapshot = featureLayer?.__wajoPrintStyleSnapshot;
       if (!snapshot) return;
@@ -815,6 +859,9 @@ const MapCanvas = forwardRef(function MapCanvas(
       const adminVillagePane = map.createPane("adminVillage");
       adminVillagePane.style.zIndex = "340";
 
+      const adminLabelPane = map.createPane("adminLabel");
+      adminLabelPane.style.zIndex = "350";
+      adminLabelPane.style.pointerEvents = "none";
 
       L.DomUtil.create(
         "div",
@@ -1128,8 +1175,11 @@ const MapCanvas = forwardRef(function MapCanvas(
 
   /*
    * Render vector layers.
+   * Context wilayah adalah bagian dari render key. Ketika pengguna
+   * berpindah kabupaten → kecamatan → desa, layer tematik yang aktif
+   * dibangun ulang dari data cache supaya hasil filter selalu segar.
    */
-  const previousRegionFilterRef = useRef(regionFilter);
+  const previousMapContextKeyRef = useRef(null);
 
   useEffect(() => {
     if (!mapRef.current) {
@@ -1139,18 +1189,19 @@ const MapCanvas = forwardRef(function MapCanvas(
     import("leaflet").then((L) => {
       const map = mapRef.current;
 
-      const regionChanged = previousRegionFilterRef.current !== regionFilter;
-      if (regionChanged) {
+      const contextKey = getAdminContextKey(regionFilter, focusAdmin);
+      const contextChanged = previousMapContextKeyRef.current !== null && previousMapContextKeyRef.current !== contextKey;
+      if (contextChanged) {
         selectedRef.current?.setStyle?.(selectedRef.current?.__wajoBaseStyle || {});
         layers.forEach((layer) => {
           if (!layerRefs.current[layer.id]) return;
-          if (["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer.id)) return;
+          if (isAdministrativeLayerId(layer.id)) return;
           layerRefs.current[layer.id]?.remove?.();
           delete layerRefs.current[layer.id];
         });
         selectedRef.current = null;
-        previousRegionFilterRef.current = regionFilter;
       }
+      previousMapContextKeyRef.current = contextKey;
       layers.forEach((layer, layerIndex) => {
         const existing =
           layerRefs.current[layer.id];
@@ -1191,10 +1242,12 @@ const MapCanvas = forwardRef(function MapCanvas(
           vectorRenderersRef.current.get(paneName);
 
         if (!vectorRenderer) {
-          vectorRenderer = L.canvas({
-            pane: paneName,
-            padding: 0.45
-          });
+          vectorRenderer = isAdministrativeLayerId(layer.id)
+            ? L.svg({ pane: paneName })
+            : L.canvas({
+                pane: paneName,
+                padding: 0.45
+              });
           vectorRenderersRef.current.set(
             paneName,
             vectorRenderer
@@ -1449,7 +1502,8 @@ const MapCanvas = forwardRef(function MapCanvas(
                         "leaflet-kecamatan-label",
                       opacity: 1,
                       interactive:
-                        false
+                        false,
+                      pane: "adminLabel"
                     }
                   );
                 } else {
@@ -1618,9 +1672,19 @@ const MapCanvas = forwardRef(function MapCanvas(
                     layer.styleMode ===
                     "admin-village"
                   ) {
-                    bindSmartTooltip(
-                      label
-                    );
+                    if (label) {
+                      featureLayer.bindTooltip(
+                        String(label),
+                        {
+                          permanent: true,
+                          direction: "center",
+                          className: "leaflet-desa-label",
+                          opacity: 0.9,
+                          interactive: false,
+                          pane: "adminLabel"
+                        }
+                      );
+                    }
                   } else if (
                     layer.styleMode ===
                     "admin-county-outline"

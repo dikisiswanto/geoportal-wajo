@@ -86,6 +86,19 @@ a:focus-visible {
   cursor: pointer;
 }
 
+.leaflet-desa-label {
+  border: 1px solid rgba(51, 65, 85, 0.3);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+  padding: 1px 4px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #334155;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none !important;
+}
+
 .leaflet-kecamatan-label {
   border: 0;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.16);
@@ -236,13 +249,17 @@ a:focus-visible {
   }
 
   .leaflet-kecamatan-label,
+  .leaflet-desa-label,
   .leaflet-tile,
   .leaflet-marker-icon,
   .leaflet-overlay-pane svg,
   .leaflet-overlay-pane path,
   .leaflet-overlay-pane canvas,
   .leaflet-wajo-data-pane path,
-  .leaflet-wajo-data-pane canvas {
+  .leaflet-wajo-data-pane canvas,
+  .adminCounty path,
+  .adminDistrict path,
+  .adminVillage path {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
   }

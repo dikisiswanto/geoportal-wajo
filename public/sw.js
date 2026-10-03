@@ -15,7 +15,15 @@ const APP_SHELL = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then(async (cache) => {
+        await Promise.all(
+          APP_SHELL.map(async (url) => {
+            const response = await fetch(new Request(url, { cache: "no-store" }));
+            if (!response.ok) throw new Error(`Gagal memuat shell ${url}`);
+            await cache.put(url, response.clone());
+          })
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -44,10 +52,10 @@ self.addEventListener("fetch", (event) => {
   // with an offline shell fallback.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-store" })
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(() =>

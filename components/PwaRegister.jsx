@@ -13,7 +13,8 @@ export default function PwaRegister() {
       try {
         const scriptUrl = withAssetVersion("/sw.js");
         const registration = await navigator.serviceWorker.register(scriptUrl, {
-          scope: "/"
+          scope: "/",
+          updateViaCache: "none"
         });
 
         // Check the versioned worker on each load so a deployment is picked up

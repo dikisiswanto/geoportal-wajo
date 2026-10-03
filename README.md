@@ -108,7 +108,7 @@ Ikon point menggunakan cache, sedangkan update koordinat kursor dibatasi agar ti
 
 ## PWA
 
-PWA menggunakan `app/manifest.js`, `public/sw.js`, ikon lokal di `public/pwa/`, dan registrasi service worker pada `components/PwaRegister.jsx`. Service worker mencache shell aplikasi, branding, ikon, GeoJSON, serta aset Next.js yang sudah pernah dimuat. Basemap OpenStreetMap tetap membutuhkan koneksi saat tile belum tersedia di cache browser.
+PWA menggunakan `app/manifest.js`, `public/sw.js`, ikon lokal di `public/pwa/`, dan registrasi service worker pada `components/PwaRegister.jsx`. Service worker menggunakan versi deployment pada URL /sw.js, tidak memakai cache HTTP untuk navigasi maupun update worker, dan membuat cache shell baru dari network. GeoJSON tetap menggunakan URL versioned (?v=BUILD_VERSION) agar data deployment baru tidak tertukar dengan salinan lama. Basemap OpenStreetMap tetap membutuhkan koneksi saat tile belum tersedia di cache browser.
 
 ## Menjalankan project
 
