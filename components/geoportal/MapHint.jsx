@@ -5,21 +5,21 @@ export default function MapHint({ step = "layer", regionName = "", onAction }) {
   const content = regionName
     ? {
         title: `${regionDisplayName(regionName)} siap dijelajahi`,
-        text: "Klik wilayah atau objek di peta untuk melihat informasinya.",
+        text: "Pilih wilayah atau lokasi di peta untuk melihat informasinya.",
         action: "Lihat data",
         icon: IconMapPin
       }
     : step === "feature"
       ? {
-          title: "Coba klik wilayah di peta",
-          text: "Pilih wilayah atau objek untuk melihat informasi dan data terkait.",
-          action: "Jelajahi data",
+          title: "Coba pilih wilayah di peta",
+          text: "Pilih wilayah atau lokasi untuk melihat informasi dan data terkait.",
+          action: "Jelajahi",
           icon: IconInfoCircle
         }
       : {
           title: "Mulai eksplorasi",
-          text: "Aktifkan layer untuk menampilkan data di peta.",
-          action: "Buka layer",
+          text: "Pilih data peta untuk menampilkannya di peta.",
+          action: "Buka data peta",
           icon: IconInfoCircle
         };
 

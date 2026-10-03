@@ -6,8 +6,8 @@ import { buildKecamatanLegend } from "../lib/geo/format";
 import { kecamatanColor } from "../lib/geo/styles";
 import { DATA_SUMMARY } from "../lib/geo/dataSummary";
 import { REGION_SUMMARY, WAJO_REGIONS } from "../lib/geo/regionSummary";
-import { getRelatedLayerIds, getRegionCount, regionDisplayName } from "../lib/geo/relations";
-import { normalizeRegionName } from "../lib/geo/region";
+import { getRelatedLayerIds, getRegionCount } from "../lib/geo/relations";
+import { normalizeRegionName, regionDisplayName } from "../lib/geo/region";
 import { featureKey } from "../lib/geo/format";
 import GeoPortalHeader from "./geoportal/GeoPortalHeader";
 import LayerCatalog from "./geoportal/LayerCatalog";
@@ -45,6 +45,7 @@ export default function GeoPortal() {
   const [startupLoading, setStartupLoading] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [regionFilter, setRegionFilter] = useState("");
+  const [focusAdmin, setFocusAdmin] = useState(null);
   const [requestedFeature, setRequestedFeature] = useState("");
   const [catalogLayerId, setCatalogLayerId] = useState("");
   const [retryTokens, setRetryTokens] = useState({});
@@ -189,7 +190,7 @@ export default function GeoPortal() {
 
   const handleFeatureSelect = useCallback((payload) => {
     setHasInteracted(true);
-    setStatus(`${payload.layer.title} · objek dipilih`);
+    setStatus(`${payload.layer.title} · dipilih`);
     if (window.matchMedia("(max-width: 1023px)").matches) {
       setSidebarOpen(false);
     }
@@ -197,7 +198,7 @@ export default function GeoPortal() {
     setSelected(payload);
     setInspectOpen(true);
     const shouldSetRegion = payload.regionName &&
-      (payload.layer.id === "adm-kecamatan" || payload.layer.group === "Administrasi") &&
+      payload.layer.id === "adm-kecamatan" &&
       WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(payload.regionName));
     if (shouldSetRegion) setRegionFilter(payload.regionName);
     const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
@@ -243,11 +244,11 @@ export default function GeoPortal() {
   const zoomToLayer = useCallback((layer) => {
     setHasInteracted(true);
     setVisible((previous) => ({ ...previous, [layer.id]: true }));
-    setStatus(`Menyesuaikan tampilan ke ${layer.title}…`);
+    setStatus(`Menyiapkan ${layer.title}…`);
     const activeIds = layers.filter((item) => visible[item.id] || item.id === layer.id).map((item) => item.id);
     updateMapQuery({ layers: activeIds.join(","), layer: layer.id, feature: null });
     mapApi.current?.zoomToLayer?.(layer.id);
-    window.setTimeout(() => setStatus(`${layer.title} ditampilkan`), 450);
+    window.setTimeout(() => setStatus(`${layer.title} tampil di peta`), 450);
   }, [updateMapQuery, visible]);
 
   const handleRegionFilter = useCallback((region) => {
@@ -256,13 +257,14 @@ export default function GeoPortal() {
     setInspectOpen(false);
     setLayerInfo(null);
     mapApi.current?.clearSelection?.();
+    setFocusAdmin(null);
     setRegionFilter(region);
     if (region) {
       setStatus(`Menampilkan data di ${regionDisplayName(region)}`);
       updateMapQuery({ region, feature: null });
       mapApi.current?.zoomToRegion?.(region);
     } else {
-      setStatus("Menampilkan data seluruh Kabupaten Wajo");
+      setStatus("Menampilkan seluruh data Kabupaten Wajo");
       updateMapQuery({ region: null, feature: null });
       mapApi.current?.zoomHome?.();
     }
@@ -277,7 +279,7 @@ export default function GeoPortal() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Geoportal Wajo", text: `Lihat ${context} di Geoportal Wajo`, url });
+        await navigator.share({ title: "Geoportal Wajo", text: `Lihat ${context} di Peta Wajo`, url });
         setStatus("Tautan berhasil dibagikan");
         return;
       }
@@ -298,6 +300,43 @@ export default function GeoPortal() {
     const activeIds = layers.filter((item) => visible[item.id] || item.id === layer.id).map((item) => item.id);
     updateMapQuery({ layers: activeIds.join(","), layer: layer.id, region, feature: null });
     mapApi.current?.zoomToRegion?.(region);
+  }, [updateMapQuery, visible]);
+
+  const handleExploreAdminLayer = useCallback((layerId, selection) => {
+    const layer = layers.find((item) => item.id === layerId);
+    if (!layer || !selection?.feature) return;
+
+    const properties = selection.feature.properties ?? {};
+    const adminLayerId = selection.layer?.id;
+    const selectedKecamatan = String(
+      properties.Kecamatan ?? properties.WADMKC ?? properties.nama_kecamatan ?? properties.kecamatan ?? ""
+    ).trim();
+
+    setHasInteracted(true);
+    setLayerInfo(null);
+    setSelected(null);
+    setInspectOpen(false);
+    setFocusAdmin(adminLayerId === "adm-desa" ? { type: "desa", feature: selection.feature } : null);
+    setVisible((previous) => ({ ...previous, [layer.id]: true }));
+
+    const activeIds = layers
+      .filter((item) => visible[item.id] || item.id === layer.id)
+      .map((item) => item.id);
+
+    if (selectedKecamatan && adminLayerId === "adm-desa") {
+      setRegionFilter(selectedKecamatan);
+      updateMapQuery({ layers: activeIds.join(","), layer: layer.id, region: selectedKecamatan, feature: null });
+      setStatus(`${layer.title} di ${regionDisplayName(selectedKecamatan)} tampil di peta`);
+    } else if (selectedKecamatan && adminLayerId === "adm-kecamatan") {
+      setRegionFilter(selectedKecamatan);
+      updateMapQuery({ layers: activeIds.join(","), layer: layer.id, region: selectedKecamatan, feature: null });
+      setStatus(`${layer.title} di ${regionDisplayName(selectedKecamatan)} tampil di peta`);
+    } else {
+      updateMapQuery({ layers: activeIds.join(","), layer: layer.id, feature: null });
+      setStatus(`${layer.title} tampil di peta`);
+    }
+
+    mapApi.current?.zoomToFeature?.(selection);
   }, [updateMapQuery, visible]);
 
   const closeInspector = useCallback(() => {
@@ -342,6 +381,7 @@ export default function GeoPortal() {
     setLayerInfo(null);
     mapApi.current?.clearSelection?.();
     mapApi.current?.zoomHome?.();
+    setFocusAdmin(null);
     setRegionFilter("");
     updateMapQuery({ layers: null, layer: null, feature: null, region: null, lat: null, lng: null, zoom: null });
   }, [updateMapQuery]);
@@ -377,11 +417,12 @@ export default function GeoPortal() {
     return getRelatedLayerIds(selected.layer.id)
       .map((id) => layers.find((layer) => layer.id === id))
       .filter(Boolean)
-      .slice(0, 5)
       .map((layer) => ({
         layer,
         count: selectedRegion ? getRegionCount(REGION_SUMMARY, layer.file, selectedRegion) : 0
-      }));
+      }))
+      .filter(({ count }) => count > 0)
+      .slice(0, 5);
   }, [selected, selectedRegion]);
 
   return (
@@ -464,7 +505,7 @@ export default function GeoPortal() {
             type="button"
             onClick={closeCatalog}
             className="sheet-backdrop absolute inset-0 z-[1300] bg-slate-950/10 lg:hidden"
-            aria-label="Tutup katalog layer"
+            aria-label="Tutup daftar data"
           />
         )}
 
@@ -492,6 +533,7 @@ export default function GeoPortal() {
             onCoords={handleMapCoords}
             onViewChange={handleMapViewChange}
             regionFilter={regionFilter}
+            focusAdmin={focusAdmin}
             retryTokens={retryTokens}
           />
           <MapControls
@@ -543,10 +585,11 @@ export default function GeoPortal() {
             open={inspectOpen}
             onClose={closeInspector}
             onZoom={() => mapApi.current?.zoomToFeature?.(selected)}
-            onShare={() => handleShare(`informasi ${selected?.layer?.title || "feature"}`)}
+            onShare={() => handleShare(`informasi ${selected?.layer?.title || "ini"}`)}
             regionName={selectedRegion}
             relatedItems={relatedItems}
             onExploreRelated={handleExploreRelated}
+            onExploreAdminLayer={handleExploreAdminLayer}
           />
           <MobileActions
             onOpenSidebar={() => {

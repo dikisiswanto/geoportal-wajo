@@ -52,7 +52,7 @@ export default function SiteHeader({
       {mapSearch ? (
         <div className="mx-auto hidden w-full max-w-md px-8 md:block">
           <label className="relative block">
-            <span className="sr-only">Cari data, layer, atau wilayah</span>
+            <span className="sr-only">Cari tempat, fasilitas, atau data</span>
             <IconSearch
               aria-hidden
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"

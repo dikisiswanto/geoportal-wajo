@@ -8,9 +8,9 @@ export default function LegendPanel({ activeLayers, kecamatanLegend, open, onClo
   const visibleLayers = expanded ? activeLayers : activeLayers.slice(0, 3);
   const hiddenCount = Math.max(0, activeLayers.length - visibleLayers.length);
   return (
-    <section className="print-map-legend absolute bottom-20 left-3 z-[820] sm:bottom-3 w-[min(310px,calc(100vw-1.5rem))] border border-slate-200 bg-white shadow-sm" aria-label="Legenda">
+    <section className="print-map-legend absolute bottom-20 left-3 z-[820] sm:bottom-3 w-[min(310px,calc(100vw-1.5rem))] border border-slate-200 bg-white shadow-sm" aria-label="Keterangan simbol peta">
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2.5">
-        <div><h2 className="map-text-compact font-semibold text-slate-900">Legenda</h2><p className="map-text-micro text-slate-500">Layer yang sedang aktif</p></div>
+        <div><h2 className="map-text-compact font-semibold text-slate-900">Legenda</h2><p className="map-text-micro text-slate-500">Data yang sedang tampil</p></div>
         <button type="button" onClick={onClose} className="grid size-7 place-items-center text-slate-500 hover:bg-slate-100" aria-label="Tutup legenda"><IconX size={15} /></button>
       </div>
       <div className="legend-scroll max-h-56 overflow-y-auto px-3 py-2">
@@ -36,7 +36,7 @@ export default function LegendPanel({ activeLayers, kecamatanLegend, open, onClo
       </div>
       {activeLayers.length > 3 && (
         <button type="button" onClick={() => setExpanded((value) => !value)} className="flex w-full items-center justify-center gap-1 border-t border-slate-100 px-3 py-2 map-text-micro font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
-          {expanded ? "Ringkas legenda" : `Tampilkan ${hiddenCount} layer lainnya`}
+          {expanded ? "Ringkas" : `Tampilkan ${hiddenCount} data lainnya`}
           {expanded ? <IconChevronUp size={13} aria-hidden="true" /> : <IconChevronDown size={13} aria-hidden="true" />}
         </button>
       )}

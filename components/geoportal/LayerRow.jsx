@@ -4,13 +4,13 @@ import SourceBadge from "./SourceBadge";
 import { regionDisplayName } from "../../lib/geo/region";
 
 export default function LayerRow({ layer, active, busy, error, onToggle, onInfo, featureCount, regionFilter, regionScoped = false, totalCount = null, unmappedCount = 0 }) {
-  const objectLabel = layer.geometry?.includes("Point") ? "lokasi" : "objek";
+  const objectLabel = layer.id?.startsWith("adm-") ? "wilayah" : layer.geometry?.includes("Point") ? "lokasi" : layer.geometry?.includes("LineString") ? "jalur" : "area";
   const hasUnmapped = !regionFilter && Number(unmappedCount) > 0 && Number(totalCount) > Number(featureCount);
   const countLabel = featureCount > 0
     ? (hasUnmapped
-      ? `${Number(totalCount).toLocaleString("id-ID")} rekaman · ${Number(featureCount).toLocaleString("id-ID")} ${objectLabel}`
+      ? `${Number(totalCount).toLocaleString("id-ID")} data · ${Number(featureCount).toLocaleString("id-ID")} ${objectLabel}`
       : `${featureCount.toLocaleString("id-ID")} ${regionFilter && regionScoped ? objectLabel + " di " + regionDisplayName(regionFilter) : objectLabel}`)
-    : regionFilter && regionScoped ? `Belum ada objek di ${regionDisplayName(regionFilter)}` : "";
+    : regionFilter && regionScoped ? `Belum ada data di ${regionDisplayName(regionFilter)}` : "";
 
   return (
     <div className={`relative flex items-start gap-2 px-2.5 py-2.5 transition ${active ? "bg-slate-50" : "bg-white hover:bg-slate-50/70"}`}>
@@ -31,9 +31,9 @@ export default function LayerRow({ layer, active, busy, error, onToggle, onInfo,
       </button>
 
       <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
-        {busy && <span className="size-3 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" aria-label="Sedang memuat data" />}
-        {error && <span className="grid size-6 place-items-center map-text-compact font-semibold text-red-600" title={error} aria-label="Gagal memuat">!</span>}
-        <button type="button" onClick={() => onInfo(layer)} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-white hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" aria-label={`Tentang ${layer.title}`} title="Tentang layer">
+        {busy && <span className="size-3 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" aria-label="Sedang menyiapkan data" />}
+        {error && <span className="grid size-6 place-items-center map-text-compact font-semibold text-red-600" title="Data belum dapat ditampilkan" aria-label="Data belum dapat ditampilkan">!</span>}
+        <button type="button" onClick={() => onInfo(layer)} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-white hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" aria-label={`Tentang ${layer.title}`} title="Tentang data">
           <IconInfoCircle size={15} stroke={1.7} />
         </button>
       </div>

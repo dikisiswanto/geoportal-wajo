@@ -5,9 +5,9 @@ const SOURCE_STYLES = {
 };
 
 const SOURCE_LABELS = {
-  "Ina-Geoportal BIG": "Ina-Geo BIG",
+  "Ina-Geoportal BIG": "BIG",
   "Kemendikdasmen": "Kemendikdasmen",
-  "Sumber terbuka / ArcGIS": "Terbuka / ArcGIS"
+  "Sumber terbuka / ArcGIS": "Sumber terbuka"
 };
 
 const SOURCE_FULL_LABELS = {

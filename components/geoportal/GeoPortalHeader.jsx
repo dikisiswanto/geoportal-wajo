@@ -9,7 +9,7 @@ export default function GeoPortalHeader({ search, onSearch }) {
       mapSearch
       search={search}
       onSearch={onSearch}
-      searchPlaceholder="Cari data atau wilayah…"
+      searchPlaceholder="Cari tempat, fasilitas, atau data…"
       titleAs="h1"
     />
   );

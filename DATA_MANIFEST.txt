@@ -5,8 +5,9 @@ Nama file menggunakan lowercase-kebab-case dan tidak memasukkan tahun sumber.
 
 Kelompok data:
 - Administrasi:
-  - batas-administrasi.geojson — 679 feature
-  - batas-kecamatan.geojson — 15 feature (14 kecamatan + 1 Danau Tempe)
+    - batas-kabupaten.geojson — 1 feature (outline dasar, BIG edisi Juni 2026)
+    - batas-kecamatan.geojson — 14 feature
+    - batas-desa-kelurahan.geojson — 190 feature
 - Pemerintahan:
   - organisasi-perangkat-daerah.geojson — 27 feature
 - Pendidikan:
@@ -62,7 +63,7 @@ Basemap OpenStreetMap merupakan peta dasar dan bukan bagian dari dataset GeoJSON
 
 Validasi seluruh dataset non-pendidikan
 - Tanggal validasi: 2026-10-03 06:55 WITA
-- 30/30 dataset non-pendidikan lulus pemeriksaan struktur FeatureCollection dan geometry validity.
+- 31/31 dataset non-pendidikan lulus pemeriksaan struktur FeatureCollection dan geometry validity.
 - Tidak ada geometry invalid atau empty pada dataset non-pendidikan.
 - Anomali di luar mask administrasi lokal tidak otomatis dianggap salah pada jaringan, perairan, batas, dan polygon tematik; fitur dipertahankan kecuali ada bukti koreksi.
 - Koreksi aman: normalisasi nama wilayah/OPD, penandaan dua record jaringan jalan beratribut sumber tidak lengkap, dan penandaan 1 Puskesmas tanpa koordinat.
@@ -70,3 +71,4 @@ Validasi seluruh dataset non-pendidikan
 
 
 Batas Desa/Kelurahan: 190 feature, sumber Ina-Geoportal BIG edisi Juni 2026.
+Batas Kabupaten: 1 feature Kabupaten Wajo, diambil langsung dari layanan BIG edisi Juni 2026 dan ditampilkan sebagai garis dasar tanpa fill.

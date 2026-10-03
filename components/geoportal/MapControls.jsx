@@ -40,7 +40,7 @@ export default function MapControls({
 
       {!sidebarOpen && (
         <div className="pointer-events-auto absolute left-3 top-3">
-          <IconButton label="Tampilkan katalog layer" tone="blue" placement="right" onClick={onOpenSidebar}>
+          <IconButton label="Tampilkan data peta" tone="blue" placement="right" onClick={onOpenSidebar}>
             <IconLayersIntersect size={18} stroke={1.8} />
           </IconButton>
         </div>

@@ -6,7 +6,7 @@ Aplikasi web untuk melihat dan menjelajahi data geospasial Kabupaten Wajo secara
 
 - Basemap OpenStreetMap tanpa API key.
 - Katalog layer dengan pencarian dan filter kelompok.
-- Batas Administrasi dan Batas Kecamatan aktif secara default.
+- Batas Kabupaten Wajo dan Batas Kecamatan aktif secara default.
 - Label nama kecamatan ditampilkan pada peta.
 - Layer polygon, garis, dan titik dengan simbologi yang konsisten.
 - Ikon Tabler untuk layer titik, termasuk OPD dan Puskesmas.
@@ -86,7 +86,9 @@ Tahun: 2020
 File GeoJSON menggunakan konvensi `lowercase-kebab-case`, misalnya:
 
 ```text
-batas-administrasi.geojson
+batas-kabupaten.geojson
+batas-desa-kelurahan.geojson
+(batas administrasi lama tidak lagi disertakan pada katalog)
 batas-kecamatan.geojson
 organisasi-perangkat-daerah.geojson
 puskesmas.geojson
@@ -155,6 +157,25 @@ Pastikan seluruh file di `public/geo-data/` dan `public/brand/` ikut dipublikasi
 ## Catatan data
 
 Portal membaca GeoJSON statis yang sudah disiapkan di project. Tidak ada proses perubahan sumber data saat runtime.
+### Administrasi Wajo
+
+Nama dan kode wilayah disimpan dengan dua referensi agar tidak terjadi pencampuran identitas:
+
+- `kode_kecamatan_kemendagri` dan `kode_desa` / `kode_kemendagri`: kode wilayah administrasi dari BIG/Kemendagri.
+- `kode_kecamatan_bps` dan `kode_desa_bps`: kode statistik BPS.
+- `nama_*_kemendagri`: nama dari sumber BIG/Kemendagri.
+- `nama_*_bps`: nama yang mengikuti nomenklatur BPS dan digunakan untuk tampilan pengguna.
+
+Untuk Kabupaten Wajo saat ini terdapat **14 kecamatan dan 190 desa/kelurahan**. Perbedaan ejaan antara BIG/Kemendagri dan BPS tidak dipaksakan menjadi satu kode; keduanya disimpan sebagai pasangan referensi yang bisa diaudit.
+
+Setelah memperbarui data administrasi, jalankan `npm run validate:admin` untuk memastikan seluruh kode Kemendagri dan BPS unik serta seluruh 14 kecamatan dan 190 desa/kelurahan terpetakan.
+
 ### Batas Kabupaten Wajo
 
-Layer **Batas Kabupaten Wajo** menggunakan referensi Badan Informasi Geospasial (BIG), edisi Juni 2026. Paket ini menyediakan geometri awal hasil penggabungan 14 batas kecamatan BIG 2026 agar peta dapat langsung digunakan. Untuk mengambil feature kabupaten secara langsung dari layanan `BATAS_KABKOTA_AR_2026`, jalankan `npm run sync:admin:kab`.
+Layer **Batas Kabupaten Wajo** menggunakan referensi Badan Informasi Geospasial (BIG), edisi Juni 2026. Paket ini menggunakan feature Kabupaten Wajo langsung dari layanan BIG edisi Juni 2026. Batas kabupaten ditampilkan sebagai garis dasar tanpa fill agar tidak menutupi layer lain. Untuk memperbarui feature kabupaten dari BIG, jalankan `npm run sync:admin:kab`.
+
+### Sinkronisasi batas BIG
+
+`npm run sync:admin:desa` memperbarui batas kecamatan dan desa/kelurahan dari BIG. Script menggunakan koneksi IPv4 terlebih dahulu, retry untuk gangguan jaringan seperti `ECONNRESET`, `EAI_AGAIN`, timeout, dan kegagalan socket, lalu memeriksa hasil terhadap master Kemendagri + BPS. **Identitas/uniqueness feature selalu berdasarkan kode administrasi (`kode_kecamatan` / `kode_desa`), bukan nama.** Nama hanya digunakan untuk mencocokkan nomenklatur BPS setelah kecamatan/lokasi ditentukan oleh kode BIG. Karena itu desa dengan nama sama di kecamatan berbeda tetap tersimpan sebagai feature yang berbeda. Saat `--apply`, script juga mencegah hasil BIG yang lebih sedikit menimpa data lokal; pakai `--allow-shrink` hanya bila pengurangan kode memang disengaja.
+
+Jika layanan BIG sedang tidak dapat dijangkau, script otomatis memakai GeoJSON lokal terakhir yang sudah ada sebagai fallback dan tetap menjalankan validasi sebelum menulis hasil. Gunakan `--remote-only` atau `BIG_ALLOW_LOCAL_FALLBACK=0` bila proses harus gagal ketika BIG tidak tersedia. Timeout dan jumlah retry dapat diatur melalui `BIG_TIMEOUT_MS` dan `BIG_RETRIES`.

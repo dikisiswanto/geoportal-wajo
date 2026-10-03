@@ -60,9 +60,9 @@ export default function AboutPage() {
                 Peta Wajo, untuk memahami wilayah dari satu tempat.
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                {SITE_NAME} adalah portal geospasial Kabupaten Wajo yang membantu masyarakat dan
-                perangkat pemerintah menjelajahi wilayah melalui peta, dataset, dan informasi
-                geografis yang disajikan dalam satu antarmuka.
+                {SITE_NAME} adalah portal Kabupaten Wajo yang membantu masyarakat dan
+                perangkat pemerintah menjelajahi wilayah, fasilitas, jaringan, dan potensi daerah
+                melalui peta interaktif dalam satu tempat.
               </p>
             </header>
 
@@ -82,19 +82,19 @@ export default function AboutPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">Mencari data</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Temukan dataset berdasarkan kelompok, wilayah, atau kata kunci lalu buka konteksnya di peta.
+                        Temukan data berdasarkan kelompok, wilayah, atau kata kunci lalu buka lokasinya di peta.
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Memahami konteks</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Memahami informasi</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Setiap dataset dilengkapi informasi sumber, cakupan, geometri, tahun data, dan ringkasan statistik bila tersedia.
+                        Setiap data dilengkapi keterangan sumber, wilayah, tahun data, dan ringkasan statistik bila tersedia.
                       </p>
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">Membagikan temuan</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Posisi peta, layer, dan konteks tertentu dapat dibagikan melalui tautan yang dapat dibuka kembali.
+                        Tampilan peta dan lokasi tertentu dapat dibagikan melalui tautan yang dapat dibuka kembali.
                       </p>
                     </div>
                   </div>
@@ -111,13 +111,12 @@ export default function AboutPage() {
                       Pendidikan Dasar dan Menengah.
                     </p>
                     <p>
-                      Dataset sektoral lainnya dihimpun dari sumber data terbuka dan layanan ArcGIS.
-                      Sumber dan instansi asal dicantumkan pada halaman dataset agar pengguna dapat
-                      memahami dari mana setiap data berasal.
+                      Data lainnya dihimpun dari sumber terbuka dan layanan ArcGIS.
+                      Sumber dan penyedia data dicantumkan agar pengguna dapat mengetahui asal informasi yang ditampilkan.
                     </p>
                     <p>
                       Portal ini menyajikan data untuk membantu eksplorasi dan pemahaman wilayah.
-                      Tahun, cakupan, dan keterangan pada masing-masing dataset perlu diperhatikan
+                      Tahun, wilayah, dan keterangan pada masing-masing data perlu diperhatikan
                       ketika data digunakan untuk analisis atau kebutuhan resmi.
                     </p>
                   </div>

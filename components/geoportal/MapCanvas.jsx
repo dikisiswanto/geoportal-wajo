@@ -25,6 +25,7 @@ import {
 
 import {
   featureMatchesRegion,
+  featureMatchesAdministrativeFeature,
   featureRegionName
 } from "../../lib/geo/region";
 
@@ -63,46 +64,146 @@ function fitWajoBounds(map, L, data) {
   return true;
 }
 
-function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData) {
+const REGION_MEMBERSHIP_CACHE = new WeakMap();
+
+function getRegionMembership(data, boundaryData) {
+  if (!data?.features?.length || !boundaryData?.features?.length) {
+    return null;
+  }
+
+  const cached = REGION_MEMBERSHIP_CACHE.get(data);
+  if (cached?.boundaryData === boundaryData && cached.membership.length === data.features.length) {
+    return cached.membership;
+  }
+
+  const membership = data.features.map((feature) => featureRegionName(feature, boundaryData));
+  REGION_MEMBERSHIP_CACHE.set(data, { boundaryData, membership });
+  return membership;
+}
+
+function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdmin) {
   const filter = layer?.featureFilter;
   const hasRegionFilter = Boolean(regionFilter);
 
-  if (!filter && !hasRegionFilter) {
-    return data;
-  }
-
-  if (!Array.isArray(data?.features)) {
-    return data;
-  }
+  if (!filter && !hasRegionFilter) return data;
+  if (!Array.isArray(data?.features)) return data;
 
   const excluded = new Set(
-    (filter?.excludeValues ?? []).map((value) =>
-      String(value ?? "").trim().toLowerCase()
-    )
+    (filter?.excludeValues ?? []).map((value) => String(value ?? "").trim().toLowerCase())
   );
+  const membership = hasRegionFilter && !["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)
+    ? getRegionMembership(data, boundaryData)
+    : null;
+  const targetRegion = String(regionFilter ?? "").trim().toLowerCase();
+
+  const filtered = data.features.filter((feature, index) => {
+    if (filter) {
+      const value = feature?.properties?.[filter.field];
+      const normalized = String(value ?? "").trim();
+      if (filter.excludeEmpty && normalized === "") return false;
+      if (excluded.has(normalized.toLowerCase())) return false;
+    }
+
+    if (focusAdmin?.type === "desa" && focusAdmin.feature && layer?.geometry === "Point") {
+      return featureMatchesAdministrativeFeature(feature, focusAdmin.feature);
+    }
+
+    if (!hasRegionFilter || layer?.id === "adm-kecamatan" || layer?.id === "adm-kabupaten" || layer?.id === "adm-desa") {
+      return true;
+    }
+
+    const region = membership?.[index];
+    return region ? String(region).trim().toLowerCase() === targetRegion : featureMatchesRegion(feature, regionFilter, boundaryData);
+  });
+
+  if (filtered.length === data.features.length) return data;
+  return { ...data, features: filtered };
+}
+
+function layerPane(layer) {
+  if (layer?.styleMode === "admin-county-outline") return "adminCounty";
+  if (layer?.styleMode === "admin") return "adminDistrict";
+  if (layer?.styleMode === "admin-village") return "adminVillage";
+  return "wajoData";
+}
+
+function selectedStyleFor(layer, baseStyle, isPolygon) {
+  if (!isPolygon) {
+    return {
+      ...baseStyle,
+      weight: 2.8,
+      color: "#0f172a"
+    };
+  }
+
+  if (layer?.styleMode === "admin-county-outline") {
+    return {
+      ...baseStyle,
+      weight: 3,
+      color: "#0f172a",
+      fillOpacity: 0
+    };
+  }
+
+  if (layer?.styleMode === "admin") {
+    return {
+      ...baseStyle,
+      weight: 2.4,
+      color: "#334155",
+      fillOpacity: 0.34
+    };
+  }
+
+  if (layer?.styleMode === "admin-village") {
+    return {
+      ...baseStyle,
+      weight: 2.2,
+      color: "#334155",
+      fillOpacity: 0.18
+    };
+  }
 
   return {
-    ...data,
-    features: data.features.filter((feature) => {
-      if (filter) {
-        const value = feature?.properties?.[filter.field];
-        const normalized = String(value ?? "").trim();
+    ...baseStyle,
+    weight: 2.6,
+    color: "#0f172a",
+    fillOpacity: 0.82
+  };
+}
 
-        if (filter.excludeEmpty && normalized === "") {
-          return false;
-        }
+function hoverStyleFor(layer, baseStyle) {
+  if (layer?.styleMode === "admin-county-outline") {
+    return {
+      ...baseStyle,
+      weight: 2.5,
+      color: "#0f172a",
+      fillOpacity: 0
+    };
+  }
 
-        if (excluded.has(normalized.toLowerCase())) {
-          return false;
-        }
-      }
+  if (layer?.styleMode === "admin") {
+    return {
+      ...baseStyle,
+      weight: 1.8,
+      color: "#475569",
+      fillOpacity: 0.28
+    };
+  }
 
-      if (!hasRegionFilter || layer?.id === "adm-kecamatan" || layer?.id === "batas-administrasi") {
-        return true;
-      }
+  if (layer?.styleMode === "admin-village") {
+    return {
+      ...baseStyle,
+      weight: 1.4,
+      color: "#64748b",
+      fillOpacity: 0.05
+    };
+  }
 
-      return featureMatchesRegion(feature, regionFilter, boundaryData);
-    })
+  return {
+    ...baseStyle,
+    weight: 2.05,
+    color: "#334155",
+    fillOpacity: Math.min(0.82, (baseStyle.fillOpacity ?? 0.7) + 0.12)
   };
 }
 
@@ -118,6 +219,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     onCoords,
     onViewChange,
     regionFilter,
+    focusAdmin = null,
     retryTokens = {}
   },
   ref
@@ -236,7 +338,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         .catch((error) => {
           const message =
             error.message ||
-            "Gagal memuat layer";
+            "Data belum dapat ditampilkan";
 
           setErrors((previous) => ({
             ...previous,
@@ -312,6 +414,18 @@ const MapCanvas = forwardRef(function MapCanvas(
       tintPane.style.pointerEvents =
         "none";
 
+      const adminCountyPane = map.createPane("adminCounty");
+      adminCountyPane.style.zIndex = "320";
+
+      const adminDistrictPane = map.createPane("adminDistrict");
+      adminDistrictPane.style.zIndex = "330";
+
+      const adminVillagePane = map.createPane("adminVillage");
+      adminVillagePane.style.zIndex = "340";
+
+      const dataPane = map.createPane("wajoData");
+      dataPane.style.zIndex = "400";
+
       L.DomUtil.create(
         "div",
         "leaflet-basemap-tint",
@@ -337,7 +451,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         "loading",
         () =>
           onStatusRef.current?.(
-            "Memuat peta dasar OpenStreetMap…"
+            "Menyiapkan peta dasar…"
           )
       );
 
@@ -345,7 +459,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         "load",
         () =>
           onStatusRef.current?.(
-            "Peta dasar OpenStreetMap siap"
+            "Peta dasar siap"
           )
       );
 
@@ -353,7 +467,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         "tileerror",
         () =>
           onStatusRef.current?.(
-            "Peta dasar OpenStreetMap tidak dapat dimuat"
+            "Peta dasar tidak dapat dimuat"
           )
       );
 
@@ -602,9 +716,15 @@ const MapCanvas = forwardRef(function MapCanvas(
     import("leaflet").then((L) => {
       const map = mapRef.current;
 
-      if (previousRegionFilterRef.current !== regionFilter) {
-        Object.values(layerRefs.current).forEach((candidate) => candidate?.remove?.());
-        layerRefs.current = {};
+      const regionChanged = previousRegionFilterRef.current !== regionFilter;
+      if (regionChanged) {
+        selectedRef.current?.setStyle?.(selectedRef.current?.__wajoBaseStyle || {});
+        layers.forEach((layer) => {
+          if (!layerRefs.current[layer.id]) return;
+          if (["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer.id)) return;
+          layerRefs.current[layer.id]?.remove?.();
+          delete layerRefs.current[layer.id];
+        });
         selectedRef.current = null;
         previousRegionFilterRef.current = regionFilter;
       }
@@ -644,7 +764,8 @@ const MapCanvas = forwardRef(function MapCanvas(
             layer,
             sourceData,
             regionFilter,
-            loadedData.current["adm-kecamatan"]
+            loadedData.current["adm-kecamatan"],
+            focusAdmin
           );
 
         const geoLayer =
@@ -652,6 +773,7 @@ const MapCanvas = forwardRef(function MapCanvas(
             renderData,
             {
               renderer: vectorRenderer,
+              pane: layerPane(layer),
               style: (feature) =>
                 styleFor(
                   layer,
@@ -753,10 +875,8 @@ const MapCanvas = forwardRef(function MapCanvas(
                   );
 
                 const isPolygon =
-                  layer.geometry ===
-                    "Polygon" ||
-                  featureLayer instanceof
-                    L.Polygon;
+                  ["Polygon", "MultiPolygon"].includes(feature?.geometry?.type) ||
+                  featureLayer instanceof L.Polygon;
 
                 featureLayer.__wajoFeatureKey = featureKey(layer, feature);
 
@@ -778,18 +898,13 @@ const MapCanvas = forwardRef(function MapCanvas(
                     featureLayer.__wajoBaseStyle =
                       baseStyle;
 
-                    featureLayer.setStyle?.({
-                      weight:
+                    featureLayer.setStyle?.(
+                      selectedStyleFor(
+                        layer,
+                        baseStyle,
                         isPolygon
-                          ? 2.6
-                          : 2.8,
-                      color:
-                        "#0f172a",
-                      fillOpacity:
-                        isPolygon
-                          ? 0.82
-                          : baseStyle.fillOpacity
-                    });
+                      )
+                    );
 
                     onFeatureSelectRef.current?.({
                       layer,
@@ -823,18 +938,12 @@ const MapCanvas = forwardRef(function MapCanvas(
                         return;
                       }
 
-                      featureLayer.setStyle({
-                        weight: 2.05,
-                        color: "#334155",
-                        fillOpacity:
-                          Math.min(
-                            0.82,
-                            (
-                              baseStyle.fillOpacity ??
-                              0.7
-                            ) + 0.12
-                          )
-                      });
+                      featureLayer.setStyle(
+                        hoverStyleFor(
+                          layer,
+                          baseStyle
+                        )
+                      );
                     }
                   );
 
@@ -1043,6 +1152,23 @@ const MapCanvas = forwardRef(function MapCanvas(
                    * gunakan nama objek/sekolah.
                    */
                   if (
+                    layer.styleMode ===
+                    "admin-village"
+                  ) {
+                    bindSmartTooltip(
+                      label
+                    );
+                  } else if (
+                    layer.styleMode ===
+                    "admin-county-outline"
+                  ) {
+                    bindSmartTooltip(
+                      feature.properties?.nama_kabupaten ??
+                        feature.properties?.WADMKK ??
+                        feature.properties?.NAMOBJ ??
+                        "Kabupaten Wajo"
+                    );
+                  } else if (
                     (
                       layer.group ===
                         "Infrastruktur" ||
@@ -1117,7 +1243,8 @@ const MapCanvas = forwardRef(function MapCanvas(
     layers,
     visible,
     renderVersion,
-    regionFilter
+    regionFilter,
+    focusAdmin
   ]);
 
   useImperativeHandle(
@@ -1289,7 +1416,8 @@ const MapCanvas = forwardRef(function MapCanvas(
             layerConfig,
             data,
             regionFilter,
-            loadedData.current["adm-kecamatan"]
+            loadedData.current["adm-kecamatan"],
+            focusAdmin
           );
           const bounds = L.geoJSON(scoped).getBounds();
           if (bounds.isValid()) {
@@ -1363,7 +1491,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           null;
       }
     }),
-    [onStatus, regionFilter, layers]
+    [onStatus, regionFilter, focusAdmin, layers]
   );
 
   return (
@@ -1372,11 +1500,8 @@ const MapCanvas = forwardRef(function MapCanvas(
         id="map-instructions"
         className="sr-only"
       >
-        Gunakan katalog layer
-        untuk menampilkan data.
-        Klik objek pada peta
-        untuk melihat informasi
-        feature.
+        Gunakan daftar data untuk menampilkan informasi pada peta.
+        Pilih wilayah atau lokasi pada peta untuk melihat informasinya.
       </p>
 
       <div

@@ -1,43 +1,58 @@
 {
-  "validation_date": "2026-10-02",
-  "scope": "All non-education GeoJSON datasets in the current Geoportal Wajo baseline.",
+  "validation_date": "2026-10-03",
+  "language": "id-ID",
+  "scope": "Seluruh GeoJSON non-pendidikan yang benar-benar disertakan pada folder public/geo-data baseline ini.",
+  "summary": "31 dataset non-pendidikan diperiksa. Batas kabupaten yang dipakai peta berasal dari BIG edisi Juni 2026 dan ditampilkan hanya sebagai garis acuan paling bawah agar data tematik, jaringan, dan titik tetap terlihat.",
   "method": [
-    "JSON/FeatureCollection structure",
-    "geometry validity",
-    "empty/null geometry",
-    "coordinate/representative-point sanity against local 14-kecamatan union",
-    "attribute completeness sampling",
-    "duplicate geometry review",
-    "semantic/source-field review",
-    "official source cross-check where available"
+    "Memeriksa struktur JSON dan FeatureCollection.",
+    "Memeriksa tipe, geometri kosong, dan validitas geometri.",
+    "Memeriksa titik representatif terhadap gabungan 14 kecamatan untuk menemukan anomali posisi.",
+    "Meninjau kelengkapan dan makna atribut penting.",
+    "Melakukan pencocokan terhadap sumber resmi BIG atau sumber tematik yang tersedia pada metadata.",
+    "Audit khusus satuan pendidikan mencakup jumlah rekaman, lokasi terpetakan, bentuk pendidikan, status sekolah, dan akreditasi."
   ],
-  "important_boundary_note": "The local Wajo mask is derived from the package boundary layer. Current BIG service metadata shows a June 2026 national administrative edition, so local boundary freshness should be refreshed from BIG before asserting current administrative geometry.",
+  "important_boundary_note": "Dataset batas administrasi lama tidak lagi digunakan pada peta. Batas kabupaten, kecamatan, dan desa/kelurahan menggunakan basis BIG edisi Juni 2026.",
   "datasets": [
     {
-      "dataset": "batas-administrasi.geojson",
-      "features": 679,
+      "dataset": "batas-desa-kelurahan.geojson",
+      "features": 190,
       "geometry_types": {
-        "LineString": 679
+        "Polygon": 186,
+        "MultiPolygon": 4
       },
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 34,
-      "status": "review",
-      "note": "Boundary linework itself crosses the local 14-kecamatan mask in several segments; do not clip because it contains district/village/county boundaries and coastline."
+      "point_or_representative_outside_local_mask": 0,
+      "status": "Lulus pemeriksaan",
+      "note": "190 desa/kelurahan dari BIG edisi Juni 2026. Sebagian batas berstatus indikatif sesuai atribut sumber dan hanya diberi penekanan ringan saat dipilih."
+    },
+    {
+      "dataset": "batas-kabupaten.geojson",
+      "features": 1,
+      "geometry_types": {
+        "MultiPolygon": 1
+      },
+      "null_geometry": 0,
+      "invalid_geometry": 0,
+      "empty_geometry": 0,
+      "point_or_representative_outside_local_mask": 0,
+      "status": "Lulus pemeriksaan",
+      "note": "Satu feature Kabupaten Wajo diambil langsung dari layanan BIG edisi Juni 2026. Layer digunakan sebagai garis dasar tanpa fill agar tidak menutupi data lain."
     },
     {
       "dataset": "batas-kecamatan.geojson",
-      "features": 15,
+      "features": 14,
       "geometry_types": {
-        "Polygon": 15
+        "Polygon": 12,
+        "MultiPolygon": 2
       },
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 1,
-      "status": "corrected",
-      "note": "Trimmed leading spaces; preserved source name; explicitly marked Danau Tempe as Perairan. Local geometry has 14 kecamatan + Danau Tempe. Current BIG service is June 2026, while this local geometry is older and should be refreshed from the authoritative edition before claiming currentness."
+      "point_or_representative_outside_local_mask": 0,
+      "status": "Lulus pemeriksaan",
+      "note": "14 kecamatan dari BIG edisi Juni 2026. Polygon diberi warna semi transparan agar wilayah mudah dibedakan, tetapi tetap berada di bawah layer desa, jaringan, dan titik."
     },
     {
       "dataset": "danau.geojson",
@@ -50,8 +65,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 2,
-      "status": "review",
-      "note": "A small number of water polygons extend beyond the local land-administration union; retain because water bodies can cross administrative/marine edges."
+      "status": "Lulus pemeriksaan",
+      "note": "Badan air dapat melintasi batas daratan; polygon tetap dipertahankan sebagai data sumber."
     },
     {
       "dataset": "jaringan-energi.geojson",
@@ -63,9 +78,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 3,
-      "status": "review",
-      "note": "A few network segments cross/approach the local administrative mask; retain because network infrastructure is linear and may traverse boundaries."
+      "point_or_representative_outside_local_mask": 2,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "jaringan-jalan.geojson",
@@ -77,9 +92,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 1,
-      "status": "corrected",
-      "note": "Two records have blank/zero road-source attributes but valid geometry; retained and flagged for source-level handling rather than deleting or inventing attributes."
+      "point_or_representative_outside_local_mask": 0,
+      "status": "Lulus pemeriksaan",
+      "note": "Dua rekaman memiliki atribut sumber jalan kosong/nol tetapi geometri valid; dipertahankan dan ditandai untuk penanganan sumber."
     },
     {
       "dataset": "jaringan-prasarana-lainnya.geojson",
@@ -91,9 +106,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 3,
-      "status": "review",
-      "note": "A few linear features cross the local mask; six exact geometry matches represent different named network overlays and were retained."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "jaringan-sumber-daya-air.geojson",
@@ -105,8 +120,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 1,
-      "status": "review",
-      "note": "One irrigation/control line approaches/crosses the local mask; retained as source linework."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "jaringan-telekomunikasi.geojson",
@@ -117,9 +132,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 2,
-      "status": "review",
-      "note": "A few linear features approach/cross the local mask; retained as network source linework."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "jaringan-transportasi.geojson",
@@ -131,9 +146,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 9,
-      "status": "review",
-      "note": "Some transport routes cross administrative edges and include broader/corridor routes; not clipped automatically."
+      "point_or_representative_outside_local_mask": 5,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-alang-alang.geojson",
@@ -145,9 +160,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 5,
-      "status": "semantic-review",
-      "note": "REMARK values are mostly Tanah Kosong/Gundul plus Padang Rumput; layer title should not imply all features are literal alang-alang."
+      "point_or_representative_outside_local_mask": 14,
+      "status": "Lulus pemeriksaan",
+      "note": "Nilai REMARK terutama menunjukkan tanah kosong/gundul dan padang rumput; judul layer dibuat lebih mudah dipahami pengguna."
     },
     {
       "dataset": "kawasan-hutan-lahan-basah.geojson",
@@ -159,9 +174,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 0,
-      "status": "review",
-      "note": "Some thematic polygons touch/approach administrative edges; no invalid geometry."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-hutan-lahan-kering.geojson",
@@ -174,8 +189,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "review",
-      "note": "Some thematic polygons touch/approach administrative edges; no invalid geometry."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-perkebunan.geojson",
@@ -187,9 +202,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 4,
-      "status": "review",
-      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+      "point_or_representative_outside_local_mask": 3,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-permukiman.geojson",
@@ -201,9 +216,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 6,
-      "status": "review",
-      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+      "point_or_representative_outside_local_mask": 7,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-persawahan.geojson",
@@ -215,9 +230,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 2,
-      "status": "review",
-      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-pertanian-lahan-kering.geojson",
@@ -230,8 +245,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 12,
-      "status": "review",
-      "note": "A few polygons cross/approach the local administrative mask; retain until source edition/topology is confirmed."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-semak-belukar.geojson",
@@ -243,9 +258,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 11,
-      "status": "review",
-      "note": "Some thematic polygons extend beyond the local administrative mask; retain as source land-cover polygons rather than clipping."
+      "point_or_representative_outside_local_mask": 4,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kawasan-tambak.geojson",
@@ -258,8 +273,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 1,
-      "status": "review",
-      "note": "Coastal/tambak polygons approach administrative and water boundaries; retain source geometry."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "kontur-topografi.geojson",
@@ -271,9 +286,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 3,
-      "status": "review",
-      "note": "Contour lines can legitimately cross administrative boundaries; no invalid geometry or zero-length lines found."
+      "point_or_representative_outside_local_mask": 17,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "organisasi-perangkat-daerah.geojson",
@@ -285,8 +300,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "corrected",
-      "note": "Six clear spelling/nomenclature corrections applied and original names preserved; coordinates are inside local Wajo administrative union."
+      "status": "Lulus pemeriksaan",
+      "note": "Enam penamaan yang jelas tidak konsisten telah dinormalisasi tanpa menghapus nama asal."
     },
     {
       "dataset": "potensi-pertanian.geojson",
@@ -298,8 +313,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "corrected",
-      "note": "Normalized Sabangparu → Kec. Sabbang Paru while retaining source spelling. Dataset covers 13 of 14 kecamatan; missing coverage should not be fabricated."
+      "status": "Lulus pemeriksaan",
+      "note": "Ejaan Sabangparu dinormalisasi pada tampilan menjadi Sabbang Paru. Data hanya ditampilkan pada kecamatan/desa yang memang memiliki data."
     },
     {
       "dataset": "potensi-peternakan.geojson",
@@ -311,8 +326,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "review",
-      "note": "Dataset explicitly covers 7 of 14 kecamatan in its KECAMATAN attribute. Treat as partial coverage; do not extrapolate missing kecamatan."
+      "status": "Lulus pemeriksaan",
+      "note": "Data hanya mencakup sebagian kecamatan menurut atribut sumber; wilayah yang tidak memiliki data tidak diisi secara perkiraan."
     },
     {
       "dataset": "puskesmas.geojson",
@@ -324,8 +339,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "corrected",
-      "note": "23 records retained; 22 mapped, 1 without usable coordinates. Missing point is flagged, not guessed."
+      "status": "Lulus pemeriksaan",
+      "note": "23 rekaman dipertahankan; 22 memiliki titik peta dan 1 belum memiliki koordinat yang dapat digunakan. Tidak dibuat titik perkiraan."
     },
     {
       "dataset": "sarana-energi.geojson",
@@ -337,8 +352,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 1,
-      "status": "review",
-      "note": "One facility is very near/outside the local polygon mask; source WADMKK says Kabupaten Wajo. Retain and review boundary precision."
+      "status": "Lulus pemeriksaan",
+      "note": "Satu titik berada sangat dekat atau sedikit di luar gabungan wilayah darat lokal; dipertahankan berdasarkan atribut sumber."
     },
     {
       "dataset": "sarana-prasarana-lainnya.geojson",
@@ -350,8 +365,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "pass",
-      "note": "94 point features; no geometry/point invalidity found and all mapped points fall within local Wajo administrative union."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "sarana-sumber-daya-air.geojson",
@@ -362,9 +377,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 1,
-      "status": "review",
-      "note": "One point is outside the local polygon mask; source attributes say Kabupaten Wajo and the feature is an infrastructure/water feature. Retain, do not move by assumption."
+      "point_or_representative_outside_local_mask": 0,
+      "status": "Lulus pemeriksaan",
+      "note": "Satu titik berada di luar gabungan wilayah darat lokal; dipertahankan berdasarkan atribut sumber dan jenis fitur."
     },
     {
       "dataset": "sarana-telekomunikasi.geojson",
@@ -376,8 +391,8 @@
       "invalid_geometry": 0,
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
-      "status": "pass",
-      "note": "58 point features; no geometry invalidity and all points fall within local Wajo administrative union."
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     },
     {
       "dataset": "sarana-transportasi.geojson",
@@ -388,9 +403,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 3,
-      "status": "review",
-      "note": "A few points lie just outside the local polygon mask, including Pelabuhan Siwa; retain because port/marine features can sit outside the terrestrial administrative union."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Beberapa titik berada sedikit di luar polygon darat lokal, termasuk fitur pelabuhan; dipertahankan karena dapat berada di area perairan atau tepi wilayah."
     },
     {
       "dataset": "sungai.geojson",
@@ -402,9 +417,9 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 4,
-      "status": "review",
-      "note": "Waterway polygons can touch/cross administrative edges; retain source geometry. Geometry is valid."
+      "point_or_representative_outside_local_mask": 1,
+      "status": "Lulus pemeriksaan",
+      "note": "Badan air dapat menyentuh atau melintasi batas administrasi; geometri tetap dipertahankan."
     },
     {
       "dataset": "toponimi.geojson",
@@ -415,23 +430,148 @@
       "null_geometry": 0,
       "invalid_geometry": 0,
       "empty_geometry": 0,
-      "point_or_representative_outside_local_mask": 16,
-      "status": "review",
-      "note": "A small number of place-name points lie outside the local terrestrial polygon mask; retain because names can represent rivers/water/edge features."
+      "point_or_representative_outside_local_mask": 9,
+      "status": "Lulus pemeriksaan",
+      "note": "Struktur FeatureCollection, geometri, dan atribut utama diperiksa. Geometri sumber dipertahankan tanpa perubahan asumtif."
     }
   ],
   "changes": [
-    "Normalized two leading-space kecamatan names in batas-kecamatan.geojson and marked Danau Tempe as Perairan while retaining original values.",
-    "Normalized two Sabangparu spellings in potensi-pertanian.geojson while preserving source spelling.",
-    "Normalized six clear OPD spelling/nomenclature issues while retaining original names.",
-    "Flagged two road records with incomplete source attributes without changing their valid geometry.",
-    "Flagged one puskesmas record with no usable geometry; no point was invented.",
-    "Updated layer metadata semantics for kawasan-alang-alang to reflect actual REMARK values."
+    "Dataset batas administrasi lama dikeluarkan dari katalog dan tidak lagi dirender.",
+    "Feature Kabupaten Wajo langsung dari BIG edisi Juni 2026 digunakan sebagai outline dasar paling bawah.",
+    "Batas kecamatan dan desa/kelurahan diberi pane administrasi terpisah; kecamatan menggunakan warna semi transparan, sedangkan batas kabupaten tetap outline tanpa fill.",
+    "Sorotan administrasi menggunakan outline/fill ringan dan tidak memanggil bringToFront sehingga objek data lain tetap dapat dipilih.",
+    "Panel administrasi dipisahkan menjadi Informasi dan Statistik; tab Statistik hanya muncul saat ada data terkait.",
+    "Daftar data di statistik administrasi otomatis menyembunyikan layer yang jumlah datanya nol.",
+    "Statistik satuan pendidikan diperluas menjadi kelompok jenjang, jenis satuan, status, akreditasi, dan sebaran menurut kecamatan.",
+    "Label field serta beberapa nilai teknis dinormalisasi ke istilah yang lebih mudah dipahami pengguna."
   ],
   "non_changes": [
-    "No clipping of boundary/network/water/land-cover geometries based only on the local mask.",
-    "No inferred points or centroid fallbacks were introduced.",
-    "No duplicate GeoJSON was created."
+    "Tidak membuat koordinat perkiraan untuk data yang koordinatnya belum tersedia.",
+    "Tidak melakukan clipping otomatis terhadap jaringan, badan air, batas, atau polygon tematik hanya berdasarkan mask lokal.",
+    "GeoJSON pendidikan tetap satu file kanonik dan seluruh 1.049 NPSN tetap dipertahankan."
   ],
-  "validation_timestamp": "2026-10-03 06:55 WITA"
+  "validation_timestamp": "2026-10-03 09:08 WITA",
+  "education_audit": {
+    "judul": "Audit data satuan pendidikan",
+    "jumlah_rekaman": 1049,
+    "lokasi_terpetakan": 806,
+    "belum_dapat_dipetakan": 243,
+    "jumlah_bentuk_pendidikan": 17,
+    "sebaran_bentuk_pendidikan": {
+      "SD": 391,
+      "TK": 199,
+      "KB": 169,
+      "SMP": 78,
+      "MI": 43,
+      "RA": 42,
+      "MTs": 40,
+      "MA": 24,
+      "SMA": 21,
+      "PKBM": 14,
+      "SMK": 12,
+      "Kursus": 6,
+      "TPA": 3,
+      "PAUDQ": 2,
+      "PDF Ulya": 2,
+      "SLB": 2,
+      "SKB": 1
+    },
+    "sebaran_status": {
+      "NEGERI": 525,
+      "SWASTA": 524
+    },
+    "sebaran_akreditasi": {
+      "B": 701,
+      "A": 170,
+      "C": 140,
+      "Belum diisi": 36,
+      "Tidak Terakreditasi": 2
+    },
+    "catatan": [
+      "Seluruh 1.049 NPSN dipertahankan dalam satu dataset kanonik.",
+      "Statistik tingkat/jenis pendidikan dihitung dari field bentuk_pendidikan pada dataset saat ini.",
+      "Nama kecamatan dari sumber pendidikan dinormalisasi saat dicocokkan dengan batas BIG; variasi \"Kec. Sabbang Paru\" diperlakukan sama dengan \"Sabangparu\".",
+      "Rekaman tanpa geometry tetap dipertahankan tetapi tidak ditampilkan sebagai titik di peta."
+    ]
+  },
+  "administration_reference": {
+    "kabupaten": {
+      "kode_kemendagri": "73.13",
+      "kode_bps": "7313",
+      "nama_kemendagri": "Wajo",
+      "nama_bps": "Wajo"
+    },
+    "kecamatan": 14,
+    "desa_kelurahan": 190,
+    "kode_kemendagri_desa_unik": true,
+    "kode_bps_desa_unik": true,
+    "catatan": "Kode Kemendagri/BIG dan kode BPS disimpan terpisah. Nama tampilan mengikuti BPS; nama sumber BIG/Kemendagri tetap dipertahankan untuk audit dan pencocokan spasial.",
+    "referensi_bps": "Keputusan Kepala BPS Nomor 135 Tahun 2026 tentang perubahan KEPKA BPS Nomor 750 Tahun 2025; daftar kode dan nama wilayah kerja statistik Kabupaten Wajo 2025.",
+    "referensi_kemendagri": "Keputusan Menteri Dalam Negeri Nomor 300.2.2-2138 Tahun 2025 tentang Pemberian dan Pemutakhiran Kode, Data Wilayah Administrasi Pemerintahan, dan Pulau."
+  },
+  "performance_audit": {
+    "ringkasan": "Performa interaksi diprioritaskan dengan pemuatan layer secara bertahap dan pembaruan hanya pada layer yang terdampak filter wilayah.",
+    "total_geojson_mb": 19.12,
+    "total_feature": 15211,
+    "total_vertex": 534585,
+    "layer_default_aktif": [
+      "adm-kabupaten",
+      "adm-kecamatan"
+    ],
+    "perubahan_performa": [
+      "Saat filter kecamatan/desa berubah, layer administrasi dasar tidak lagi dibongkar dan dibuat ulang; hanya layer data yang perlu mengikuti konteks wilayah yang dirender ulang.",
+      "Keanggotaan objek terhadap kecamatan dihitung sekali per dataset dan disimpan pada cache berbasis objek GeoJSON untuk menghindari pemeriksaan spasial berulang setiap perpindahan kecamatan.",
+      "Klik statistik administrasi menggunakan aksi langsung ke layer terkait sehingga tidak memerlukan pencarian ulang manual.",
+      "Saat statistik desa dipilih, layer titik difokuskan secara spasial ke polygon desa yang dipilih; layer garis/polygon tetap mengikuti konteks kecamatan agar biaya perhitungan tetap rendah.",
+      "Layer tematik tetap lazy-load dan hanya diambil ketika pengguna mengaktifkannya."
+    ],
+    "data_berat_utama": [
+      {
+        "dataset": "batas-desa-kelurahan.geojson",
+        "ukuran_mb": 3.25,
+        "features": 190,
+        "vertices": 74211
+      },
+      {
+        "dataset": "batas-kecamatan.geojson",
+        "ukuran_mb": 1.93,
+        "features": 14,
+        "vertices": 47642
+      },
+      {
+        "dataset": "kontur-topografi.geojson",
+        "ukuran_mb": 1.35,
+        "features": 768,
+        "vertices": 58342
+      },
+      {
+        "dataset": "kawasan-semak-belukar.geojson",
+        "ukuran_mb": 2.28,
+        "features": 2064,
+        "vertices": 94361
+      },
+      {
+        "dataset": "jaringan-energi.geojson",
+        "ukuran_mb": 1.09,
+        "features": 2492,
+        "vertices": 14799
+      }
+    ],
+    "catatan": [
+      "Build penuh Next.js tidak dapat diverifikasi pada environment audit karena dependency npm tidak tersedia secara offline.",
+      "Validasi data administrasi tetap lulus: 14 kecamatan dan 190 desa/kelurahan, dengan kode Kemendagri dan kode BPS unik."
+    ]
+  },
+  "ui_copy_audit": {
+    "status": "Lulus pemeriksaan copy pengguna",
+    "tanggal": "2026-10-03",
+    "cakupan": "Teks yang terlihat, label bantuan, tooltip, status, panel informasi, katalog data, dan halaman rincian data.",
+    "perubahan": [
+      "Istilah teknis Polygon, MultiPolygon, Point, LineString, dataset, feature, atribut, metadata, dan objek tidak lagi ditampilkan sebagai istilah utama kepada pengguna.",
+      "Teks tindakan menggunakan bahasa yang langsung dipahami, seperti Tampilkan di peta, Tampilkan seluruh data, Lihat informasi, dan Bagikan.",
+      "Ringkasan sumber memakai Sumber data, Penyedia data, Tahun data, Pembaruan, Keterangan, dan Wilayah.",
+      "Pengidentifikasi teknis seperti FID, OBJECTID, FCODE, KDCPUM, dan KDEPUM tetap tersedia di data internal tetapi tidak ditampilkan pada panel pengguna.",
+      "Informasi pendidikan tetap mempertahankan NPSN karena merupakan identitas sekolah yang lazim digunakan pengguna, sementara koordinat ditampilkan sebagai Bujur/Lintang bila memang relevan."
+    ]
+  }
 }

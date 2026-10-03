@@ -6,7 +6,7 @@ import SiteFooter from "../../components/SiteFooter";
 import CatalogDatasetList from "../../components/CatalogDatasetList";
 
 export const metadata = {
-  title: { absolute: "Katalog Data Geospasial Kabupaten Wajo | Geoportal Wajo" },
+  title: { absolute: "Data Geospasial Kabupaten Wajo | Geoportal Wajo" },
   description:
     "Katalog data geospasial Kabupaten Wajo yang memuat peta administrasi, jaringan, fasilitas publik, pendidikan, kesehatan, dan data potensi wilayah.",
   alternates: {
@@ -16,7 +16,7 @@ export const metadata = {
     type: "website",
     locale: "id_ID",
     siteName: SITE_NAME,
-    title: "Katalog Data Geospasial Kabupaten Wajo",
+    title: "Data Geospasial Kabupaten Wajo",
     description:
       "Katalog data geospasial Kabupaten Wajo yang memuat peta administrasi, jaringan, fasilitas publik, pendidikan, kesehatan, dan data potensi wilayah.",
     url: absoluteUrl("/data"),
@@ -25,13 +25,13 @@ export const metadata = {
         url: SOCIAL_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Katalog Data Geospasial Kabupaten Wajo"
+        alt: "Data Geospasial Kabupaten Wajo"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Katalog Data Geospasial Kabupaten Wajo",
+    title: "Data Geospasial Kabupaten Wajo",
     description:
       "Katalog data geospasial Kabupaten Wajo yang memuat peta administrasi, jaringan, fasilitas publik, pendidikan, kesehatan, dan data potensi wilayah.",
     images: [SOCIAL_IMAGE]
@@ -44,7 +44,7 @@ export default function DataCatalogPage() {
     "@context": "https://schema.org",
     "@type": "DataCatalog",
     "@id": `${absoluteUrl("/data")}#catalog`,
-    name: "Katalog Data Geospasial Kabupaten Wajo",
+    name: "Data Geospasial Kabupaten Wajo",
     description:
       "Katalog data geospasial yang tersedia pada Peta Interaktif Kabupaten Wajo.",
     url: absoluteUrl("/data"),
@@ -72,10 +72,10 @@ export default function DataCatalogPage() {
             {PUBLISHER_NAME}
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 lg:text-3xl">
-            Katalog Data Geospasial Kabupaten Wajo
+            Data Geospasial Kabupaten Wajo
           </h1>
           <p className="mt-4 text-sm leading-6 text-slate-600 lg:text-base lg:leading-7">
-            Jelajahi dataset geospasial Kabupaten Wajo melalui halaman ringkas yang memuat konteks data, sumber, statistik, dan tautan ke peta interaktif.
+            Jelajahi data geospasial Kabupaten Wajo melalui ringkasan sumber, statistik, wilayah, dan tautan ke peta interaktif.
           </p>
           <Link
             href="/"
@@ -85,7 +85,7 @@ export default function DataCatalogPage() {
           </Link>
         </header>
 
-        <section className="mt-10" aria-label="Daftar dataset">
+        <section className="mt-10" aria-label="Daftar data">
           <CatalogDatasetList layers={layers} groups={groups} />
         </section>
 

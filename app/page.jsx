@@ -89,8 +89,8 @@ export default function Home() {
         <h2 id="geoportal-summary">Peta dan data geospasial Kabupaten Wajo</h2>
         <p>
           {DEFAULT_DESCRIPTION} Portal ini dibuat dan dikelola oleh {PUBLISHER_NAME}. Data dasar administrasi
-          bersumber dari Ina-Geoportal BIG, data pendidikan dari Kemendikdasmen, dan dataset sektoral
-          lainnya dari sumber data terbuka dan/atau ArcGIS sesuai metadata.
+          bersumber dari Ina-Geoportal BIG, data pendidikan dari Kemendikdasmen, dan data sektoral
+          lainnya dari sumber data terbuka dan/atau ArcGIS sesuai keterangan sumber.
         </p>
       </section>
       {structuredData.map((item) => (

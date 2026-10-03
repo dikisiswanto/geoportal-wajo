@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { layers } from "../../../lib/layers";
 import { getLayerStatistics } from "../../../lib/geo/statistics";
+import { humanGeometryLabel } from "../../../lib/geo/format";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -175,12 +176,12 @@ export default async function DatasetPage({ params }) {
 
           <dl className="mt-8 grid gap-4 border-y border-slate-200 py-6 sm:grid-cols-2">
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama layer</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nama data</dt>
               <dd className="mt-1 text-sm text-slate-900">{layer.title}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Geometri</dt>
-              <dd className="mt-1 text-sm text-slate-900">{layer.geometry}</dd>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jenis data</dt>
+              <dd className="mt-1 text-sm text-slate-900">{humanGeometryLabel(layer.geometry)}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sumber data</dt>
@@ -197,11 +198,11 @@ export default async function DatasetPage({ params }) {
               <dd className="mt-1 text-sm text-slate-900">Kabupaten Wajo, Sulawesi Selatan</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jumlah objek</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jumlah data</dt>
               <dd className="mt-1 text-sm tabular-nums text-slate-900">{stats.total.toLocaleString("id-ID")}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Instansi sumber</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Penyedia data</dt>
               <dd className="mt-1 text-sm text-slate-900">{sourceMeta.publisher}</dd>
             </div>
           </dl>
@@ -215,7 +216,7 @@ export default async function DatasetPage({ params }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Ringkasan</p>
-                <h2 id="dataset-statistik" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Statistik dataset</h2>
+                <h2 id="dataset-statistik" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Ringkasan data</h2>
               </div>
               <span className="text-xs tabular-nums text-slate-500">{stats.total.toLocaleString("id-ID")} objek</span>
             </div>
@@ -237,19 +238,19 @@ export default async function DatasetPage({ params }) {
           </section>
 
           <section className="mt-9 border-t border-slate-200 pt-6" aria-labelledby="dataset-konteks">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Konteks dataset</p>
-            <h2 id="dataset-konteks" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Sumber &amp; konteks</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Tentang data</p>
+            <h2 id="dataset-konteks" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Sumber dan keterangan</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 lg:text-base lg:leading-7">{layer.sourceNote || sourceMeta.description} {layer.description || `Data ${layer.title} Kabupaten Wajo.`}</p>
           </section>
 
           {related.length > 0 && (
             <section className="mt-9 border-t border-slate-200 pt-6" aria-labelledby="dataset-terkait">
-              <h2 id="dataset-terkait" className="text-base font-semibold text-slate-900 lg:text-lg">Data terkait</h2>
+              <h2 id="dataset-terkait" className="text-base font-semibold text-slate-900 lg:text-lg">Data lain yang terkait</h2>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {related.map((item) => (
                   <Link key={item.id} href={`/data/${datasetSlug(item)}`} className="rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-300 hover:bg-slate-50">
                     <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.group} · Lihat detail dataset</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.group} · Lihat data</p>
                   </Link>
                 ))}
               </div>

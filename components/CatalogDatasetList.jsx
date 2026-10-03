@@ -5,6 +5,7 @@ import Link from "next/link";
 import { IconSearch, IconX } from "@tabler/icons-react";
 import { datasetSlug, getDatasetSeo } from "../lib/seo";
 import SourceBadge from "./geoportal/SourceBadge";
+import { humanGeometryLabel } from "../lib/geo/format";
 
 export default function CatalogDatasetList({ layers, groups }) {
   const [query, setQuery] = useState("");
@@ -23,12 +24,12 @@ export default function CatalogDatasetList({ layers, groups }) {
     <>
       <div className="mb-8 max-w-xl">
         <label className="relative block">
-          <span className="sr-only">Cari dataset</span>
+          <span className="sr-only">Cari data</span>
           <IconSearch size={17} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari dataset, wilayah, atau sumber…"
+            placeholder="Cari data, wilayah, atau sumber…"
             className="h-10 w-full rounded-md border border-slate-200 bg-white py-2 pl-9 pr-9 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
           />
           {query && (
@@ -43,7 +44,7 @@ export default function CatalogDatasetList({ layers, groups }) {
           )}
         </label>
         <p className="mt-2 text-xs text-slate-500">
-          {normalized ? `${filtered.length.toLocaleString("id-ID")} dataset ditemukan` : `${layers.length.toLocaleString("id-ID")} dataset tersedia`}
+          {normalized ? `${filtered.length.toLocaleString("id-ID")} data ditemukan` : `${layers.length.toLocaleString("id-ID")} data tersedia`}
         </p>
       </div>
 
@@ -67,7 +68,7 @@ export default function CatalogDatasetList({ layers, groups }) {
                     </h3>
                     <p className="mt-1 catalog-card-body leading-5 text-slate-500">{seo.description}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                      <span className="rounded-full bg-slate-100 px-2 py-1">{layer.geometry}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-1">{humanGeometryLabel(layer.geometry)}</span>
                       {layer.dataYear && <span>{layer.dataYear}</span>}
                       <SourceBadge sourceType={layer.sourceType} />
                     </div>
@@ -81,8 +82,8 @@ export default function CatalogDatasetList({ layers, groups }) {
 
       {!filtered.length && (
         <div className="rounded-lg border border-dashed border-slate-200 bg-white px-5 py-10 text-center">
-          <p className="text-sm font-medium text-slate-800">Dataset tidak ditemukan</p>
-          <p className="mt-1 text-xs text-slate-500">Coba nama dataset, wilayah, kelompok, atau sumber data.</p>
+          <p className="text-sm font-medium text-slate-800">Data tidak ditemukan</p>
+          <p className="mt-1 text-xs text-slate-500">Coba nama data, wilayah, kelompok, atau sumber data.</p>
         </div>
       )}
     </>

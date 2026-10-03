@@ -66,14 +66,14 @@ export default function LayerCatalog({
   };
 
   return (
-    <aside className={`layer-catalog-sheet sheet-panel sheet-panel-left absolute inset-x-0 bottom-0 z-[1400] flex h-[min(72dvh,560px)] w-full flex-col rounded-t-2xl border-t border-slate-200 bg-white shadow-[0_-12px_32px_rgba(15,23,42,0.10)] sm:inset-y-0 sm:left-0 sm:bottom-auto sm:h-auto sm:w-[340px] sm:rounded-none sm:rounded-r-xl sm:border-r sm:border-t-0 sm:shadow-[8px_0_24px_rgba(15,23,42,0.04)] lg:relative lg:w-[340px] lg:rounded-none lg:border-r-0 lg:shadow-none ${sheetVisible ? "sheet-panel-visible" : "sheet-panel-hidden"}`} aria-label="Katalog layer" style={swipeStyle}>
+    <aside className={`layer-catalog-sheet sheet-panel sheet-panel-left absolute inset-x-0 bottom-0 z-[1400] flex h-[min(72dvh,560px)] w-full flex-col rounded-t-2xl border-t border-slate-200 bg-white shadow-[0_-12px_32px_rgba(15,23,42,0.10)] sm:inset-y-0 sm:left-0 sm:bottom-auto sm:h-auto sm:w-[340px] sm:rounded-none sm:rounded-r-xl sm:border-r sm:border-t-0 sm:shadow-[8px_0_24px_rgba(15,23,42,0.04)] lg:relative lg:w-[340px] lg:rounded-none lg:border-r-0 lg:shadow-none ${sheetVisible ? "sheet-panel-visible" : "sheet-panel-hidden"}`} aria-label="Daftar data peta" style={swipeStyle}>
       <div className="border-b border-slate-200 px-3 pb-2 pt-2">
         <div className="mx-auto mb-1.5 h-1 w-9 rounded-full bg-slate-200 sm:hidden touch-none" aria-hidden="true" {...swipeHandlers} />
         <div>
           <label className="relative block">
-            <span className="sr-only">Cari data, layer, atau wilayah</span>
+            <span className="sr-only">Cari data atau wilayah</span>
             <IconSearch aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari data atau wilayah…" className="h-9 w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-8 map-text-compact outline-none focus:border-slate-400 focus:bg-white" />
+            <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari tempat, fasilitas, atau data…" className="h-9 w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-8 map-text-compact outline-none focus:border-slate-400 focus:bg-white" />
             {search && (
               <button type="button" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center text-slate-400 hover:text-slate-800" aria-label="Hapus pencarian" title="Hapus pencarian">
                 <IconX size={14} aria-hidden="true" />
@@ -95,8 +95,8 @@ export default function LayerCatalog({
         )}
 
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          <p className="map-text-compact font-semibold text-slate-900">Layer</p>
-          <button type="button" onClick={onReset} className="inline-flex shrink-0 items-center gap-1 map-text-micro font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Kembalikan tampilan peta dan filter ke kondisi awal"><IconRefresh size={13} stroke={1.8} /> Reset</button>
+          <p className="map-text-compact font-semibold text-slate-900">Data peta</p>
+          <button type="button" onClick={onReset} className="inline-flex shrink-0 items-center gap-1 map-text-micro font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Kembalikan tampilan peta ke awal"><IconRefresh size={13} stroke={1.8} /> Reset</button>
         </div>
 
         <div className="mt-1.5 grid grid-cols-2 gap-1">
@@ -118,7 +118,7 @@ export default function LayerCatalog({
 
       </div>
 
-      <div className="layer-scroll min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5" aria-label="Daftar layer">
+      <div className="layer-scroll min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5" aria-label="Daftar data peta">
         {groupOrder.map((group) => {
           const groupLayers = filteredLayers.filter((layer) => layer.group === group);
           if (!groupLayers.length) return null;
@@ -159,7 +159,7 @@ export default function LayerCatalog({
           <div className="px-4 py-10 text-center">
             <IconSquareX className="mx-auto text-slate-300" size={28} stroke={1.5} />
             <p className="mt-3 map-text-compact font-medium text-slate-800">Data tidak ditemukan</p>
-            <p className="mt-1 map-text-compact text-slate-500">Coba kata kunci seperti <strong>sekolah</strong>, <strong>puskesmas</strong>, atau nama kecamatan.</p>
+            <p className="mt-1 map-text-compact text-slate-500">Coba nama tempat, fasilitas, jenis data, atau nama kecamatan.</p>
           </div>
         )}
       </div>

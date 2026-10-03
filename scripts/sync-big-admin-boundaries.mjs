@@ -1,6 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import dns from "node:dns";
+import { WAJO_ADMIN_MASTER, getWajoKecamatanByKemendagri, getWajoVillageByKemendagri, getWajoVillageByKemendagriCode } from "../lib/geo/adminMaster.mjs";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "public", "geo-data");
@@ -24,8 +28,10 @@ const apply = args.has("--apply");
 const includeDesa = args.has("--desa");
 const pageSize = clampInt(process.env.BIG_PAGE_SIZE, 100, 1000, 500);
 const idChunkSize = clampInt(process.env.BIG_ID_CHUNK_SIZE, 25, 100, 50);
-const maxRetries = clampInt(process.env.BIG_RETRIES, 1, 8, 4);
-const timeoutMs = clampInt(process.env.BIG_TIMEOUT_MS, 10000, 120000, 30000);
+const maxRetries = clampInt(process.env.BIG_RETRIES, 1, 10, 3);
+const timeoutMs = clampInt(process.env.BIG_TIMEOUT_MS, 10000, 180000, 30000);
+const allowLocalFallback = process.env.BIG_ALLOW_LOCAL_FALLBACK !== "0" && !args.has("--remote-only");
+const allowShrink = process.env.BIG_ALLOW_SHRINK === "1" || args.has("--allow-shrink");
 
 function clampInt(value, min, max, fallback) {
   const parsed = Number(value);
@@ -90,7 +96,7 @@ async function sleep(ms) {
 
 function isRetryable(error) {
   const code = error?.cause?.code || error?.code || error?.name;
-  return ["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN", "AbortError", "UND_ERR_CONNECT_TIMEOUT"].includes(code);
+  return ["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EAI_AGAIN", "AbortError", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_SOCKET", "ERR_SOCKET_CLOSED"].includes(code) || error instanceof TypeError;
 }
 
 async function requestText(url, { method = "GET", form, label }) {
@@ -162,7 +168,7 @@ async function postQuery(endpoint, params, label) {
 
 async function inspectLayer(endpoint, label) {
   const layerUrl = toLayerInfoUrl(endpoint);
-  const data = await requestJson(`${layerUrl}?f=pjson`, { label: `${label} metadata` });
+  const data = await requestJson(`${layerUrl}?f=pjson`, { method: "GET", label: `${label} metadata` });
   if (data?.type !== "Feature Layer") throw new Error(`${label}: endpoint tidak menunjuk Feature Layer.`);
   const fields = new Set((data.fields || []).map((field) => field.name));
   const objectIdField = data.objectIdField || [...fields].find((field) => field.toUpperCase() === "OBJECTID") || "OBJECTID";
@@ -310,6 +316,126 @@ function esriGeometryToGeoJson(geometry) {
   return null;
 }
 
+function enrichKecamatanRows(rows) {
+  return rows.map((feature) => {
+    const props = featureProperties(feature);
+    const rawCode = String(readProperty(props, ["KDCPUM", "KDCBPS"]) || "").trim();
+    const codeKemendagri = rawCode.includes(".") ? rawCode : rawCode.length === 6 ? `${rawCode.slice(0, 2)}.${rawCode.slice(2, 4)}.${rawCode.slice(4, 6)}` : rawCode;
+    const master = getWajoKecamatanByKemendagri(codeKemendagri);
+    if (!master) throw new Error(`BIG kecamatan: kode Kemendagri tidak dikenal ${rawCode}.`);
+    const nameKemendagri = String(readProperty(props, ["WADMKC", "NAMOBJ"]) || master.nameKemendagri).trim();
+    return {
+      ...feature,
+      properties: {
+        ...props,
+        Kecamatan: master.nameBps,
+        nama_kecamatan: master.nameBps,
+        kode_kecamatan: master.codeKemendagri,
+        kode_kecamatan_kemendagri: master.codeKemendagri,
+        kode_kecamatan_bps: master.codeBps,
+        nama_kecamatan_kemendagri: nameKemendagri,
+        nama_kecamatan_bps: master.nameBps,
+        kode_kemendagri: master.codeKemendagri,
+        kode_bps: master.codeBps,
+        nama_kemendagri: nameKemendagri,
+        nama_bps: master.nameBps,
+        sumber_referensi_wilayah: "Kemendagri 2025 + BPS 2025 (Keputusan Kepala BPS 750/2025, perubahan KEPKA 135/2026)"
+      },
+    };
+  });
+}
+
+function normalizeKemendagriVillageCode(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  const dotted = raw.replace(/-/g, ".");
+  const parts = dotted.split(".").filter(Boolean);
+  if (parts.length === 4 && parts.every((part) => /^\d+$/.test(part))) {
+    return `${parts[0].padStart(2, "0")}.${parts[1].padStart(2, "0")}.${parts[2].padStart(2, "0")}.${parts[3].padStart(4, "0")}`;
+  }
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 10 ? `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4, 6)}.${digits.slice(6, 10)}` : raw;
+}
+
+function dedupeByAdminCode(rows, kind) {
+  // Nama wilayah BUKAN identitas. Dua feature dengan nama sama tetap dipertahankan
+  // selama kode administrasinya berbeda. Hanya kode yang sama yang dianggap duplikat.
+  const codeField = kind === "kecamatan" ? "kode_kecamatan" : "kode_desa";
+  const index = new Map();
+  const duplicates = [];
+
+  for (const row of rows) {
+    const code = String(row?.properties?.[codeField] || "").trim();
+    if (!code) throw new Error(`BIG ${kind}: feature tanpa ${codeField}.`);
+    if (index.has(code)) {
+      duplicates.push(code);
+      continue;
+    }
+    index.set(code, row);
+  }
+
+  if (duplicates.length) {
+    const unique = [...new Set(duplicates)];
+    console.warn(`BIG ${kind}: ${duplicates.length} feature duplikat berdasarkan kode diabaikan (${unique.join(", ")}). Nama tidak digunakan sebagai kunci.`);
+  }
+  return [...index.values()];
+}
+
+function enrichDesaRows(rows) {
+  return rows.map((feature) => {
+    const props = featureProperties(feature);
+    const codeKemendagri = normalizeKemendagriVillageCode(readProperty(props, ["KDEPUM"]));
+    const village = getWajoVillageByKemendagriCode(codeKemendagri, String(readProperty(props, ["WADMKD", "NAMOBJ"]) || "").trim());
+    if (!village?.kecamatan) throw new Error(`BIG desa: kode Kemendagri ${codeKemendagri || "(kosong)"} tidak ada di master Wajo.`);
+    if (!village.nameBps || !village.codeBps) {
+      throw new Error(`BIG desa: ${codeKemendagri} berhasil mengenali kecamatan ${village.kecamatan.nameBps}, tetapi padanan BPS tidak ditemukan dari nama sumber BIG.`);
+    }
+    const kec = village.kecamatan;
+    const kecCode = kec.codeKemendagri;
+    const nameKemendagri = String(readProperty(props, ["WADMKD", "NAMOBJ"]) || village.nameBps).trim();
+    return {
+      ...feature,
+      properties: {
+        ...props,
+        Desa: village.nameBps,
+        nama_desa: village.nameBps,
+        Kecamatan: kec.nameBps,
+        nama_kecamatan: kec.nameBps,
+        kode_desa: codeKemendagri,
+        kode_kemendagri: codeKemendagri,
+        kode_bps: village.codeBps,
+        kode_desa_bps: village.codeBps,
+        kode_kecamatan: kec.codeKemendagri,
+        kode_kecamatan_kemendagri: kec.codeKemendagri,
+        kode_kecamatan_bps: kec.codeBps,
+        nama_desa_kemendagri: nameKemendagri,
+        nama_desa_bps: village.nameBps,
+        nama_kecamatan_kemendagri: kec.nameKemendagri,
+        nama_kecamatan_bps: kec.nameBps,
+        nama_kemendagri: nameKemendagri,
+        nama_bps: village.nameBps,
+        sumber_referensi_wilayah: "Kemendagri 2025 + BPS 2025 (Keputusan Kepala BPS 750/2025, perubahan KEPKA 135/2026)"
+      },
+    };
+  });
+}
+
+async function readLocalFallback(kind, label) {
+  const filename = kind === "kecamatan" ? "batas-kecamatan.geojson" : "batas-desa-kelurahan.geojson";
+  const file = path.join(OUT, filename);
+  try {
+    const text = await fs.readFile(file, "utf8");
+    const data = JSON.parse(text);
+    if (!Array.isArray(data.features) || !data.features.length) throw new Error("FeatureCollection kosong.");
+    const enriched = kind === "kecamatan" ? enrichKecamatanRows(data.features) : enrichDesaRows(data.features);
+    return dedupeByAdminCode(enriched, kind);
+    console.warn(`${label}: BIG tidak dapat dihubungi; memakai data lokal ${filename} yang sudah divalidasi terhadap master Kemendagri + BPS.`);
+    return enriched;
+  } catch (error) {
+    throw new Error(`${label}: fallback lokal gagal — ${error.message}`);
+  }
+}
+
 async function fetchWajoLayer(kind, label) {
   const endpoints = [customEndpoint(kind), ...DEFAULT_SERVICES[kind]].filter(Boolean);
   let lastError = null;
@@ -322,41 +448,79 @@ async function fetchWajoLayer(kind, label) {
       const rows = await fetchGeometryByIds(endpoint, label, discovered);
       const filtered = rows.filter(belongsToWajo);
       if (!filtered.length) throw new Error(`${label}: geometry terambil tetapi 0 feature lolos validasi atribut Wajo.`);
-      return filtered;
+      const enriched = kind === "kecamatan" ? enrichKecamatanRows(filtered) : enrichDesaRows(filtered);
+      return dedupeByAdminCode(enriched, kind);
     } catch (error) {
       lastError = error;
       console.warn(`${label}: endpoint ${endpoint} gagal — ${error.message}`);
     }
   }
+  if (allowLocalFallback) return readLocalFallback(kind, label);
   throw lastError;
 }
 
 function validateKec(rows) {
-  const names = new Set(rows.map((f) => String(readProperty(f.properties, ["WADMKC", "NAMOBJ"]) || "").trim()).filter(Boolean));
-  const codes = new Set(rows.map((f) => normalizeCode(readProperty(f.properties, ["KDCBPS", "KDCPUM"]))).filter(Boolean));
-  if (rows.length !== 14) throw new Error(`BIG kecamatan Wajo: expected 14 features, got ${rows.length}`);
-  if (names.size !== 14) throw new Error(`BIG kecamatan Wajo: expected 14 unique names, got ${names.size}`);
-  if (codes.size === 0) {
-    console.warn("BIG kecamatan Wajo: field kode kecamatan tidak ikut pada response geometry; validasi dilanjutkan berdasarkan 14 nama unik dan WADMKK.");
-  } else if (codes.size < 14) {
-    throw new Error(`BIG kecamatan Wajo: kode kecamatan tidak lengkap (${codes.size}/14)`);
+  const names = new Set(rows.map((f) => String(f.properties?.nama_kecamatan || "").trim()).filter(Boolean));
+  const codes = new Set(rows.map((f) => String(f.properties?.kode_kecamatan || "").trim()).filter(Boolean));
+  if (rows.length !== WAJO_ADMIN_MASTER.kecamatan.length) throw new Error(`BIG kecamatan Wajo: expected ${WAJO_ADMIN_MASTER.kecamatan.length} features, got ${rows.length}`);
+  if (codes.size !== WAJO_ADMIN_MASTER.kecamatan.length) throw new Error(`BIG kecamatan Wajo: kode Kemendagri tidak unik/lengkap (${codes.size}/${WAJO_ADMIN_MASTER.kecamatan.length})`);
+  for (const master of WAJO_ADMIN_MASTER.kecamatan) {
+    const hit = rows.find((row) => row.properties?.kode_kecamatan === master.codeKemendagri);
+    if (!hit) throw new Error(`Master kecamatan ${master.nameBps} (${master.codeBps}/${master.codeKemendagri}) tidak ditemukan pada GeoJSON BIG.`);
   }
   return { count: rows.length, names: [...names].sort(), codes: [...codes].sort() };
 }
 
 function validateDesa(rows) {
-  const names = new Set(rows.map((f) => String(readProperty(f.properties, ["WADMKD", "NAMOBJ"]) || "").trim()).filter(Boolean));
-  if (rows.length < 190) throw new Error(`BIG desa/kelurahan Wajo: expected at least 190 records by BPS 2025, got ${rows.length}`);
-  return { count: rows.length, uniqueNames: names.size };
+  const expected = WAJO_ADMIN_MASTER.kecamatan.reduce((sum, kec) => sum + Object.keys(kec.desa).length, 0);
+  const codeKemendagri = new Set(rows.map((f) => String(f.properties?.kode_desa || "").trim()).filter(Boolean));
+  const codeBps = new Set(rows.map((f) => String(f.properties?.kode_desa_bps || "").trim()).filter(Boolean));
+  if (rows.length !== expected) throw new Error(`BIG desa/kelurahan Wajo: expected ${expected} records from BPS 2025, got ${rows.length}`);
+  if (codeKemendagri.size !== expected) throw new Error(`BIG desa/kelurahan Wajo: kode Kemendagri tidak unik/lengkap (${codeKemendagri.size}/${expected})`);
+  if (codeBps.size !== expected) throw new Error(`BIG desa/kelurahan Wajo: kode BPS tidak unik/lengkap (${codeBps.size}/${expected})`);
+  return { count: rows.length, uniqueKemendagri: codeKemendagri.size, uniqueBps: codeBps.size };
 }
 
 function toFeatureCollection(features) {
   return { type: "FeatureCollection", features };
 }
 
+async function guardAgainstDataLoss(kind, nextRows) {
+  if (allowShrink) return;
+
+  const filename = kind === "kecamatan" ? "batas-kecamatan.geojson" : "batas-desa-kelurahan.geojson";
+  const codeField = kind === "kecamatan" ? "kode_kecamatan" : "kode_desa";
+  const file = path.join(OUT, filename);
+
+  try {
+    const current = JSON.parse(await fs.readFile(file, "utf8"));
+    const currentCodes = new Set((current.features || [])
+      .map((feature) => String(feature?.properties?.[codeField] || "").trim())
+      .filter(Boolean));
+    if (!currentCodes.size) return;
+
+    const nextCodes = new Set(nextRows
+      .map((feature) => String(feature?.properties?.[codeField] || "").trim())
+      .filter(Boolean));
+    const missing = [...currentCodes].filter((code) => !nextCodes.has(code));
+
+    if (missing.length) {
+      throw new Error(
+        `${filename}: hasil BIG kehilangan ${missing.length} kode wilayah yang sudah tersimpan. ` +
+        `File lokal tidak ditimpa. Kode hilang: ${missing.slice(0, 20).join(", ")}${missing.length > 20 ? " …" : ""}. ` +
+        `Gunakan --allow-shrink hanya bila penghapusan tersebut memang disengaja.`,
+      );
+    }
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+}
+
 console.log(`BIG boundary sync · Kabupaten Wajo (${WJ})`);
 console.log(`Mode: ${apply ? "APPLY" : "DRY RUN"}`);
 console.log(`Network: retries=${maxRetries}, timeout=${timeoutMs}ms, page=${pageSize}, ids=${idChunkSize}`);
+console.log(`Identity: kode administrasi; shrink protection=${allowShrink ? "OFF (--allow-shrink)" : "ON"}`);
 
 const kecRows = await fetchWajoLayer("kecamatan", "BIG 2026 kecamatan");
 const kecMeta = validateKec(kecRows);
@@ -366,7 +530,7 @@ let desaRows = null;
 if (includeDesa) {
   desaRows = await fetchWajoLayer("desa", "BIG 2026 desa/kelurahan");
   const desaMeta = validateDesa(desaRows);
-  console.log(`BIG 2026 desa/kelurahan: ${desaMeta.count} feature valid; nama unik: ${desaMeta.uniqueNames}`);
+  console.log(`BIG 2026 desa/kelurahan: ${desaMeta.count} feature valid; kode Kemendagri: ${desaMeta.uniqueKemendagri}; kode BPS: ${desaMeta.uniqueBps}`);
 }
 
 if (!apply) {
@@ -376,6 +540,8 @@ if (!apply) {
 }
 
 await fs.mkdir(OUT, { recursive: true });
+await guardAgainstDataLoss("kecamatan", kecRows);
+await guardAgainstDataLoss("desa", desaRows || []);
 await fs.writeFile(path.join(OUT, "batas-kecamatan.geojson"), JSON.stringify(toFeatureCollection(kecRows)), "utf8");
 console.log("Diperbarui: public/geo-data/batas-kecamatan.geojson");
 
