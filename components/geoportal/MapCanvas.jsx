@@ -805,7 +805,23 @@ const MapCanvas = forwardRef(function MapCanvas(
   const layersRefForImperative = useRef(layers);
   const regionFilterRef = useRef(regionFilter);
   const focusAdminRef = useRef(focusAdmin);
-  const handledDomEventsRef = useRef(new WeakSet());
+  const nativeAdminTapRef = useRef(null);
+  const resolveAdministrativeTarget = useCallback((latlng) => {
+    if (!latlng) return null;
+
+    const visibleNow = visibleRef.current || {};
+    const districtLayer = visibleNow["adm-kecamatan"]
+      ? layerRefs.current["adm-kecamatan"]
+      : null;
+    const countyLayer = visibleNow["adm-kabupaten"]
+      ? layerRefs.current["adm-kabupaten"]
+      : null;
+
+    return (
+      findFeatureLayerAtLatLng(districtLayer, latlng) ||
+      findFeatureLayerAtLatLng(countyLayer, latlng)
+    );
+  }, []);
 
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
@@ -1078,13 +1094,133 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       };
 
+      const setInteractiveCursor = (target) => {
+        const cursor = target ? "pointer" : "";
+        const container = map.getContainer();
+        if (container) container.style.cursor = cursor;
+
+        vectorRenderersRef.current.forEach((renderer) => {
+          const rendererContainer = renderer?.getContainer?.();
+          if (rendererContainer) rendererContainer.style.cursor = cursor;
+        });
+      };
+
+      let cursorFrame = 0;
+      let latestCursorLatLng = null;
+      const updateAdministrativeCursor = (latlng) => {
+        latestCursorLatLng = latlng;
+        if (cursorFrame) return;
+
+        cursorFrame = window.requestAnimationFrame(() => {
+          cursorFrame = 0;
+          const target = resolveAdministrativeTarget(latestCursorLatLng);
+          setInteractiveCursor(target);
+        });
+      };
+
+      let pointerState = null;
+      const pointerDistance = (event) => {
+        if (!pointerState) return 0;
+        return Math.hypot(
+          Number(event.clientX ?? 0) - pointerState.x,
+          Number(event.clientY ?? 0) - pointerState.y
+        );
+      };
+
+      const isAdministrativeDomTarget = (target) => {
+        if (!(target instanceof Element)) return false;
+        return Boolean(target.closest(".adminDistrict, .adminCounty, .adminVillage"));
+      };
+
+      const handlePointerDown = (event) => {
+        if (event.isPrimary === false) return;
+        nativeAdminTapRef.current = null;
+        pointerState = {
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          moved: false,
+          touch: event.pointerType !== "mouse",
+          directAdmin: isAdministrativeDomTarget(event.target)
+        };
+      };
+
+      const handlePointerMove = (event) => {
+        if (pointerState && event.pointerId === pointerState.pointerId) {
+          if (pointerDistance(event) > 7) pointerState.moved = true;
+        }
+
+        if (event.pointerType === "mouse") {
+          updateAdministrativeCursor(map.mouseEventToLatLng?.(event) || map.containerPointToLatLng([event.offsetX, event.offsetY]));
+        }
+      };
+
+      const handlePointerUp = (event) => {
+        if (!pointerState || event.pointerId !== pointerState.pointerId) {
+          return;
+        }
+
+        const state = pointerState;
+        pointerState = null;
+
+        if (state.moved) return;
+        if (state.directAdmin) return;
+
+        const latlng = map.mouseEventToLatLng?.(event) ||
+          map.containerPointToLatLng([event.offsetX, event.offsetY]);
+        const target = resolveAdministrativeTarget(latlng);
+        if (!target) return;
+
+        const currentFocus = focusAdminRef.current;
+        const targetType = target.__wajoLayerId === "adm-kabupaten" ? "kabupaten" : "kecamatan";
+        const sameFeature = currentFocus?.feature
+          ? administrationFeatureMatchesTarget(
+              target.__wajoFeature,
+              currentFocus.feature,
+              currentFocus.type === "desa" ? "desa" : targetType
+            )
+          : false;
+
+        if (sameFeature && currentFocus?.type !== "kabupaten") return;
+
+        nativeAdminTapRef.current = {
+          at: performance.now(),
+          latlng
+        };
+        target.fire("click", { originalEvent: event, latlng });
+      };
+
+      const clearPointerState = () => {
+        pointerState = null;
+      };
+
       const handleMapMouseMove = (event) => {
         latestCoords = event.latlng;
+        updateAdministrativeCursor(event.latlng);
+
         const elapsed = performance.now() - lastCoordsUpdate;
         if (coordsTimer || elapsed < coordsThrottle) return;
         coordsTimer = window.setTimeout(flushCoords, coordsThrottle);
       };
 
+      const mapNodeElement = map.getContainer();
+      mapNodeElement.addEventListener("pointerdown", handlePointerDown, true);
+      mapNodeElement.addEventListener("pointermove", handlePointerMove, true);
+      mapNodeElement.addEventListener("pointerup", handlePointerUp, true);
+      mapNodeElement.addEventListener("pointercancel", clearPointerState, true);
+      map._wajoPointerHandlers = {
+        element: mapNodeElement,
+        handlePointerDown,
+        handlePointerMove,
+        handlePointerUp,
+        clearPointerState,
+        cancelCursorFrame: () => {
+          if (cursorFrame) {
+            window.cancelAnimationFrame(cursorFrame);
+            cursorFrame = 0;
+          }
+        }
+      };
       map.on("mousemove", handleMapMouseMove);
 
       map.on("click", (event) => {
@@ -1092,14 +1228,21 @@ const MapCanvas = forwardRef(function MapCanvas(
         const latlng = event?.latlng;
         if (!originalEvent || !latlng) return;
 
+        const nativeAdminTap = nativeAdminTapRef.current;
+        if (nativeAdminTap) {
+          const elapsed = performance.now() - nativeAdminTap.at;
+          const distance = map.latLngToContainerPoint(nativeAdminTap.latlng)
+            .distanceTo(map.latLngToContainerPoint(latlng));
+          if (elapsed < 750 && distance < 8) {
+            nativeAdminTapRef.current = null;
+            return;
+          }
+          nativeAdminTapRef.current = null;
+        }
+
         const visibleNow = visibleRef.current || {};
-        const handled = handledDomEventsRef.current.has(originalEvent);
         const currentFocus = focusAdminRef.current;
-        // Feature-level handlers own clicks that already landed on an
-        // interactive layer. Administrative context promotion for thematic
-        // features is resolved in that feature handler, so the map-level
-        // hit-test must not replay the same DOM event and replace selection.
-        if (handled) return;
+        const selectedLayerId = selectedRef.current?.__wajoLayerId;
 
         const navigationType = currentFocus?.type === "desa" ? "desa" : "kecamatan";
         const priority = navigationType === "desa"
@@ -1133,14 +1276,12 @@ const MapCanvas = forwardRef(function MapCanvas(
               )
             : false;
 
-          // The map-level hit-test handles only bare map clicks here. A
-          // thematic feature click is promoted to administrative context by
-          // its own feature handler while keeping that thematic feature
-          // selected.
-          if (!sameFeature) {
-            target.fire("click", { originalEvent, latlng });
+          if (selectedLayerId && isAdministrativeLayerId(selectedLayerId) && sameFeature) {
             return;
           }
+
+          target.fire("click", { originalEvent, latlng });
+          return;
         }
       });
 
@@ -1290,7 +1431,16 @@ const MapCanvas = forwardRef(function MapCanvas(
       }
 
       map?._wajoCoordsTimer?.();
-      map?.remove();
+      const pointerHandlers = map?._wajoPointerHandlers;
+      pointerHandlers?.element?.removeEventListener?.("pointerdown", pointerHandlers.handlePointerDown, true);
+      pointerHandlers?.element?.removeEventListener?.("pointermove", pointerHandlers.handlePointerMove, true);
+      pointerHandlers?.element?.removeEventListener?.("pointerup", pointerHandlers.handlePointerUp, true);
+      pointerHandlers?.element?.removeEventListener?.("pointercancel", pointerHandlers.clearPointerState, true);
+      pointerHandlers?.cancelCursorFrame?.();
+      if (map) {
+        delete map._wajoPointerHandlers;
+        map.remove?.();
+      }
 
       mapRef.current = null;
       leafletRef.current = null;
@@ -1304,7 +1454,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       markerIconCacheSnapshot.clear();
       Object.values(layerRefsSnapshot).forEach((layerGroup) => layerGroup?.remove?.());
     };
-  }, []);
+  }, [resolveAdministrativeTarget]);
 
   useEffect(() => {
     const changedIds = layers
@@ -1390,8 +1540,17 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       if (!visible[layer.id] || !sourceData) {
         if (existing) {
+          const paneName = layerPaneName(layer);
           existing.remove();
           delete layerRefs.current[layer.id];
+
+          if (!isAdministrativeLayerId(layer.id)) {
+            const renderer = vectorRenderersRef.current.get(paneName);
+            if (renderer && Object.keys(renderer._layers || {}).length === 0) {
+              renderer.remove?.();
+              vectorRenderersRef.current.delete(paneName);
+            }
+          }
         }
         return;
       }
@@ -1503,10 +1662,6 @@ const MapCanvas = forwardRef(function MapCanvas(
           featureLayer.__wajoSelected = false;
 
           featureLayer.on("click", (event) => {
-            if (event?.originalEvent) {
-              handledDomEventsRef.current.add(event.originalEvent);
-            }
-
             const previousSelected = selectedRef.current;
             if (previousSelected && previousSelected !== featureLayer) {
               restoreFeatureHoverVisual(
@@ -1521,12 +1676,9 @@ const MapCanvas = forwardRef(function MapCanvas(
             let contextAdminFeature = null;
             let contextRegion = null;
             if (!isAdministrativeLayerId(layer.id) && event?.latlng) {
-              const districtTarget = findFeatureLayerAtLatLng(
-                layerRefs.current["adm-kecamatan"],
-                event.latlng
-              );
+              const districtTarget = resolveAdministrativeTarget(event.latlng);
               contextAdminFeature = districtTarget?.__wajoFeature ?? null;
-              if (contextAdminFeature) {
+              if (contextAdminFeature && districtTarget?.__wajoLayerId === "adm-kecamatan") {
                 contextRegion = administrativeName(contextAdminFeature, "kecamatan") || null;
               }
             }
@@ -1695,7 +1847,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       }
       map._wajoInitialFit = true;
     }
-  }, [layers, visible, renderVersion, regionFilter, focusAdmin]);
+  }, [layers, visible, renderVersion, regionFilter, focusAdmin, resolveAdministrativeTarget]);
 
   useImperativeHandle(
     ref,
