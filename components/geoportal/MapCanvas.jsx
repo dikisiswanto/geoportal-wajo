@@ -68,6 +68,66 @@ function fitWajoBounds(map, L, data) {
   return true;
 }
 
+function pointInRing(lng, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i += 1) {
+    const xi = Number(ring[i]?.[0]);
+    const yi = Number(ring[i]?.[1]);
+    const xj = Number(ring[j]?.[0]);
+    const yj = Number(ring[j]?.[1]);
+    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
+
+    const intersects =
+      yi > lat !== yj > lat &&
+      lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || Number.EPSILON) + xi;
+
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInPolygonCoordinates(lng, lat, coordinates) {
+  if (!Array.isArray(coordinates)) return false;
+  let inside = false;
+  for (const ring of coordinates) {
+    if (pointInRing(lng, lat, ring)) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInFeature(feature, latlng) {
+  const geometry = feature?.geometry;
+  if (!geometry || !latlng) return false;
+
+  const lng = Number(latlng.lng);
+  const lat = Number(latlng.lat);
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return false;
+
+  if (geometry.type === "Polygon") {
+    return pointInPolygonCoordinates(lng, lat, geometry.coordinates);
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates?.some((polygon) =>
+      pointInPolygonCoordinates(lng, lat, polygon)
+    ) ?? false;
+  }
+
+  return false;
+}
+
+function findFeatureLayerByKey(group, key) {
+  if (!group || key == null) return null;
+  let target = null;
+  group.eachLayer?.((candidate) => {
+    if (target) return;
+    if (candidate?.__wajoFeatureKey != null && String(candidate.__wajoFeatureKey) === String(key)) {
+      target = candidate;
+    }
+  });
+  return target;
+}
+
 const REGION_MEMBERSHIP_CACHE = new WeakMap();
 
 function getRegionMembership(data) {
@@ -271,6 +331,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   const printViewRef = useRef(null);
   const markerIconCacheRef = useRef(new Map());
   const vectorRenderersRef = useRef(new Map());
+  const visibleRef = useRef(visible);
+  const handledDomEventsRef = useRef(new WeakSet());
 
   const [errors, setErrors] = useState({});
   const [renderVersion, setRenderVersion] = useState(0);
@@ -315,6 +377,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     onViewChangeRef.current = onViewChange;
   }, [onViewChange]);
+
+  useEffect(() => {
+    visibleRef.current = visible;
+  }, [visible]);
 
   const loadLayerData = useCallback(
     async (layer) => {
@@ -533,6 +599,37 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       map.on("mousemove", handleMapMouseMove);
 
+      map.on("click", (event) => {
+        const originalEvent = event?.originalEvent;
+        if (!originalEvent || handledDomEventsRef.current.has(originalEvent)) {
+          return;
+        }
+
+        const visibleNow = visibleRef.current || {};
+        const priority = [
+          { layerId: "adm-desa", type: "desa" },
+          { layerId: "adm-kecamatan", type: "kecamatan" },
+          { layerId: "adm-kabupaten", type: "kabupaten" }
+        ];
+
+        for (const candidate of priority) {
+          if (!visibleNow[candidate.layerId]) continue;
+          const data = loadedData.current[candidate.layerId];
+          if (!data?.features?.length) continue;
+
+          const feature = data.features.find((item) => pointInFeature(item, event.latlng));
+          if (!feature) continue;
+
+          const config = layers.find((item) => item.id === candidate.layerId);
+          const key = config ? featureKey(config, feature) : null;
+          const target = findFeatureLayerByKey(layerRefs.current[candidate.layerId], key);
+          if (!target) continue;
+
+          target.fire("click", { originalEvent });
+          return;
+        }
+      });
+
       map.on(
         "zoomend",
         () =>
@@ -562,31 +659,30 @@ const MapCanvas = forwardRef(function MapCanvas(
       });
 
       const beforePrint = () => {
-        if (!mapRef.current) {
-          return;
+        if (!mapRef.current) return;
+
+        if (!printViewRef.current) {
+          const center = map.getCenter();
+          printViewRef.current = {
+            lat: center.lat,
+            lng: center.lng,
+            zoom: map.getZoom()
+          };
         }
 
-        const center =
-          map.getCenter();
+        map.invalidateSize({ pan: false, debounceMoveend: true });
 
-        printViewRef.current = {
-          lat: center.lat,
-          lng: center.lng,
-          zoom: map.getZoom()
-        };
-
-        map.invalidateSize({
-          pan: false,
-          debounceMoveend: true
-        });
-
-        map.setView(
-          center,
-          map.getZoom(),
-          {
-            animate: false
+        const countyData = loadedData.current["adm-kabupaten"];
+        if (countyData) {
+          const bounds = L.geoJSON(countyData).getBounds();
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, {
+              padding: [40, 40],
+              maxZoom: 12,
+              animate: false
+            });
           }
-        );
+        }
       };
 
       const afterPrint = () => {
@@ -619,10 +715,12 @@ const MapCanvas = forwardRef(function MapCanvas(
             );
 
             window.requestAnimationFrame(
-              () =>
+              () => {
                 map.invalidateSize({
                   pan: false
-                })
+                });
+                printViewRef.current = null;
+              }
             );
           }
         );
@@ -925,13 +1023,21 @@ const MapCanvas = forwardRef(function MapCanvas(
                   featureLayer instanceof L.Polygon;
 
                 featureLayer.__wajoFeatureKey = featureKey(layer, feature);
+                featureLayer.__wajoFeature = feature;
 
                 /*
                  * Universal feature selection.
+                 * Klik data tematik dianggap sudah ditangani, sehingga
+                 * map-level administrative hit-test tidak ikut memilih
+                 * kecamatan/desa di bawahnya.
                  */
                 featureLayer.on(
                   "click",
-                  () => {
+                  (event) => {
+                    if (event?.originalEvent) {
+                      handledDomEventsRef.current.add(event.originalEvent);
+                    }
+
                     selectedRef.current?.setStyle?.(
                       selectedRef.current
                         ?.__wajoBaseStyle ||
@@ -1312,15 +1418,14 @@ const MapCanvas = forwardRef(function MapCanvas(
 
         import("leaflet").then(
           (L) => {
-            const data =
-              loadedData.current[
-                "adm-kecamatan"
-              ];
+            const countyData = loadedData.current["adm-kabupaten"];
+            if (countyData && fitWajoBounds(mapRef.current, L, countyData)) {
+              return;
+            }
 
-            if (data) {
-              if (fitWajoBounds(mapRef.current, L, data)) {
-                return;
-              }
+            const districtData = loadedData.current["adm-kecamatan"];
+            if (districtData && fitWajoBounds(mapRef.current, L, districtData)) {
+              return;
             }
 
             mapRef.current.setView(
@@ -1422,34 +1527,51 @@ const MapCanvas = forwardRef(function MapCanvas(
       },
 
       preparePrint: () => {
-        const map =
-          mapRef.current;
+        const map = mapRef.current;
 
         if (!map) {
-          return;
+          return Promise.resolve(false);
         }
 
-        const center =
-          map.getCenter();
-
-        printViewRef.current = {
-          lat: center.lat,
-          lng: center.lng,
-          zoom: map.getZoom()
-        };
-
-        map.invalidateSize({
-          pan: false,
-          debounceMoveend: true
-        });
-
-        map.setView(
-          center,
-          map.getZoom(),
-          {
-            animate: false
+        return import("leaflet").then((L) => {
+          if (!printViewRef.current) {
+            const center = map.getCenter();
+            printViewRef.current = {
+              lat: center.lat,
+              lng: center.lng,
+              zoom: map.getZoom()
+            };
           }
-        );
+
+          const fitForPrint = () => {
+            map.invalidateSize({ pan: false, debounceMoveend: true });
+
+            const countyData = loadedData.current["adm-kabupaten"];
+            if (!countyData) return false;
+
+            const bounds = L.geoJSON(countyData).getBounds();
+            if (!bounds.isValid()) return false;
+
+            map.fitBounds(bounds, {
+              padding: [40, 40],
+              maxZoom: 12,
+              animate: false
+            });
+            return true;
+          };
+
+          fitForPrint();
+
+          return new Promise((resolve) => {
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(() => {
+                fitForPrint();
+                map.invalidateSize({ pan: false, debounceMoveend: true });
+                resolve(true);
+              });
+            });
+          });
+        });
       },
 
       zoomToLayer: (layerId) => {

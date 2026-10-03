@@ -14,6 +14,7 @@ import LayerCatalog from "./geoportal/LayerCatalog";
 import MapCanvas from "./geoportal/MapCanvas";
 import MapControls from "./geoportal/MapControls";
 import LegendPanel from "./geoportal/LegendPanel";
+import PrintLegend from "./geoportal/PrintLegend";
 import FeatureInspector from "./geoportal/FeatureInspector";
 import LayerInfoPanel from "./geoportal/LayerInfoPanel";
 import MapStatus from "./geoportal/MapStatus";
@@ -396,12 +397,10 @@ export default function GeoPortal() {
   }, []);
 
   const handleMapCoords = useCallback((nextCoords) => setCoords(nextCoords), []);
-  const handlePrint = useCallback(() => {
+  const handlePrint = useCallback(async () => {
     if (typeof window === "undefined") return;
-    setStatus("Menyiapkan area peta untuk dicetak…");
-    // Preserve the exact map viewport. Print CSS changes the map container
-    // dimensions; MapCanvas invalidates Leaflet without allowing it to pan.
-    mapApi.current?.preparePrint?.();
+    setStatus("Menyiapkan peta untuk dicetak…");
+    await mapApi.current?.preparePrint?.();
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => window.print());
     });
@@ -536,6 +535,10 @@ export default function GeoPortal() {
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
+          />
+          <PrintLegend
+            activeLayers={activeLayers}
+            kecamatanLegend={kecamatanLegend}
           />
           <MapControls
             mapReady={mapReady}

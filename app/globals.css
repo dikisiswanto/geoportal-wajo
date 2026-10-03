@@ -142,6 +142,10 @@ a:focus-visible {
 }
 
 
+.print-only-legend {
+  display: none;
+}
+
 
 @media print {
   @page {
@@ -163,7 +167,9 @@ a:focus-visible {
 
   #map,
   #map .leaflet-container,
-  #map .leaflet-container * {
+  #map .leaflet-container * ,
+  #map .print-only-legend,
+  #map .print-only-legend * {
     visibility: visible !important;
   }
 
@@ -175,15 +181,20 @@ a:focus-visible {
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #fff !important;
+  }
+
+  #map .print-only-legend {
+    display: block !important;
   }
 
   .leaflet-container {
     width: 100% !important;
     height: 100% !important;
-    background: #eef2f4 !important;
+    background: #f8fafc !important;
   }
 
-  /* Print hanya kanvas peta; seluruh chrome aplikasi tidak ikut. */
+  /* Print hanya peta dan legenda; seluruh chrome aplikasi tidak ikut. */
   .map-ui-chrome,
   .print-map-legend,
   .feature-inspector,
@@ -192,32 +203,160 @@ a:focus-visible {
     display: none !important;
   }
 
-  /* Basemap kembali penuh agar hasil cetak tetap terbaca. */
+  /* OSM tetap menjadi konteks, bukan elemen utama. */
   .leaflet-tile-pane {
-    opacity: 1 !important;
+    opacity: 0.26 !important;
   }
 
   .leaflet-basemap-tint {
-    display: none !important;
+    display: block !important;
+    background: rgba(255, 255, 255, 0.42) !important;
   }
 
   .leaflet-control-attribution {
     display: block !important;
     visibility: visible !important;
     font-size: 8px !important;
-    background: rgba(255, 255, 255, 0.82) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
   }
 
   .leaflet-kecamatan-label,
   .leaflet-tile,
   .leaflet-marker-icon,
   .leaflet-overlay-pane svg,
-  .leaflet-overlay-pane path {
+  .leaflet-overlay-pane path,
+  .leaflet-wajo-data-pane path {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
   }
-}
 
+  .print-only-legend {
+    position: absolute !important;
+    left: 18px !important;
+    bottom: 18px !important;
+    z-index: 9999 !important;
+    display: block !important;
+    width: min(440px, calc(100vw - 36px)) !important;
+    max-height: calc(100vh - 36px) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    padding: 14px 16px 12px !important;
+    border: 1px solid rgba(100, 116, 139, 0.35) !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #0f172a !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16) !important;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-only-header {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .print-only-kicker,
+  .print-only-note,
+  .print-only-section-title,
+  .print-only-footer {
+    margin: 0 !important;
+  }
+
+  .print-only-kicker {
+    font-size: 8px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: #64748b !important;
+  }
+
+  .print-only-header h2 {
+    margin: 1px 0 0 !important;
+    font-size: 15px !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+  }
+
+  .print-only-note {
+    font-size: 9px !important;
+    color: #64748b !important;
+    text-align: right !important;
+  }
+
+  .print-only-legend-items {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 16px !important;
+    row-gap: 5px !important;
+  }
+
+  .print-only-kecamatan {
+    margin-top: 10px !important;
+    padding-top: 9px !important;
+    border-top: 1px solid #e2e8f0 !important;
+  }
+
+  .print-only-section-title {
+    margin-bottom: 6px !important;
+    font-weight: 800 !important;
+    color: #334155 !important;
+  }
+
+  .print-only-kecamatan-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    column-gap: 14px !important;
+    row-gap: 4px !important;
+  }
+
+  .print-only-legend-item {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .print-only-legend-item > span:last-child {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .print-only-swatch {
+    flex: 0 0 auto !important;
+    width: 10px !important;
+    height: 10px !important;
+    border: 1px solid currentColor !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-only-swatch-line {
+    width: 18px !important;
+    height: 0 !important;
+    border-width: 2px 0 0 !important;
+  }
+
+  .print-only-swatch-point {
+    width: 9px !important;
+    height: 9px !important;
+    border-radius: 999px !important;
+  }
+
+  .print-only-footer {
+    margin-top: 10px !important;
+    padding-top: 7px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    font-size: 8px !important;
+    color: #64748b !important;
+  }
+}
 
 @media (max-width: 639px) {
   .map-ui-chrome {
@@ -387,7 +526,6 @@ a:focus-visible {
   }
 }
 
-
 .layer-catalog-focus {
   position: relative;
   scroll-margin-block: 1rem;
@@ -404,7 +542,6 @@ a:focus-visible {
   .layer-catalog-focus { animation: none; }
 }
 
-
 .active-layers-scroll {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -414,7 +551,6 @@ a:focus-visible {
 .active-layers-scroll::-webkit-scrollbar {
   display: none;
 }
-
 
 .catalog-card-body {
   font-size: 0.8rem;
