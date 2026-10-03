@@ -1,5 +1,6 @@
 import { IconChevronRight, IconEye, IconX } from "@tabler/icons-react";
 import { regionDisplayName } from "../../lib/geo/region";
+import { featureHasRenderableGeometry, featurePassesLayerFilter } from "../../lib/geo/dataFilter";
 
 export default function ActiveLayersBar({
   activeLayers,
@@ -14,23 +15,15 @@ export default function ActiveLayersBar({
   if (!activeLayers?.length) return null;
 
   const countFor = (layer) => {
-    const loaded = layerData[layer.id]?.features;
-    if (!regionFilter) return loaded?.filter((feature) => Boolean(feature?.geometry)).length || dataSummary[layer.file]?.mappedCount || dataSummary[layer.file]?.total || 0;
-
-    const districtIndex = regionSummary["batas-kecamatan.geojson"]?.regions?.find(
-      (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
-    );
-    if (loaded && districtIndex?.code) {
-      return loaded.filter((feature) => {
-        if (!feature?.geometry) return false;
-        const codes = feature?.properties?.wilayah_kecamatan_kode;
-        return Array.isArray(codes) ? codes.includes(districtIndex.code) : String(codes ?? "") === districtIndex.code;
-      }).length;
+    if (!regionFilter) {
+      const loaded = layerData?.[layer.id]?.features;
+      if (loaded) return loaded.filter((feature) => featureHasRenderableGeometry(feature) && featurePassesLayerFilter(layer, feature)).length;
+      return dataSummary?.[layer.file]?.mappedCount ?? dataSummary?.[layer.file]?.total ?? 0;
     }
 
-    return regionSummary[layer.file]?.regions?.find(
+    return regionSummary?.[layer.file]?.regions?.find(
       (item) => item.name.toLowerCase() === regionFilter.toLowerCase()
-    )?.count || 0;
+    )?.count ?? 0;
   };
 
   return (

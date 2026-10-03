@@ -131,7 +131,7 @@ export default function FeatureInspector({
             </summary>
             <dl className="border-t border-slate-100">
               {group.fields.map(([key, label]) => (
-                <div key={key} className="grid grid-cols-[42%_58%] gap-3 border-b border-slate-50 px-3 py-2 last:border-b-0">
+                <div key={key} className="grid grid-cols-[42%_58%] gap-3 border-b border-slate-50 px-4 py-3 last:border-b-0">
                   <dt className="break-words map-text-micro text-slate-500">{label}</dt>
                   <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{formatValue(properties[key], key)}</dd>
                 </div>
@@ -142,7 +142,7 @@ export default function FeatureInspector({
       </div>
 
       {isAdministrative && (
-        <section className="border-t border-slate-200 px-3 py-3">
+        <section className="border-t border-slate-200 px-4 py-4">
           <div className="flex items-center gap-2">
             <IconInfoCircle size={15} className="text-slate-400" aria-hidden="true" />
             <h3 className="map-text-compact font-semibold text-slate-900">Tentang wilayah</h3>
@@ -156,7 +156,7 @@ export default function FeatureInspector({
   );
 
   const statisticsContent = hasAdminStats ? (
-    <div className="px-3 py-3">
+    <div className="px-4 py-4">
       {adminStats.metrics?.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {adminStats.metrics.map((item) => <MetricCard key={item.label} item={item} />)}
@@ -182,7 +182,7 @@ export default function FeatureInspector({
       </div>
 
       {adminStats.notes?.length > 0 && (
-        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5">
+        <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3">
           {adminStats.notes.map((note) => (
             <p key={note} className="map-text-micro leading-4 text-slate-500">{note}</p>
           ))}

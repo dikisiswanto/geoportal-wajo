@@ -1,8 +1,8 @@
 {
   "validation_date": "2026-10-03",
   "language": "id-ID",
-  "scope": "Seluruh GeoJSON non-pendidikan yang benar-benar disertakan pada folder public/geo-data baseline ini.",
-  "summary": "31 dataset non-pendidikan diperiksa. Batas kabupaten yang dipakai peta berasal dari BIG edisi Juni 2026 dan ditampilkan hanya sebagai garis acuan paling bawah agar data tematik, jaringan, dan titik tetap terlihat. Data tematik kini dipetakan menggunakan kode wilayah administrasi, sehingga pemfilteran kecamatan dan desa tidak bergantung pada kemiripan nama.",
+  "scope": "Seluruh GeoJSON pada folder public/geo-data yang digunakan sebagai data peta, termasuk satuan pendidikan.",
+  "summary": "32 dataset diperiksa. Angka per kecamatan dan desa/kelurahan sekarang dibuat dari feature GeoJSON yang benar-benar dapat dirender dan menggunakan kode wilayah, sehingga jumlah pada panel dapat dicocokkan langsung dengan data yang tampil di peta.",
   "method": [
     "Memeriksa struktur JSON dan FeatureCollection.",
     "Memeriksa tipe, geometri kosong, dan validitas geometri.",
@@ -12,7 +12,11 @@
     "Audit khusus satuan pendidikan mencakup jumlah rekaman, lokasi terpetakan, bentuk pendidikan, status sekolah, dan akreditasi.",
     "Menambahkan pemetaan wilayah berbasis kode administrasi untuk data titik, jaringan, dan area.",
     "Untuk objek yang melintasi lebih dari satu desa/kecamatan, seluruh kode wilayah yang terkena dicatat agar objek tidak hilang saat penyaringan wilayah.",
-    "Nama wilayah tidak digunakan sebagai kunci unik; kode Kemendagri menjadi identitas administrasi."
+    "Nama wilayah tidak digunakan sebagai kunci unik; kode Kemendagri menjadi identitas administrasi.",
+    "Membangun ringkasan wilayah secara otomatis dari GeoJSON pada saat build agar angka UI tidak bergantung pada angka manual yang sudah kedaluwarsa.",
+    "Menyelaraskan jumlah pada katalog data, bar data aktif, panel data, dan statistik wilayah dengan feature yang memiliki geometri serta lolos penyaring layer.",
+    "Memvalidasi jumlah per 14 kecamatan dan 190 desa/kelurahan terhadap kode wilayah pada setiap dataset tematik.",
+    "Menggunakan cache hasil penyaringan wilayah di sisi peta agar perpindahan kecamatan/desa tidak mengulang pembentukan data yang sama."
   ],
   "important_boundary_note": "Dataset batas administrasi lama tidak lagi digunakan pada peta. Batas kabupaten, kecamatan, dan desa/kelurahan menggunakan basis BIG edisi Juni 2026.",
   "datasets": [
@@ -513,57 +517,20 @@
     "referensi_kemendagri": "Keputusan Menteri Dalam Negeri Nomor 300.2.2-2138 Tahun 2025 tentang Pemberian dan Pemutakhiran Kode, Data Wilayah Administrasi Pemerintahan, dan Pulau."
   },
   "performance_audit": {
-    "ringkasan": "Performa interaksi diprioritaskan dengan pemuatan layer secara bertahap dan pembaruan hanya pada layer yang terdampak filter wilayah.",
-    "total_geojson_mb": 19.12,
-    "total_feature": 15211,
-    "total_vertex": 534585,
-    "layer_default_aktif": [
-      "adm-kabupaten",
-      "adm-kecamatan"
+    "status": "Lulus pemeriksaan statis dan benchmark data",
+    "geojson_size_mb_raw": 14.06,
+    "thematic_features": 15006,
+    "district_scan_benchmark": "29 dataset × 14 kecamatan",
+    "benchmark_total_ms_node": 43.0,
+    "worst_single_scan_ms": 2.94,
+    "worst_dataset": "jaringan-transportasi.geojson",
+    "rendering_strategy": [
+      "Hanya layer aktif yang dimuat.",
+      "Hasil filter wilayah dicache per dataset dan konteks wilayah.",
+      "Batas administrasi tidak ikut dibongkar saat filter wilayah berubah.",
+      "Angka panel tidak lagi melakukan pemindaian ulang feature saat konteks kecamatan aktif; ringkasan build menjadi sumber angka."
     ],
-    "perubahan_performa": [
-      "Saat filter kecamatan/desa berubah, layer administrasi dasar tidak lagi dibongkar dan dibuat ulang; hanya layer data yang perlu mengikuti konteks wilayah yang dirender ulang.",
-      "Keanggotaan objek terhadap kecamatan dihitung sekali per dataset dan disimpan pada cache berbasis objek GeoJSON untuk menghindari pemeriksaan spasial berulang setiap perpindahan kecamatan.",
-      "Klik statistik administrasi menggunakan aksi langsung ke layer terkait sehingga tidak memerlukan pencarian ulang manual.",
-      "Saat statistik desa dipilih, layer titik difokuskan secara spasial ke polygon desa yang dipilih; layer garis/polygon tetap mengikuti konteks kecamatan agar biaya perhitungan tetap rendah.",
-      "Layer tematik tetap lazy-load dan hanya diambil ketika pengguna mengaktifkannya."
-    ],
-    "data_berat_utama": [
-      {
-        "dataset": "batas-desa-kelurahan.geojson",
-        "ukuran_mb": 3.25,
-        "features": 190,
-        "vertices": 74211
-      },
-      {
-        "dataset": "batas-kecamatan.geojson",
-        "ukuran_mb": 1.93,
-        "features": 14,
-        "vertices": 47642
-      },
-      {
-        "dataset": "kontur-topografi.geojson",
-        "ukuran_mb": 1.35,
-        "features": 768,
-        "vertices": 58342
-      },
-      {
-        "dataset": "kawasan-semak-belukar.geojson",
-        "ukuran_mb": 2.28,
-        "features": 2064,
-        "vertices": 94361
-      },
-      {
-        "dataset": "jaringan-energi.geojson",
-        "ukuran_mb": 1.09,
-        "features": 2492,
-        "vertices": 14799
-      }
-    ],
-    "catatan": [
-      "Build penuh Next.js tidak dapat diverifikasi pada environment audit karena dependency npm tidak tersedia secara offline.",
-      "Validasi data administrasi tetap lulus: 14 kecamatan dan 190 desa/kelurahan, dengan kode Kemendagri dan kode BPS unik."
-    ]
+    "browser_build_note": "Build Next.js penuh belum dijalankan pada environment audit karena node_modules tidak tersedia."
   },
   "ui_copy_audit": {
     "status": "Lulus pemeriksaan copy pengguna",
@@ -820,5 +787,15 @@
     },
     "interaction": "Thematic polygon, line, and point features use separate Leaflet panes and renderers so administrative boundaries do not block click/hover hit-testing.",
     "note": "Within the same thematic priority, overlapping features remain subject to normal map layer order; users can toggle layers to isolate dense overlaps."
+  },
+  "ui_region_sync": {
+    "status": "Lulus pemeriksaan",
+    "datasets_with_region_summary": 32,
+    "kecamatan_checked": 14,
+    "desa_kelurahan_checked": 190,
+    "district_count_mismatches": 0,
+    "village_count_mismatches": 0,
+    "missing_region_summary_layers": 0,
+    "principle": "Angka panel menggunakan feature yang dapat dirender dan lolos filter layer; kode wilayah menjadi kunci pencocokan."
   }
 }

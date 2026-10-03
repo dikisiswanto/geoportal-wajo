@@ -11,7 +11,9 @@
     "sync:admin:desa": "node scripts/sync-big-admin-boundaries.mjs --desa --apply",
     "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.mjs",
     "validate:admin": "node scripts/validate-admin.mjs",
-    "validate:data:region": "node scripts/validate-geo-membership.mjs"
+    "validate:data:region": "node scripts/validate-geo-membership.mjs",
+    "sync:data:region": "node scripts/build-region-summary.mjs",
+    "prebuild": "node scripts/build-region-summary.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",

@@ -27,12 +27,12 @@ function Distribution({ title, items }) {
   if (!items?.length) return null;
   const max = Math.max(...items.map((item) => item.count), 1);
   return (
-    <section className="mt-3.5">
+    <section className="mt-4 px-3">
       <div className="flex items-center gap-2">
         <IconChartBar size={15} className="text-slate-400" aria-hidden="true" />
         <h3 className="map-text-compact font-semibold text-slate-900">{title}</h3>
       </div>
-      <div className="mt-2.5 space-y-2.5">
+      <div className="mt-2.5 space-y-3">
         {items.map((item) => (
           <div key={item.label}>
             <div className="mb-1 flex items-center justify-between gap-3 map-text-micro">
@@ -75,7 +75,10 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
   const stats = getLayerStatistics(currentLayer, scopedData, summary);
   const sourceType = currentLayer.sourceType || "Sumber terbuka / ArcGIS";
   const coverageCount = stats.kecamatanDistribution?.length || 0;
-  const contextCount = regionFilter ? stats.mappedCount : null;
+  const summaryContextCount = selectedRegionSummary?.count ?? null;
+  const contextCount = regionFilter
+    ? (stats.loaded ? stats.mappedCount : summaryContextCount)
+    : null;
   const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Keterangan sumber mengikuti informasi yang tersedia pada data.";
 
   return (
@@ -103,45 +106,45 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <p className="mt-2.5 rounded-lg bg-slate-50 px-3 py-2 map-text-body leading-5 text-slate-600">{getLayerInsight(currentLayer, data, stats)}</p>
 
-        <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+        <div className="mt-2.5 grid grid-cols-2 gap-2">
           <StatNumber value={contextCount != null ? contextCount : currentLayer.geometry?.includes("Point") ? stats.mappedCount : stats.total} label={contextCount != null ? "Data di wilayah ini" : currentLayer.geometry?.includes("Point") && stats.unmappedCount > 0 ? "Lokasi yang tampil" : "Jumlah data"} />
           <StatNumber value={stats.unmappedCount > 0 ? stats.total : (coverageCount || stats.geometryCounts.length)} label={stats.unmappedCount > 0 ? "Jumlah data" : (coverageCount ? "Kecamatan tercakup" : "Jumlah data")} />
         </div>
         {regionFilter && contextCount == null && (
-          <p className="mt-2 map-text-micro leading-4 text-slate-500">Data ini belum memiliki ringkasan per kecamatan. Peta tetap menampilkan data sesuai lokasi yang tersedia.</p>
+          <p className="mt-2 map-text-micro leading-4 text-slate-500">Jumlah data untuk wilayah ini belum dapat dihitung.</p>
         )}
 
         <section className="mt-4 rounded-lg border border-slate-200 bg-white">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
             <IconInfoCircle size={15} className="text-slate-400" aria-hidden="true" />
             <h3 className="map-text-compact font-semibold text-slate-900">Sumber dan pembaruan</h3>
           </div>
           <dl className="divide-y divide-slate-100">
-            <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+            <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
               <dt className="map-text-micro text-slate-500">Sumber data</dt>
               <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.source || "Belum dicantumkan"}</dd>
             </div>
-            <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+            <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
               <dt className="map-text-micro text-slate-500">Penyedia data</dt>
               <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.publisher || (sourceType === "Ina-Geoportal BIG" ? "Badan Informasi Geospasial (BIG)" : sourceType === "Kemendikdasmen" ? "Kementerian Pendidikan Dasar dan Menengah" : "Sesuai keterangan sumber data")}</dd>
             </div>
-            <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+            <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
               <dt className="map-text-micro text-slate-500">Tahun data</dt>
               <dd className="map-text-compact font-medium leading-5 text-slate-800">{currentLayer.dataYear || "Belum dicantumkan"}</dd>
             </div>
             {currentLayer.latestDataYear && currentLayer.latestDataYear !== currentLayer.dataYear && (
-              <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+              <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
                 <dt className="map-text-micro text-slate-500">Pembaruan</dt>
                 <dd className="map-text-compact font-medium leading-5 text-slate-800">BIG · Edisi Juni {currentLayer.latestDataYear}</dd>
               </div>
             )}
             {currentLayer.localDataStatus && (
-              <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+              <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
                 <dt className="map-text-micro text-slate-500">Keterangan</dt>
                 <dd className="map-text-compact font-medium leading-5 text-amber-700">{currentLayer.localDataStatus}</dd>
               </div>
             )}
-            <div className="grid grid-cols-[40%_60%] gap-2 px-3 py-2">
+            <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
               <dt className="map-text-micro text-slate-500">Wilayah</dt>
               <dd className="map-text-compact font-medium leading-5 text-slate-800">Kabupaten Wajo, Sulawesi Selatan</dd>
             </div>
@@ -160,7 +163,7 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
           ? stats.educationGroupDistribution.length + stats.educationTypeDistribution.length + stats.educationStatusDistribution.length + stats.educationAccreditationDistribution.length + stats.kecamatanDistribution.length
           : stats.distribution.length + stats.kecamatanDistribution.length) > 0 && (
           <details className="mt-4 rounded-lg border border-slate-200 bg-white group">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 map-text-compact font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 map-text-compact font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
               <span>Rincian data</span>
               <span className="map-text-micro font-medium text-slate-400 group-open:hidden">Buka</span>
               <span className="hidden map-text-micro font-medium text-slate-400 group-open:inline">Tutup</span>

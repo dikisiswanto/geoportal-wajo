@@ -23,6 +23,7 @@ import {
   styleFor
 } from "../../lib/geo/styles";
 import { withAssetVersion } from "../../lib/assetVersion";
+import { featurePassesLayerFilter } from "../../lib/geo/dataFilter";
 
 import {
   featureMatchesRegion,
@@ -80,30 +81,33 @@ function getRegionMembership(data) {
   return membership;
 }
 
+const FILTERED_DATA_CACHE = new WeakMap();
+
 function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdmin) {
-  const filter = layer?.featureFilter;
   const hasRegionFilter = Boolean(regionFilter);
 
-  if (!filter && !hasRegionFilter && !focusAdmin) return data;
+  if (!hasRegionFilter && !focusAdmin && !layer?.featureFilter) return data;
   if (!Array.isArray(data?.features)) return data;
 
-  const excluded = new Set(
-    (filter?.excludeValues ?? []).map((value) => String(value ?? "").trim().toLowerCase())
-  );
-  const membership = hasRegionFilter && !["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)
-    ? getRegionMembership(data)
-    : null;
+  const focusCode = focusAdmin?.feature
+    ? featureAdministrativeCodes(focusAdmin.feature, focusAdmin.type === "desa" ? "desa" : "kecamatan")[0] || ""
+    : "";
   const targetRegionCode = hasRegionFilter
     ? regionCodeFromBoundaryName(regionFilter, boundaryData)
     : "";
+  const cacheKey = `${layer?.id ?? "layer"}|${targetRegionCode}|${focusAdmin?.type ?? ""}|${focusCode}`;
+  let layerCache = FILTERED_DATA_CACHE.get(data);
+  if (!layerCache) {
+    layerCache = new Map();
+    FILTERED_DATA_CACHE.set(data, layerCache);
+  }
+  if (layerCache.has(cacheKey)) return layerCache.get(cacheKey);
+  const membership = hasRegionFilter && !["adm-kecamatan", "adm-kabupaten", "adm-desa"].includes(layer?.id)
+    ? getRegionMembership(data)
+    : null;
 
   const filtered = data.features.filter((feature, index) => {
-    if (filter) {
-      const value = feature?.properties?.[filter.field];
-      const normalized = String(value ?? "").trim();
-      if (filter.excludeEmpty && normalized === "") return false;
-      if (excluded.has(normalized.toLowerCase())) return false;
-    }
+    if (!featurePassesLayerFilter(layer, feature)) return false;
 
     if (focusAdmin?.feature && (focusAdmin.type === "desa" || focusAdmin.type === "kecamatan")) {
       return featureMatchesAdministrativeFeature(feature, focusAdmin.feature);
@@ -119,8 +123,9 @@ function filterGeoJsonForLayer(layer, data, regionFilter, boundaryData, focusAdm
     return featureMatchesRegion(feature, regionFilter, boundaryData);
   });
 
-  if (filtered.length === data.features.length) return data;
-  return { ...data, features: filtered };
+  const result = filtered.length === data.features.length ? data : { ...data, features: filtered };
+  layerCache.set(cacheKey, result);
+  return result;
 }
 
 function layerPaneName(layer) {
