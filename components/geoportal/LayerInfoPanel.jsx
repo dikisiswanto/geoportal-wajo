@@ -27,14 +27,14 @@ function Distribution({ title, items }) {
   if (!items?.length) return null;
   const max = Math.max(...items.map((item) => item.count), 1);
   return (
-    <section className="mt-4 px-3">
+    <section className="mt-2 px-3">
       <div className="flex items-center gap-2">
         <IconChartBar size={15} className="text-slate-400" aria-hidden="true" />
         <h3 className="map-text-compact font-semibold text-slate-900">{title}</h3>
       </div>
       <div className="mt-2.5 space-y-3">
         {items.map((item) => (
-          <div key={item.label}>
+          <div key={item.label} className="py-1">
             <div className="mb-1 flex items-center justify-between gap-3 map-text-micro">
               <span className="min-w-0 truncate text-slate-600">{item.label}</span>
               <span className="shrink-0 font-semibold tabular-nums text-slate-800">{item.count.toLocaleString("id-ID")}</span>
