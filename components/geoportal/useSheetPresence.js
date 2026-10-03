@@ -5,19 +5,17 @@ export default function useSheetPresence(open, duration = 240) {
   const [visible, setVisible] = useState(open);
 
   useEffect(() => {
-    let frameId;
-    let timerId;
+    let frameId = 0;
+    let timerId = 0;
 
     if (open) {
-      setRendered(true);
       frameId = window.requestAnimationFrame(() => {
-        setVisible(true);
+        setRendered(true);
+        window.requestAnimationFrame(() => setVisible(true));
       });
     } else {
-      setVisible(false);
-      timerId = window.setTimeout(() => {
-        setRendered(false);
-      }, duration);
+      frameId = window.requestAnimationFrame(() => setVisible(false));
+      timerId = window.setTimeout(() => setRendered(false), duration);
     }
 
     return () => {

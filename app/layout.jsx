@@ -5,8 +5,8 @@ import PwaRegister from "../components/PwaRegister";
 import { absoluteUrl, DEFAULT_DESCRIPTION, PUBLISHER_NAME, SITE_NAME, getSiteUrl } from "../lib/seo";
 import { withAssetVersion } from "../lib/assetVersion";
 
-const WAJO_ICON = withAssetVersion("/icon.png");
-const WAJO_OG = withAssetVersion("/seo/geoportal-wajo-og.png");
+const SITE_ICON = withAssetVersion("/icon.png");
+const SITE_OG_IMAGE = withAssetVersion("/seo/geoportal-wajo-og.png");
 const BUILD_VERSION = process.env.NEXT_PUBLIC_ASSET_VERSION?.trim() || "dev";
 void BUILD_VERSION;
 
@@ -41,8 +41,8 @@ export const metadata = {
     statusBarStyle: "default"
   },
   icons: {
-    icon: WAJO_ICON,
-    shortcut: WAJO_ICON,
+    icon: SITE_ICON,
+    shortcut: SITE_ICON,
     apple: withAssetVersion("/apple-icon.png")
   },
   alternates: {
@@ -68,7 +68,7 @@ export const metadata = {
     url: absoluteUrl("/"),
     images: [
       {
-        url: WAJO_OG,
+        url: SITE_OG_IMAGE,
         width: 1200,
         height: 630,
         alt: "Peta Interaktif Kabupaten Wajo"
@@ -79,7 +79,7 @@ export const metadata = {
     card: "summary_large_image",
     title: SITE_NAME,
     description: DEFAULT_DESCRIPTION,
-    images: [WAJO_OG]
+    images: [SITE_OG_IMAGE]
   }
 };
 

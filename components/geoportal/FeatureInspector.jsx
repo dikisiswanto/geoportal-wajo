@@ -94,22 +94,18 @@ export default function FeatureInspector({
   onExploreRelated,
   onExploreAdminLayer
 }) {
-  const [renderSelected, setRenderSelected] = useState(selected);
   const [adminTab, setAdminTab] = useState("info");
   const { rendered, visible } = useSheetPresence(Boolean(open && selected));
   const { swipeHandlers, swipeStyle } = useSheetSwipe(onClose, Boolean(open && selected));
 
   useEffect(() => {
-    if (selected) setRenderSelected(selected);
-  }, [selected]);
-
-  useEffect(() => {
-    setAdminTab("info");
+    const frameId = window.requestAnimationFrame(() => setAdminTab("info"));
+    return () => window.cancelAnimationFrame(frameId);
   }, [selected?.featureKey, selected?.layer?.id]);
 
-  if (!rendered || !renderSelected) return null;
+  if (!rendered || !selected) return null;
 
-  const currentSelected = renderSelected;
+  const currentSelected = selected;
   const properties = currentSelected.feature.properties ?? {};
   const adminType = getAdministrativeType(currentSelected.layer?.id);
   const isAdministrative = Boolean(adminType);

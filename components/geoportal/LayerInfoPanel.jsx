@@ -3,7 +3,6 @@ import LayerGlyph from "./LayerGlyph";
 import { getLayerInsight, getLayerStatistics } from "../../lib/geo/statistics";
 import { featureAdministrativeCodes } from "../../lib/geo/region";
 import SourceBadge from "./SourceBadge";
-import { useEffect, useState } from "react";
 import useSheetPresence from "./useSheetPresence";
 import useSheetSwipe from "./useSheetSwipe";
 
@@ -50,17 +49,13 @@ function Distribution({ title, items }) {
 }
 
 export default function LayerInfoPanel({ layer, data, summary, regionSummary = null, regionFilter = "", active = false, loading = false, error = "", open, onClose, onShowOnMap, onZoomToLayer, onShare }) {
-  const [renderLayer, setRenderLayer] = useState(layer);
   const { rendered, visible } = useSheetPresence(Boolean(open && layer));
   const { swipeHandlers, swipeStyle } = useSheetSwipe(onClose, Boolean(open && layer));
 
-  useEffect(() => {
-    if (layer) setRenderLayer(layer);
-  }, [layer]);
 
-  if (!rendered || !renderLayer) return null;
+  if (!rendered || !layer) return null;
 
-  const currentLayer = renderLayer;
+  const currentLayer = layer;
   const selectedRegionSummary = regionFilter
     ? regionSummary?.regions?.find((item) => item.name.toLowerCase() === regionFilter.toLowerCase())
     : null;

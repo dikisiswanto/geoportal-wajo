@@ -5,7 +5,7 @@ import { IconSearch } from "@tabler/icons-react";
 import MobileNav from "./geoportal/MobileNav";
 import { withAssetVersion } from "../lib/assetVersion";
 
-const WAJO_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
+const SITE_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
 
 const NAV_ITEMS = [
   { href: "/", label: "Peta", key: "map" },
@@ -33,7 +33,7 @@ export default function SiteHeader({
         aria-label="Buka Peta Interaktif Kabupaten Wajo"
       >
         <Image
-          src={WAJO_LOGO}
+          src={SITE_LOGO}
           alt="Lambang Kabupaten Wajo"
           width={42}
           height={42}

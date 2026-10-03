@@ -351,15 +351,23 @@ function pointInFeature(feature, latlng) {
   return false;
 }
 
-function findFeatureLayerByKey(group, key) {
-  if (!group || key == null) return null;
+function findFeatureLayerAtLatLng(group, latlng) {
+  if (!group || !latlng) return null;
+
   let target = null;
   group.eachLayer?.((candidate) => {
-    if (target) return;
-    if (candidate?.__wajoFeatureKey != null && String(candidate.__wajoFeatureKey) === String(key)) {
+    if (target || !candidate?.__wajoFeature) return;
+
+    const bounds = candidate.getBounds?.();
+    if (bounds?.isValid?.() && !bounds.contains(latlng)) return;
+
+    const feature = candidate.__wajoFeature;
+    const geometryType = feature?.geometry?.type;
+    if (["Polygon", "MultiPolygon"].includes(geometryType) && pointInFeature(feature, latlng)) {
       target = candidate;
     }
   });
+
   return target;
 }
 
@@ -517,6 +525,16 @@ function administrativeName(feature, type) {
     ).trim();
   }
 
+  if (type === "kabupaten") {
+    return String(
+      properties.Kabupaten ??
+      properties.WADMKK ??
+      properties.nama_kabupaten ??
+      properties.NAMOBJ ??
+      ""
+    ).trim();
+  }
+
   return String(
     properties.Kecamatan ??
     properties.WADMKC ??
@@ -530,9 +548,15 @@ function administrativeName(feature, type) {
 function administrationFeatureMatchesTarget(feature, targetFeature, type) {
   if (!feature || !targetFeature || !type) return false;
 
+  const targetCode = administrativeFeatureCode(targetFeature, type);
+  const featureCode = administrativeFeatureCode(feature, type);
+
+  if (targetCode && featureCode) {
+    return targetCode === featureCode;
+  }
+
   const targetCodes = featureAdministrativeCodes(targetFeature, type);
   const featureCodes = featureAdministrativeCodes(feature, type);
-
   if (targetCodes.length && featureCodes.length) {
     return featureCodes.some((code) => targetCodes.includes(code));
   }
@@ -588,6 +612,58 @@ function applyActiveAdministrationStyles(layerRefs, loadedData, { focusAdmin, re
         : base
       );
     });
+  }
+}
+
+function setFeatureSelectedVisual(featureLayer, layer, baseStyle, isPolygon, selected) {
+  if (!featureLayer) return;
+
+  featureLayer.__wajoSelected = selected;
+
+  if (typeof featureLayer.setStyle === "function") {
+    featureLayer.setStyle(
+      selected
+        ? selectedStyleFor(layer, baseStyle, isPolygon)
+        : baseStyle
+    );
+  }
+
+  if (typeof featureLayer.setZIndexOffset === "function") {
+    const baseOffset = featureLayer.__wajoBaseZIndexOffset ?? 0;
+    featureLayer.setZIndexOffset(selected ? baseOffset + 500 : baseOffset);
+  }
+}
+
+function applyFeatureHoverVisual(featureLayer, layer, baseStyle) {
+  if (!featureLayer || featureLayer.__wajoSelected || featureLayer.__wajoActiveAdmin) return;
+
+  if (typeof featureLayer.setStyle === "function") {
+    featureLayer.setStyle(hoverStyleFor(layer, baseStyle));
+  }
+
+  if (typeof featureLayer.setZIndexOffset === "function") {
+    const baseOffset = featureLayer.__wajoBaseZIndexOffset ?? 0;
+    featureLayer.setZIndexOffset(baseOffset + 250);
+  }
+}
+
+function restoreFeatureHoverVisual(featureLayer, baseStyle) {
+  if (!featureLayer || featureLayer.__wajoSelected) return;
+
+  if (typeof featureLayer.setStyle === "function") {
+    featureLayer.setStyle(
+      featureLayer.__wajoActiveAdmin
+        ? selectedStyleFor(
+            { styleMode: featureLayer.__wajoLayerStyleMode },
+            baseStyle,
+            true
+          )
+        : baseStyle
+    );
+  }
+
+  if (typeof featureLayer.setZIndexOffset === "function") {
+    featureLayer.setZIndexOffset(featureLayer.__wajoBaseZIndexOffset ?? 0);
   }
 }
 
@@ -657,9 +733,11 @@ const MapCanvas = forwardRef(function MapCanvas(
   const printLayoutRef = useRef(null);
   const markerIconCacheRef = useRef(new Map());
   const vectorRenderersRef = useRef(new Map());
+  const leafletRef = useRef(null);
   const printStyleRef = useRef(false);
   const printScopeRef = useRef(null);
   const visibleRef = useRef(visible);
+  const layersRefForImperative = useRef(layers);
   const regionFilterRef = useRef(regionFilter);
   const focusAdminRef = useRef(focusAdmin);
   const handledDomEventsRef = useRef(new WeakSet());
@@ -713,9 +791,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   }, [visible]);
 
   useEffect(() => {
+    layersRefForImperative.current = layers;
     regionFilterRef.current = regionFilter;
     focusAdminRef.current = focusAdmin;
-  }, [regionFilter, focusAdmin]);
+  }, [layers, regionFilter, focusAdmin]);
 
   const loadLayerData = useCallback(
     async (layer) => {
@@ -813,6 +892,9 @@ const MapCanvas = forwardRef(function MapCanvas(
    */
   useEffect(() => {
     let disposed = false;
+    const layerRefsSnapshot = layerRefs.current;
+    const vectorRenderersSnapshot = vectorRenderersRef.current;
+    const markerIconCacheSnapshot = markerIconCacheRef.current;
 
     import("leaflet").then((L) => {
       if (
@@ -863,6 +945,10 @@ const MapCanvas = forwardRef(function MapCanvas(
       adminLabelPane.style.zIndex = "350";
       adminLabelPane.style.pointerEvents = "none";
 
+      const featureTooltipPane = map.createPane("featureTooltip");
+      featureTooltipPane.style.zIndex = "1200";
+      featureTooltipPane.style.pointerEvents = "none";
+
       L.DomUtil.create(
         "div",
         "leaflet-basemap-tint",
@@ -912,59 +998,85 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       tileRef.current = osm;
 
-      let coordsFrame = 0;
+      let coordsTimer = 0;
       let latestCoords = null;
+      let lastCoordsUpdate = 0;
+      const coordsThrottle = 120;
+
+      const flushCoords = () => {
+        coordsTimer = 0;
+        if (!latestCoords) return;
+
+        lastCoordsUpdate = performance.now();
+        onCoordsRef.current?.(
+          `${latestCoords.lat.toFixed(5)}, ${latestCoords.lng.toFixed(5)}`
+        );
+      };
 
       const handleMapMouseMove = (event) => {
         latestCoords = event.latlng;
-
-        if (coordsFrame) {
-          return;
-        }
-
-        coordsFrame = window.requestAnimationFrame(() => {
-          coordsFrame = 0;
-
-          if (!latestCoords) {
-            return;
-          }
-
-          onCoordsRef.current?.(
-            `${latestCoords.lat.toFixed(5)}, ${latestCoords.lng.toFixed(5)}`
-          );
-        });
+        const elapsed = performance.now() - lastCoordsUpdate;
+        if (coordsTimer || elapsed < coordsThrottle) return;
+        coordsTimer = window.setTimeout(flushCoords, coordsThrottle);
       };
 
       map.on("mousemove", handleMapMouseMove);
 
       map.on("click", (event) => {
         const originalEvent = event?.originalEvent;
-        if (!originalEvent || handledDomEventsRef.current.has(originalEvent)) {
-          return;
-        }
+        const latlng = event?.latlng;
+        if (!originalEvent || !latlng) return;
 
         const visibleNow = visibleRef.current || {};
-        const priority = [
-          { layerId: "adm-desa", type: "desa" },
-          { layerId: "adm-kecamatan", type: "kecamatan" },
-          { layerId: "adm-kabupaten", type: "kabupaten" }
-        ];
+        const handled = handledDomEventsRef.current.has(originalEvent);
+        const currentFocus = focusAdminRef.current;
+        const selectedLayerId = selectedRef.current?.__wajoLayerId;
+
+        // A direct administrative click has already selected the correct
+        // feature. Do not replay it through the map-level hit test.
+        if (handled && isAdministrativeLayerId(selectedLayerId)) return;
+
+        const navigationType = currentFocus?.type === "desa" ? "desa" : "kecamatan";
+        const priority = navigationType === "desa"
+          ? [
+              { layerId: "adm-desa", type: "desa" },
+              { layerId: "adm-kecamatan", type: "kecamatan" },
+              { layerId: "adm-kabupaten", type: "kabupaten" }
+            ]
+          : [
+              { layerId: "adm-kecamatan", type: "kecamatan" },
+              { layerId: "adm-kabupaten", type: "kabupaten" },
+              { layerId: "adm-desa", type: "desa" }
+            ];
 
         for (const candidate of priority) {
           if (!visibleNow[candidate.layerId]) continue;
-          const data = loadedData.current[candidate.layerId];
-          if (!data?.features?.length) continue;
 
-          const feature = data.features.find((item) => pointInFeature(item, event.latlng));
-          if (!feature) continue;
-
-          const config = layers.find((item) => item.id === candidate.layerId);
-          const key = config ? featureKey(config, feature) : null;
-          const target = findFeatureLayerByKey(layerRefs.current[candidate.layerId], key);
+          const target = findFeatureLayerAtLatLng(
+            layerRefs.current[candidate.layerId],
+            latlng
+          );
           if (!target) continue;
 
-          target.fire("click", { originalEvent });
-          return;
+          const feature = target.__wajoFeature;
+          const currentFeature = currentFocus?.feature;
+          const sameFeature = currentFeature
+            ? administrationFeatureMatchesTarget(
+                feature,
+                currentFeature,
+                candidate.type
+              )
+            : false;
+
+          // With a thematic feature on top, keep that feature's click when
+          // it belongs to the current administrative context. When the user
+          // is already inside another context, promote a click landing in a
+          // different administrative region so navigation remains available.
+          const canPromoteHandled = handled && Boolean(currentFocus) && !sameFeature;
+          if (!handled || canPromoteHandled) {
+            target.fire("click", { originalEvent, latlng });
+            return;
+          }
         }
       });
 
@@ -986,6 +1098,8 @@ const MapCanvas = forwardRef(function MapCanvas(
       });
 
       mapRef.current = map;
+      leafletRef.current = L;
+      setRenderVersion((value) => value + 1);
 
       map.whenReady(() => {
         window.requestAnimationFrame(
@@ -1077,10 +1191,10 @@ const MapCanvas = forwardRef(function MapCanvas(
       };
 
       mapRef.current = map;
-      map._wajoCoordsFrame = () => {
-        if (coordsFrame) {
-          window.cancelAnimationFrame(coordsFrame);
-          coordsFrame = 0;
+      map._wajoCoordsTimer = () => {
+        if (coordsTimer) {
+          window.clearTimeout(coordsTimer);
+          coordsTimer = 0;
         }
       };
 
@@ -1111,18 +1225,20 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       }
 
-      map?._wajoCoordsFrame?.();
+      map?._wajoCoordsTimer?.();
       map?.remove();
 
       mapRef.current = null;
+      leafletRef.current = null;
       tileRef.current = null;
       printViewRef.current = null;
-      restorePrintAdministrationStyles(layerRefs.current);
+      restorePrintAdministrationStyles(layerRefsSnapshot);
       printStyleRef.current = false;
       printScopeRef.current = null;
       restorePrintViewport(map, printLayoutRef);
-      vectorRenderersRef.current.clear();
-      markerIconCacheRef.current.clear();
+      vectorRenderersSnapshot.clear();
+      markerIconCacheSnapshot.clear();
+      Object.values(layerRefsSnapshot).forEach((layerGroup) => layerGroup?.remove?.());
     };
   }, []);
 
@@ -1175,59 +1291,56 @@ const MapCanvas = forwardRef(function MapCanvas(
 
   /*
    * Render vector layers.
-   * Context wilayah adalah bagian dari render key. Ketika pengguna
-   * berpindah kabupaten → kecamatan → desa, layer tematik yang aktif
-   * dibangun ulang dari data cache supaya hasil filter selalu segar.
+   * Administrative layers remain mounted so their interaction never
+   * disappears under thematic data. Thematic/vector layers reuse their
+   * existing GeoJSON container and only replace feature children when the
+   * administrative context changes.
    */
   const previousMapContextKeyRef = useRef(null);
 
   useEffect(() => {
-    if (!mapRef.current) {
-      return;
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+
+    const contextKey = getAdminContextKey(regionFilter, focusAdmin);
+    const contextChanged =
+      previousMapContextKeyRef.current !== null &&
+      previousMapContextKeyRef.current !== contextKey;
+
+    if (contextChanged) {
+      selectedRef.current?.setStyle?.(
+        selectedRef.current?.__wajoBaseStyle || {}
+      );
+      selectedRef.current?.setZIndexOffset?.(
+        selectedRef.current?.__wajoBaseZIndexOffset ?? 0
+      );
+      selectedRef.current = null;
     }
 
-    import("leaflet").then((L) => {
-      const map = mapRef.current;
+    previousMapContextKeyRef.current = contextKey;
 
-      const contextKey = getAdminContextKey(regionFilter, focusAdmin);
-      const contextChanged = previousMapContextKeyRef.current !== null && previousMapContextKeyRef.current !== contextKey;
-      if (contextChanged) {
-        selectedRef.current?.setStyle?.(selectedRef.current?.__wajoBaseStyle || {});
-        layers.forEach((layer) => {
-          if (!layerRefs.current[layer.id]) return;
-          if (isAdministrativeLayerId(layer.id)) return;
-          layerRefs.current[layer.id]?.remove?.();
-          delete layerRefs.current[layer.id];
-        });
-        selectedRef.current = null;
-      }
-      previousMapContextKeyRef.current = contextKey;
-      layers.forEach((layer, layerIndex) => {
-        const existing =
-          layerRefs.current[layer.id];
+    layers.forEach((layer, layerIndex) => {
+      const existing = layerRefs.current[layer.id];
+      const sourceData = loadedData.current[layer.id];
 
-        const sourceData =
-          loadedData.current[layer.id];
-
-        if (
-          !visible[layer.id] ||
-          !sourceData
-        ) {
-          if (existing) {
-            existing.remove();
-            delete layerRefs.current[layer.id];
-          }
-
-          return;
-        }
-
-        // Keep already-rendered layers intact. Toggling one layer
-        // should not rebuild every other active layer.
+      if (!visible[layer.id] || !sourceData) {
         if (existing) {
-          return;
+          existing.remove();
+          delete layerRefs.current[layer.id];
         }
-        const renderData =
-          filterGeoJsonForLayer(
+        return;
+      }
+
+      // Administrative boundaries do not need to be rebuilt when context
+      // changes. Their active style is synchronized below.
+      const renderKey = isAdministrativeLayerId(layer.id)
+        ? `admin:${layer.id}`
+        : `${layer.id}:${contextKey}`;
+
+      if (existing) {
+        if (existing.__wajoRenderKey !== renderKey) {
+          const renderData = filterGeoJsonForLayer(
             layer,
             sourceData,
             regionFilter,
@@ -1235,553 +1348,275 @@ const MapCanvas = forwardRef(function MapCanvas(
             focusAdmin
           );
 
-        const paneName =
-          ensureLayerPane(map, layer, layerIndex);
-
-        let vectorRenderer =
-          vectorRenderersRef.current.get(paneName);
-
-        if (!vectorRenderer) {
-          vectorRenderer = isAdministrativeLayerId(layer.id)
-            ? L.svg({ pane: paneName })
-            : L.canvas({
-                pane: paneName,
-                padding: 0.45
-              });
-          vectorRenderersRef.current.set(
-            paneName,
-            vectorRenderer
-          );
+          existing.clearLayers();
+          existing.addData(renderData);
+          existing.__wajoRenderKey = renderKey;
         }
+        return;
+      }
 
-        const geoLayer =
-          L.geoJSON(
-            renderData,
-            {
-              renderer: vectorRenderer,
-              pane: paneName,
-              interactive: true,
-              bubblingMouseEvents: true,
-              style: (feature) =>
-                styleFor(
-                  layer,
-                  feature
-                ),
-
-              pointToLayer: (
-                feature,
-                latlng
-              ) => {
-                const isPointLayer =
-                  layer.geometry === "Point";
-
-                if (isPointLayer) {
-                  const kind =
-                    pointKind(
-                      layer,
-                      feature
-                    );
-
-                  if (
-                    kind === "place"
-                  ) {
-                    return L.circleMarker(
-                      latlng,
-                      {
-                        radius: 3.5,
-                        color: "#fff",
-                        weight: 1,
-                        fillColor:
-                          layer.color,
-                        fillOpacity:
-                          0.85
-                      }
-                    );
-                  }
-
-                  const iconKey =
-                    `${kind}:${layer.color}`;
-
-                  let icon =
-                    markerIconCacheRef.current.get(
-                      iconKey
-                    );
-
-                  if (!icon) {
-                    icon =
-                      L.divIcon({
-                        className: "",
-                        html:
-                          markerIconMarkup(
-                            kind,
-                            layer.color
-                          ),
-                        iconSize: [
-                          30,
-                          30
-                        ],
-                        iconAnchor: [
-                          15,
-                          15
-                        ]
-                      });
-
-                    markerIconCacheRef.current.set(
-                      iconKey,
-                      icon
-                    );
-                  }
-
-                  return L.marker(
-                    latlng,
-                    {
-                      icon,
-                      pane: layerPaneName(layer),
-                      keyboard: true
-                    }
-                  );
-                }
-
-                return L.circleMarker(
-                  latlng,
-                  {
-                    radius: 4,
-                    color: "#fff",
-                    weight: 1,
-                    fillColor:
-                      layer.color,
-                    fillOpacity:
-                      0.82
-                  }
-                );
-              },
-
-              onEachFeature: (
-                feature,
-                featureLayer
-              ) => {
-                const baseStyle =
-                  styleFor(
-                    layer,
-                    feature
-                  );
-
-                const isPolygon =
-                  ["Polygon", "MultiPolygon"].includes(feature?.geometry?.type) ||
-                  featureLayer instanceof L.Polygon;
-
-                featureLayer.__wajoFeatureKey = featureKey(layer, feature);
-                featureLayer.__wajoFeature = feature;
-                featureLayer.__wajoLayerId = layer.id;
-
-                /*
-                 * Universal feature selection.
-                 * Klik data tematik dianggap sudah ditangani, sehingga
-                 * map-level administrative hit-test tidak ikut memilih
-                 * kecamatan/desa di bawahnya.
-                 */
-                featureLayer.on(
-                  "click",
-                  (event) => {
-                    if (event?.originalEvent) {
-                      handledDomEventsRef.current.add(event.originalEvent);
-                    }
-
-                    const previousSelected = selectedRef.current;
-                    if (previousSelected && previousSelected !== featureLayer) {
-                      const previousIsAdmin = isAdministrativeLayerId(previousSelected.__wajoLayerId);
-                      const nextIsAdmin = isAdministrativeLayerId(layer.id);
-                      if (!(previousIsAdmin && !nextIsAdmin)) {
-                        previousSelected.setStyle?.(previousSelected.__wajoBaseStyle || {});
-                      }
-                    }
-
-                    selectedRef.current =
-                      featureLayer;
-
-                    featureLayer.__wajoBaseStyle =
-                      baseStyle;
-
-                    featureLayer.setStyle?.(
-                      selectedStyleFor(
-                        layer,
-                        baseStyle,
-                        isPolygon
-                      )
-                    );
-
-                    onFeatureSelectRef.current?.({
-                      layer,
-                      feature,
-                      featureKey: featureKey(layer, feature),
-                      regionName: featureRegionName(
-                        feature,
-                        loadedData.current["adm-kecamatan"]
-                      )
-                    });
-                  }
-                );
-
-                /*
-                 * Polygon highlight.
-                 *
-                 * Tidak menggunakan bringToFront().
-                 * Feature lain tetap bisa di-click.
-                 */
-                if (isPolygon) {
-                  featureLayer.__wajoBaseStyle =
-                    baseStyle;
-
-                  featureLayer.on(
-                    "mouseover",
-                    () => {
-                      if (
-                        selectedRef.current ===
-                        featureLayer ||
-                        featureLayer.__wajoActiveAdmin
-                      ) {
-                        return;
-                      }
-
-                      featureLayer.setStyle(
-                        hoverStyleFor(
-                          layer,
-                          baseStyle
-                        )
-                      );
-                    }
-                  );
-
-                  featureLayer.on(
-                    "mouseout",
-                    () => {
-                      if (
-                        selectedRef.current ===
-                        featureLayer
-                      ) {
-                        return;
-                      }
-
-                      if (featureLayer.__wajoActiveAdmin) {
-                        featureLayer.setStyle(
-                          selectedStyleFor(
-                            layer,
-                            baseStyle,
-                            true
-                          )
-                        );
-                        return;
-                      }
-
-                      featureLayer.setStyle(
-                        baseStyle
-                      );
-                    }
-                  );
-                }
-
-                /*
-                 * Label kecamatan permanen.
-                 */
-                if (
-                  layer.styleMode === "admin" &&
-                  (feature.properties?.Kecamatan ?? feature.properties?.WADMKC ?? feature.properties?.NAMOBJ)
-                ) {
-                  featureLayer.bindTooltip(
-                    String(
-                      feature.properties.Kecamatan ??
-                      feature.properties.WADMKC ??
-                      feature.properties.NAMOBJ
-                    ),
-                    {
-                      permanent:
-                        true,
-                      direction:
-                        "center",
-                      className:
-                        "leaflet-kecamatan-label",
-                      opacity: 1,
-                      interactive:
-                        false,
-                      pane: "adminLabel"
-                    }
-                  );
-                } else {
-                  const label =
-                    featureLabel(
-                      layer,
-                      feature
-                    );
-
-                  const tooltipOptions =
-                    {
-                      sticky: true,
-                      direction:
-                        "auto",
-                      opacity: 0.96,
-                      offset: [
-                        10,
-                        0
-                      ],
-                      className:
-                        "leaflet-smart-tooltip"
-                    };
-
-                  const bindSmartTooltip =
-                    (content) => {
-                      featureLayer.bindTooltip(
-                        String(
-                          content
-                        ),
-                        tooltipOptions
-                      );
-
-                      featureLayer.on(
-                        "tooltipopen",
-                        (event) => {
-                          const map =
-                            mapRef.current;
-
-                          const tooltip =
-                            event.tooltip;
-
-                          const element =
-                            tooltip?.getElement?.();
-
-                          if (
-                            !map ||
-                            !tooltip ||
-                            !element
-                          ) {
-                            return;
-                          }
-
-                          const size =
-                            map.getSize();
-
-                          const latLng =
-                            event?.latlng ||
-                            tooltip?.getLatLng?.() ||
-                            featureLayer.getLatLng?.() ||
-                            featureLayer
-                              .getBounds?.()
-                              .getCenter?.();
-
-                          if (!latLng) {
-                            return;
-                          }
-
-                          const point =
-                            map.latLngToContainerPoint(
-                              latLng
-                            );
-
-                          const width =
-                            Math.min(
-                              element.offsetWidth ||
-                                220,
-                              320
-                            );
-
-                          const height =
-                            Math.min(
-                              element.offsetHeight ||
-                                40,
-                              140
-                            );
-
-                          const gap = 12;
-
-                          const available = {
-                            right:
-                              size.x -
-                              point.x,
-
-                            left:
-                              point.x,
-
-                            bottom:
-                              size.y -
-                              point.y,
-
-                            top:
-                              point.y
-                          };
-
-                          let direction =
-                            "top";
-
-                          if (
-                            available.right >=
-                            width +
-                              gap
-                          ) {
-                            direction =
-                              "right";
-                          } else if (
-                            available.left >=
-                            width +
-                              gap
-                          ) {
-                            direction =
-                              "left";
-                          } else if (
-                            available.bottom >=
-                            height +
-                              gap
-                          ) {
-                            direction =
-                              "bottom";
-                          }
-
-                          const offsets = {
-                            right: [
-                              10,
-                              0
-                            ],
-
-                            left: [
-                              -10,
-                              0
-                            ],
-
-                            bottom: [
-                              0,
-                              10
-                            ],
-
-                            top: [
-                              0,
-                              -10
-                            ]
-                          };
-
-                          tooltip.options.direction = direction;
-                          tooltip.options.offset =
-                            offsets[direction];
-                          tooltip.update();
-                        }
-                      );
-                    };
-
-                  /*
-                   * Sarana + pendidikan:
-                   * gunakan nama objek/sekolah.
-                   */
-                  if (
-                    layer.styleMode ===
-                    "admin-village"
-                  ) {
-                    if (label) {
-                      featureLayer.bindTooltip(
-                        String(label),
-                        {
-                          permanent: true,
-                          direction: "center",
-                          className: "leaflet-desa-label",
-                          opacity: 0.9,
-                          interactive: false,
-                          pane: "adminLabel"
-                        }
-                      );
-                    }
-                  } else if (
-                    layer.styleMode ===
-                    "admin-county-outline"
-                  ) {
-                    bindSmartTooltip(
-                      feature.properties?.nama_kabupaten ??
-                        feature.properties?.WADMKK ??
-                        feature.properties?.NAMOBJ ??
-                        "Kabupaten Wajo"
-                    );
-                  } else if (
-                    (
-                      layer.group ===
-                        "Infrastruktur" ||
-                      layer.group ===
-                        "Pendidikan"
-                    ) &&
-                    (
-                      feature
-                        .properties
-                        ?.NAMOBJ ||
-                      feature
-                        .properties
-                        ?.nama_sekolah
-                    )
-                  ) {
-                    bindSmartTooltip(
-                      feature
-                        .properties
-                        ?.NAMOBJ ||
-                        feature
-                          .properties
-                          ?.nama_sekolah
-                    );
-                  } else if (
-                    layer.styleMode ===
-                      "toponym" ||
-                    (
-                      label &&
-                      layer.labelField &&
-                      layer.geometry ===
-                        "Point"
-                    )
-                  ) {
-                    bindSmartTooltip(
-                      label
-                    );
-                  }
-                }
-              }
-            }
-          ).addTo(
-            mapRef.current
-          );
-
-        layerRefs.current[
-          layer.id
-        ] = geoLayer;
-      });
-
-      applyActiveAdministrationStyles(
-        layerRefs.current,
-        loadedData.current,
-        {
-          focusAdmin,
-          regionFilter
-        }
+      const renderData = filterGeoJsonForLayer(
+        layer,
+        sourceData,
+        regionFilter,
+        loadedData.current["adm-kecamatan"],
+        focusAdmin
       );
 
-      /*
-       * Initial map fit hanya sekali
-       * berdasarkan kecamatan.
-       */
-      const adminLayer =
-        layerRefs.current[
-          "adm-kecamatan"
-        ];
+      const paneName = ensureLayerPane(map, layer, layerIndex);
 
-      if (
-        adminLayer &&
-        visible["adm-kecamatan"] &&
-        !map._wajoInitialFit
-      ) {
-        if (adminLayer.getBounds().isValid()) {
-          fitWajoBounds(map, L, adminLayer.toGeoJSON());
-        }
-
-        map._wajoInitialFit = true;
+      let vectorRenderer = vectorRenderersRef.current.get(paneName);
+      if (!vectorRenderer) {
+        vectorRenderer = isAdministrativeLayerId(layer.id)
+          ? L.svg({ pane: paneName })
+          : L.canvas({ pane: paneName, padding: 0.45 });
+        vectorRenderersRef.current.set(paneName, vectorRenderer);
       }
+
+      const createGeoLayer = () => L.geoJSON(renderData, {
+        renderer: vectorRenderer,
+        pane: paneName,
+        interactive: true,
+        bubblingMouseEvents: true,
+        style: (feature) => styleFor(layer, feature),
+
+        pointToLayer: (feature, latlng) => {
+          const isPointLayer = layer.geometry === "Point";
+          if (isPointLayer) {
+            const kind = pointKind(layer, feature);
+
+            if (kind === "place") {
+              return L.circleMarker(latlng, {
+                radius: 3.5,
+                color: "#fff",
+                weight: 1,
+                fillColor: layer.color,
+                fillOpacity: 0.85
+              });
+            }
+
+            const iconKey = `${kind}:${layer.color}`;
+            let icon = markerIconCacheRef.current.get(iconKey);
+            if (!icon) {
+              icon = L.divIcon({
+                className: "",
+                html: markerIconMarkup(kind, layer.color),
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+              });
+              markerIconCacheRef.current.set(iconKey, icon);
+            }
+
+            return L.marker(latlng, {
+              icon,
+              pane: paneName,
+              keyboard: true
+            });
+          }
+
+          return L.circleMarker(latlng, {
+            radius: 4,
+            color: "#fff",
+            weight: 1,
+            fillColor: layer.color,
+            fillOpacity: 0.82
+          });
+        },
+
+        onEachFeature: (feature, featureLayer) => {
+          const baseStyle = styleFor(layer, feature);
+          const isPolygon =
+            ["Polygon", "MultiPolygon"].includes(feature?.geometry?.type) ||
+            featureLayer instanceof L.Polygon;
+
+          featureLayer.__wajoFeatureKey = featureKey(layer, feature);
+          featureLayer.__wajoFeature = feature;
+          featureLayer.__wajoLayerId = layer.id;
+          featureLayer.__wajoLayerStyleMode = layer.styleMode;
+          featureLayer.__wajoBaseStyle = baseStyle;
+          featureLayer.__wajoBaseZIndexOffset =
+            featureLayer.options?.zIndexOffset ?? 0;
+          featureLayer.__wajoSelected = false;
+
+          featureLayer.on("click", (event) => {
+            if (event?.originalEvent) {
+              handledDomEventsRef.current.add(event.originalEvent);
+            }
+
+            const previousSelected = selectedRef.current;
+            if (previousSelected && previousSelected !== featureLayer) {
+              restoreFeatureHoverVisual(
+                previousSelected,
+                previousSelected.__wajoBaseStyle || {}
+              );
+            }
+
+            selectedRef.current = featureLayer;
+            setFeatureSelectedVisual(featureLayer, layer, baseStyle, isPolygon, true);
+
+            onFeatureSelectRef.current?.({
+              layer,
+              feature,
+              featureKey: featureKey(layer, feature),
+              regionName: featureRegionName(
+                feature,
+                loadedData.current["adm-kecamatan"]
+              )
+            });
+          });
+
+          featureLayer.on("mouseover", () => {
+            map.getContainer().style.cursor = "pointer";
+            applyFeatureHoverVisual(featureLayer, layer, baseStyle);
+          });
+
+          featureLayer.on("mouseout", () => {
+            map.getContainer().style.cursor = "";
+            restoreFeatureHoverVisual(featureLayer, baseStyle);
+          });
+
+          if (layer.styleMode === "admin" && (
+            feature.properties?.Kecamatan ??
+            feature.properties?.WADMKC ??
+            feature.properties?.NAMOBJ
+          )) {
+            featureLayer.bindTooltip(
+              String(
+                feature.properties.Kecamatan ??
+                feature.properties.WADMKC ??
+                feature.properties.NAMOBJ
+              ),
+              {
+                permanent: true,
+                direction: "center",
+                className: "leaflet-kecamatan-label",
+                opacity: 1,
+                interactive: false,
+                pane: "adminLabel"
+              }
+            );
+          } else {
+            const label = featureLabel(layer, feature);
+            const tooltipOptions = {
+              sticky: true,
+              direction: "auto",
+              opacity: 0.96,
+              offset: [10, 0],
+              className: "leaflet-smart-tooltip",
+              pane: "featureTooltip"
+            };
+
+            const bindSmartTooltip = (content) => {
+              featureLayer.bindTooltip(String(content), tooltipOptions);
+              featureLayer.on("tooltipopen", (event) => {
+                const activeMap = mapRef.current;
+                const tooltip = event.tooltip;
+                const element = tooltip?.getElement?.();
+                if (!activeMap || !tooltip || !element) return;
+
+                const size = activeMap.getSize();
+                const latLng =
+                  event?.latlng ||
+                  tooltip?.getLatLng?.() ||
+                  featureLayer.getLatLng?.() ||
+                  featureLayer.getBounds?.().getCenter?.();
+                if (!latLng) return;
+
+                const point = activeMap.latLngToContainerPoint(latLng);
+                const width = Math.min(element.offsetWidth || 220, 320);
+                const height = Math.min(element.offsetHeight || 40, 140);
+                const gap = 12;
+                const available = {
+                  right: size.x - point.x,
+                  left: point.x,
+                  bottom: size.y - point.y,
+                  top: point.y
+                };
+
+                let direction = "top";
+                if (available.right >= width + gap) {
+                  direction = "right";
+                } else if (available.left >= width + gap) {
+                  direction = "left";
+                } else if (available.bottom >= height + gap) {
+                  direction = "bottom";
+                }
+
+                const offsets = {
+                  right: [10, 0],
+                  left: [-10, 0],
+                  bottom: [0, 10],
+                  top: [0, -10]
+                };
+
+                tooltip.options.direction = direction;
+                tooltip.options.offset = offsets[direction];
+                tooltip.update();
+              });
+            };
+
+            if (layer.styleMode === "admin-village") {
+              if (label) {
+                featureLayer.bindTooltip(String(label), {
+                  permanent: true,
+                  direction: "center",
+                  className: "leaflet-desa-label",
+                  opacity: 0.9,
+                  interactive: false,
+                  pane: "adminLabel"
+                });
+              }
+            } else if (layer.styleMode === "admin-county-outline") {
+              bindSmartTooltip(
+                feature.properties?.nama_kabupaten ??
+                  feature.properties?.WADMKK ??
+                  feature.properties?.NAMOBJ ??
+                  "Kabupaten Wajo"
+              );
+            } else if ((
+              layer.group === "Infrastruktur" ||
+              layer.group === "Pendidikan"
+            ) && (
+              feature.properties?.NAMOBJ ||
+              feature.properties?.nama_sekolah
+            )) {
+              bindSmartTooltip(
+                feature.properties?.NAMOBJ ||
+                  feature.properties?.nama_sekolah
+              );
+            } else if (
+              layer.styleMode === "toponym" ||
+              (label && layer.labelField && layer.geometry === "Point")
+            ) {
+              bindSmartTooltip(label);
+            }
+          }
+        }
+      });
+
+      const geoLayer = createGeoLayer().addTo(map);
+      geoLayer.__wajoRenderKey = renderKey;
+      layerRefs.current[layer.id] = geoLayer;
     });
-  }, [
-    layers,
-    visible,
-    renderVersion,
-    regionFilter,
-    focusAdmin
-  ]);
+
+    applyActiveAdministrationStyles(
+      layerRefs.current,
+      loadedData.current,
+      { focusAdmin, regionFilter }
+    );
+
+    const adminLayer = layerRefs.current["adm-kecamatan"];
+    if (
+      adminLayer &&
+      visible["adm-kecamatan"] &&
+      !map._wajoInitialFit
+    ) {
+      if (adminLayer.getBounds().isValid()) {
+        fitWajoBounds(map, L, adminLayer.toGeoJSON());
+      }
+      map._wajoInitialFit = true;
+    }
+  }, [layers, visible, renderVersion, regionFilter, focusAdmin]);
 
   useImperativeHandle(
     ref,
@@ -1958,20 +1793,37 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       zoomToLayer: (layerId) => {
         if (!mapRef.current) return;
+
+        const renderedLayer = layerRefs.current[layerId];
+        const renderedBounds = renderedLayer?.getBounds?.();
+        if (renderedBounds?.isValid?.()) {
+          mapRef.current.fitBounds(renderedBounds, {
+            padding: [44, 44],
+            maxZoom: regionFilterRef.current ? 15 : 14,
+            animate: true
+          });
+          return;
+        }
+
+        const data = loadedData.current[layerId];
+        const layerConfig = layersRefForImperative.current.find((item) => item.id === layerId);
+        if (!data || !layerConfig) return;
+
         import("leaflet").then((L) => {
-          const data = loadedData.current[layerId];
-          const layerConfig = layers.find((item) => item.id === layerId);
-          if (!data || !layerConfig) return;
           const scoped = filterGeoJsonForLayer(
             layerConfig,
             data,
-            regionFilter,
+            regionFilterRef.current,
             loadedData.current["adm-kecamatan"],
-            focusAdmin
+            focusAdminRef.current
           );
           const bounds = L.geoJSON(scoped).getBounds();
           if (bounds.isValid()) {
-            mapRef.current.fitBounds(bounds, { padding: [44, 44], maxZoom: regionFilter ? 15 : 14, animate: true });
+            mapRef.current.fitBounds(bounds, {
+              padding: [44, 44],
+              maxZoom: regionFilterRef.current ? 15 : 14,
+              animate: true
+            });
           }
         });
       },

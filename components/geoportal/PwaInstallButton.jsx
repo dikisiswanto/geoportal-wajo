@@ -6,13 +6,17 @@ import IconButton from "./IconButton";
 
 export default function PwaInstallButton() {
   const [installPrompt, setInstallPrompt] = useState(null);
-  const [installed, setInstalled] = useState(false);
+  const [installed, setInstalled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
-    const standalone = mediaQuery.matches || window.navigator.standalone === true;
-    setInstalled(standalone);
+    const handleDisplayModeChange = (event) => {
+      setInstalled(event.matches || window.navigator.standalone === true);
+    };
 
     const handleBeforeInstallPrompt = (event) => {
       event.preventDefault();
@@ -25,10 +29,12 @@ export default function PwaInstallButton() {
       setBusy(false);
     };
 
+    mediaQuery.addEventListener?.("change", handleDisplayModeChange);
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleInstalled);
 
     return () => {
+      mediaQuery.removeEventListener?.("change", handleDisplayModeChange);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleInstalled);
     };

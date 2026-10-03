@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "sync:admin": "node scripts/sync-big-admin-boundaries.mjs",
     "sync:admin:desa": "node scripts/sync-big-admin-boundaries.mjs --desa --apply",
     "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.mjs",

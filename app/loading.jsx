@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { withAssetVersion } from "../lib/assetVersion";
-const WAJO_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
+
+const SITE_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
 
 export default function Loading() {
   return (
@@ -9,8 +11,8 @@ export default function Loading() {
       aria-live="polite"
     >
       <section className="flex w-full max-w-sm flex-col items-center text-center">
-        <img
-          src={WAJO_LOGO}
+        <Image
+          src={SITE_LOGO}
           alt="Lambang Kabupaten Wajo"
           width="96"
           height="96"

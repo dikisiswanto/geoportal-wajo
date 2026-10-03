@@ -5,7 +5,7 @@ import { groupOrder, layers } from "../lib/layers";
 import { buildKecamatanLegend } from "../lib/geo/format";
 import { kecamatanColor } from "../lib/geo/styles";
 import { DATA_SUMMARY } from "../lib/geo/dataSummary";
-import { REGION_SUMMARY, WAJO_REGIONS } from "../lib/geo/regionSummary";
+import { REGION_SUMMARY, REGIONS } from "../lib/geo/regionSummary";
 import { getRelatedLayerIds, getRegionCount } from "../lib/geo/relations";
 import { normalizeRegionName, regionDisplayName } from "../lib/geo/region";
 import { featureKey } from "../lib/geo/format";
@@ -30,6 +30,7 @@ const DEFAULT_VISIBLE = Object.freeze(
 
 export default function GeoPortal() {
   const mapApi = useRef(null);
+  const requestedFeatureHandledRef = useRef("");
   const [visible, setVisible] = useState(() => ({ ...DEFAULT_VISIBLE }));
   const [loading, setLoading] = useState({});
   const [errors, setErrors] = useState({});
@@ -65,27 +66,31 @@ export default function GeoPortal() {
 
     if (requestedLayers.length) {
       const hasExplicitLayerState = Boolean(params.get("layers"));
-      setVisible((previous) => {
-        const base = hasExplicitLayerState
-          ? Object.fromEntries(layers.map((layer) => [layer.id, false]))
-          : previous;
-        return {
-          ...base,
-          ...Object.fromEntries(requestedLayers.map((id) => [id, true]))
-        };
+      window.requestAnimationFrame(() => {
+        setVisible((previous) => {
+          const base = hasExplicitLayerState
+            ? Object.fromEntries(layers.map((layer) => [layer.id, false]))
+            : previous;
+          return {
+            ...base,
+            ...Object.fromEntries(requestedLayers.map((id) => [id, true]))
+          };
+        });
+        setHasInteracted(true);
+        if (requestedFeatureParam) setRequestedFeature(requestedFeatureParam);
+        if (requestedCatalog && requestedLayer) {
+          setCatalogLayerId(requestedLayer);
+          setSidebarOpen(true);
+        }
       });
-      setHasInteracted(true);
-      if (requestedFeatureParam) setRequestedFeature(requestedFeatureParam);
-      if (requestedCatalog && requestedLayer) {
-        setCatalogLayerId(requestedLayer);
-        setSidebarOpen(true);
-      }
     }
 
-    if (requestedRegion && WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(requestedRegion))) {
-      const region = WAJO_REGIONS.find((item) => normalizeRegionName(item) === normalizeRegionName(requestedRegion));
-      setRegionFilter(region || "");
-      setHasInteracted(true);
+    if (requestedRegion && REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(requestedRegion))) {
+      const region = REGIONS.find((item) => normalizeRegionName(item) === normalizeRegionName(requestedRegion));
+      window.requestAnimationFrame(() => {
+        setRegionFilter(region || "");
+        setHasInteracted(true);
+      });
     }
   }, []);
 
@@ -136,10 +141,11 @@ export default function GeoPortal() {
     const data = layerData[layer.id];
     if (!data?.features?.length) return;
     const found = data.features.find((feature) => String(featureKey(layer, feature) ?? "") === String(requestedFeature));
-    if (found) {
+    const requestKey = `${layer.id}:${requestedFeature}`;
+    if (found && requestedFeatureHandledRef.current !== requestKey) {
+      requestedFeatureHandledRef.current = requestKey;
       mapApi.current?.selectFeature?.(layer.id, requestedFeature);
       mapApi.current?.zoomToFeature?.({ layer, feature: found });
-      setRequestedFeature("");
     }
   }, [requestedFeature, mapReady, layerData]);
 
@@ -221,13 +227,20 @@ export default function GeoPortal() {
       .map((item) => item.id);
     setHasInteracted(true);
     setStatus(`${layer.title} ${nextVisible ? "ditampilkan" : "disembunyikan"}`);
+
+    if (!nextVisible && selected?.layer?.id === layer.id) {
+      mapApi.current?.clearSelection?.();
+      setSelected(null);
+      setInspectOpen(false);
+    }
+
     setVisible((previous) => ({ ...previous, [layer.id]: nextVisible }));
     updateMapQuery({
       layers: nextVisibleIds.join(","),
       layer: nextVisible ? layer.id : null,
       feature: null
     });
-  }, [visible, updateMapQuery]);
+  }, [selected, visible, updateMapQuery]);
 
   const handleFeatureSelect = useCallback((payload) => {
     setHasInteracted(true);
@@ -245,13 +258,13 @@ export default function GeoPortal() {
 
     let shouldSetRegion = false;
     if (adminLayerId === "adm-kecamatan" && selectedKecamatan) {
-      shouldSetRegion = WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
+      shouldSetRegion = REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
       setFocusAdmin({ type: "kecamatan", feature: payload.feature });
       if (shouldSetRegion) setRegionFilter(selectedKecamatan);
     } else if (adminLayerId === "adm-desa") {
       setFocusAdmin({ type: "desa", feature: payload.feature });
       if (selectedKecamatan) {
-        shouldSetRegion = WAJO_REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
+        shouldSetRegion = REGIONS.some((region) => normalizeRegionName(region) === normalizeRegionName(selectedKecamatan));
         if (shouldSetRegion) setRegionFilter(selectedKecamatan);
       }
     } else if (adminLayerId === "adm-kabupaten") {
@@ -320,7 +333,6 @@ export default function GeoPortal() {
     if (region) {
       setStatus(`Menampilkan data di ${regionDisplayName(region)}`);
       updateMapQuery({ region, feature: null });
-      mapApi.current?.zoomToRegion?.(region);
     } else {
       setStatus("Menampilkan seluruh data Kabupaten Wajo");
       updateMapQuery({ region: null, feature: null });
@@ -357,7 +369,6 @@ export default function GeoPortal() {
     setStatus(`Menampilkan ${layer.title} di ${regionDisplayName(region)}…`);
     const activeIds = layers.filter((item) => visible[item.id] || item.id === layer.id).map((item) => item.id);
     updateMapQuery({ layers: activeIds.join(","), layer: layer.id, region, feature: null });
-    mapApi.current?.zoomToRegion?.(region);
   }, [updateMapQuery, visible]);
 
   const handleExploreAdminLayer = useCallback((layerId, selection) => {
@@ -547,7 +558,7 @@ export default function GeoPortal() {
           search={search}
           groupFilter={groupFilter}
           regionFilter={regionFilter}
-          regionOptions={WAJO_REGIONS}
+          regionOptions={REGIONS}
           onSearch={setSearch}
           onGroupFilter={setGroupFilter}
           onRegionFilter={handleRegionFilter}
