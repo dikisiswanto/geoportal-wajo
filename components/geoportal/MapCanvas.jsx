@@ -45,6 +45,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     onStatus,
     onCoords,
     onViewChange,
+    onPrintScale,
     regionFilter,
     focusAdmin = null,
     retryTokens = {}
@@ -102,6 +103,7 @@ const MapCanvas = forwardRef(function MapCanvas(
   const onFeatureSelectRef =
     useRef(onFeatureSelect);
   const onViewChangeRef = useRef(onViewChange);
+  const onPrintScaleRef = useRef(onPrintScale);
 
   useEffect(() => {
     onStatusRef.current = onStatus;
@@ -110,6 +112,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     onCoordsRef.current = onCoords;
   }, [onCoords]);
+
+  useEffect(() => {
+    onPrintScaleRef.current = onPrintScale;
+  }, [onPrintScale]);
 
   useEffect(() => {
     onLayerLoadingRef.current = onLayerLoading;
@@ -395,7 +401,8 @@ const MapCanvas = forwardRef(function MapCanvas(
         if (scope) {
           applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
           printStyleRef.current = true;
-          fitMapForPrint(map, scope, printLayoutRef);
+          const printScale = fitMapForPrint(map, scope, printLayoutRef);
+          onPrintScaleRef.current?.(printScale);
         }
       };
 
@@ -404,6 +411,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           restorePrintAdministrationStyles(layerRefs.current);
           printStyleRef.current = false;
           printScopeRef.current = null;
+          onPrintScaleRef.current?.(null);
           restorePrintViewport(map, printLayoutRef);
           return;
         }
@@ -840,14 +848,16 @@ const MapCanvas = forwardRef(function MapCanvas(
         printScopeRef.current = scope;
         applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
         printStyleRef.current = true;
-        fitMapForPrint(map, scope, printLayoutRef);
+        const printScale = fitMapForPrint(map, scope, printLayoutRef);
+        onPrintScaleRef.current?.(printScale);
 
         await new Promise((resolve) => {
           window.requestAnimationFrame(() => {
             window.requestAnimationFrame(resolve);
           });
         });
-        fitMapForPrint(map, scope, printLayoutRef);
+        const finalPrintScale = fitMapForPrint(map, scope, printLayoutRef);
+        onPrintScaleRef.current?.(finalPrintScale);
         map.invalidateSize({ pan: false, debounceMoveend: false });
         await waitForPrintImages(document);
 

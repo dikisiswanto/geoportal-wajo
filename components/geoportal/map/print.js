@@ -197,6 +197,39 @@ function getUsableFeatureBounds(L, feature) {
   return isUsableBounds(bounds) ? bounds : null;
 }
 
+
+export function getPrintScaleDenominator(map) {
+  if (!map?.getZoom || !map?.getCenter) return null;
+
+  const zoom = Number(map.getZoom());
+  const center = map.getCenter();
+  const latitude = Number(center?.lat);
+  if (!Number.isFinite(zoom) || !Number.isFinite(latitude)) return null;
+
+  // Leaflet uses Web Mercator. Scale denominator is derived from the
+  // ground resolution at the map center and the standard 0.28 mm pixel.
+  const metersPerPixel =
+    (156543.03392804097 * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, zoom);
+  const denominator = metersPerPixel / 0.00028;
+
+  return Number.isFinite(denominator) && denominator > 0 ? denominator : null;
+}
+
+export function formatPrintScale(map) {
+  const denominator = getPrintScaleDenominator(map);
+  if (!denominator) return null;
+
+  // Keep the displayed value readable while preserving the calculated scale.
+  const magnitude = Math.pow(10, Math.floor(Math.log10(denominator)));
+  const step = magnitude >= 100000 ? 1000 : magnitude >= 10000 ? 500 : 100;
+  const rounded = Math.round(denominator / step) * step;
+
+  return {
+    denominator,
+    label: `1 : ${Math.max(1, Math.round(rounded)).toLocaleString("id-ID")}`
+  };
+}
+
 function getMaxPrintZoom(scope) {
   if (scope.type === "desa") return 17;
   if (scope.type === "kecamatan") return 15;
@@ -354,5 +387,5 @@ export function fitMapForPrint(map, scope, printLayoutRef) {
   }
 
   map.invalidateSize({ pan: false, debounceMoveend: false });
-  return true;
+  return formatPrintScale(map);
 }

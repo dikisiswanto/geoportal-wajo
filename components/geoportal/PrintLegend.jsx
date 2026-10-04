@@ -152,7 +152,7 @@ function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion 
   };
 }
 
-export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion }) {
+export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion, printScale }) {
   const info = buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion });
   const interactiveMapUrl = absoluteUrl("/");
 
@@ -191,6 +191,10 @@ export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle,
           <div>
             <dt>Luas wilayah</dt>
             <dd>{info.area}</dd>
+          </div>
+          <div>
+            <dt>Skala</dt>
+            <dd>{printScale?.label || "—"}</dd>
           </div>
           <div>
             <dt>Geometri</dt>

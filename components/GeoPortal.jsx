@@ -34,6 +34,7 @@ export default function GeoPortal() {
   const requestedFeatureHandledRef = useRef("");
   const [visible, setVisible] = useState(() => ({ ...DEFAULT_VISIBLE }));
   const [loading, setLoading] = useState({});
+  const [printScale, setPrintScale] = useState(null);
   const [errors, setErrors] = useState({});
   const [layerData, setLayerData] = useState({});
   const [selected, setSelected] = useState(null);
@@ -659,6 +660,7 @@ export default function GeoPortal() {
             onStatus={handleMapReadyStatus}
             onCoords={handleMapCoords}
             onViewChange={handleMapViewChange}
+            onPrintScale={setPrintScale}
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
@@ -741,6 +743,7 @@ export default function GeoPortal() {
           selectedFeature={selected}
           focusAdmin={focusAdmin}
           selectedRegion={selectedRegion}
+          printScale={printScale}
         />
       </main>
     </div>
