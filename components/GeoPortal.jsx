@@ -619,7 +619,7 @@ export default function GeoPortal() {
 
         <div className="print-map-stage relative min-w-0 flex-1">
           <div
-            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-[8.5rem] left-1/2 z-[1600] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-20 ui-fade-in"
+            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-[12rem] left-1/2 z-[1000] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-20 ui-fade-in"
             role="status"
             aria-live="polite"
           >
