@@ -358,7 +358,9 @@ export default function GeoPortal() {
     } else {
       setStatus("Menampilkan seluruh data Kabupaten Wajo");
       updateMapQuery({ region: null, feature: null });
-      mapApi.current?.zoomHome?.();
+      window.requestAnimationFrame(() => {
+        mapApi.current?.zoomHome?.();
+      });
     }
   }, [updateMapQuery]);
 
@@ -481,7 +483,9 @@ export default function GeoPortal() {
     setInspectOpen(false);
     setLayerInfo(null);
     mapApi.current?.clearSelection?.();
-    mapApi.current?.zoomHome?.();
+    window.requestAnimationFrame(() => {
+      mapApi.current?.zoomHome?.();
+    });
     setFocusAdmin(null);
     setRegionFilter("");
     updateMapQuery({ layers: null, layer: null, feature: null, region: null, lat: null, lng: null, zoom: null });
@@ -612,7 +616,7 @@ export default function GeoPortal() {
           />
         )}
 
-        <div className="relative min-w-0 flex-1">
+        <div className="print-map-stage relative min-w-0 flex-1">
           <ActiveLayersBar activeLayers={activeLayers} layerData={layerData} dataSummary={DATA_SUMMARY} regionFilter={regionFilter} regionSummary={REGION_SUMMARY} onSelectLayer={handleActiveLayerSelect} onCloseLayer={hideActiveLayer} onClearRegion={() => handleRegionFilter("")} />
           {!hasInteracted && !layerInfo && !selected && (
             <MapHint
@@ -638,11 +642,6 @@ export default function GeoPortal() {
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
-          />
-          <PrintLegend
-            activeLayers={activeLayers}
-            kecamatanLegend={printKecamatanLegend}
-            scopeTitle={printScopeTitle}
           />
           <MapControls
             mapReady={mapReady}
@@ -714,6 +713,12 @@ export default function GeoPortal() {
             legendOpen={legendOpen}
           />
         </div>
+
+        <PrintLegend
+          activeLayers={activeLayers}
+          kecamatanLegend={printKecamatanLegend}
+          scopeTitle={printScopeTitle}
+        />
       </main>
     </div>
   );

@@ -8,7 +8,7 @@ import { styleFor, kecamatanColor } from "../../../lib/geo/styles";
 
 export function getPrintScope(L, { regionFilter, focusAdmin, countyData, districtData, villageData }) {
   if (focusAdmin?.feature) {
-    const bounds = getFeatureBounds(L, focusAdmin.feature);
+    const bounds = getUsableFeatureBounds(L, focusAdmin.feature);
     if (bounds) {
       return {
         type: focusAdmin.type || "wilayah",
@@ -27,7 +27,7 @@ export function getPrintScope(L, { regionFilter, focusAdmin, countyData, distric
       ).trim();
       return normalizeRegionName(name) === target;
     });
-    const bounds = getFeatureBounds(L, feature);
+    const bounds = getUsableFeatureBounds(L, feature);
     if (bounds) {
       return { type: "kecamatan", feature, bounds };
     }
@@ -38,62 +38,18 @@ export function getPrintScope(L, { regionFilter, focusAdmin, countyData, distric
     const feature = villageData.features.find((item) =>
       String(item?.properties?.Desa ?? item?.properties?.WADMKD ?? item?.properties?.nama_desa ?? "").trim().toLowerCase() === villageTarget.toLowerCase()
     );
-    const bounds = getFeatureBounds(L, feature);
+    const bounds = getUsableFeatureBounds(L, feature);
     if (bounds) return { type: "desa", feature, bounds };
   }
 
   if (countyData?.features?.length) {
     const bounds = L.geoJSON(countyData).getBounds();
-    if (bounds.isValid()) return { type: "kabupaten", feature: countyData.features[0], bounds };
+    if (isUsableBounds(bounds)) return { type: "kabupaten", feature: countyData.features[0], bounds };
   }
 
   return null;
 }
 
-export function lockPrintViewport(map, printLayoutRef) {
-  const mapContainer = map?.getContainer?.();
-  const printRoot = mapContainer?.closest?.("#map") || mapContainer?.parentElement;
-  if (!printRoot || !mapContainer) return null;
-
-  if (!printLayoutRef.current) {
-    printLayoutRef.current = {
-      root: printRoot,
-      rootStyle: printRoot.getAttribute("style"),
-      mapStyle: mapContainer.getAttribute("style")
-    };
-  }
-
-  printRoot.style.position = "fixed";
-  printRoot.style.inset = "0";
-  printRoot.style.width = "100vw";
-  printRoot.style.height = "100vh";
-  printRoot.style.margin = "0";
-  printRoot.style.padding = "0";
-  printRoot.style.overflow = "hidden";
-
-  mapContainer.style.width = "100%";
-  mapContainer.style.height = "100%";
-  mapContainer.style.position = "absolute";
-  mapContainer.style.inset = "0";
-
-  return { printRoot, mapContainer };
-}
-
-export function restorePrintViewport(map, printLayoutRef) {
-  const snapshot = printLayoutRef.current;
-  if (!snapshot) return;
-
-  if (snapshot.rootStyle == null) snapshot.root.removeAttribute("style");
-  else snapshot.root.setAttribute("style", snapshot.rootStyle);
-
-  const mapContainer = map?.getContainer?.();
-  if (mapContainer) {
-    if (snapshot.mapStyle == null) mapContainer.removeAttribute("style");
-    else mapContainer.setAttribute("style", snapshot.mapStyle);
-  }
-
-  printLayoutRef.current = null;
-}
 
 function districtMatchesPrintScope(feature, scope) {
   if (!feature || !scope) return false;
@@ -193,21 +149,182 @@ export function restorePrintAdministrationStyles(layerRefs) {
   });
 }
 
+const PRINT_PAGE_CSS_PX = {
+  width: (297 / 25.4) * 96,
+  height: (210 / 25.4) * 96
+};
+
+const PRINT_MAP_RATIO = 0.75;
+
+function getPrintMapSize() {
+  return {
+    width: PRINT_PAGE_CSS_PX.width * PRINT_MAP_RATIO,
+    height: PRINT_PAGE_CSS_PX.height
+  };
+}
+
+function getPrintFitPadding(size) {
+  const shortest = Math.max(1, Math.min(size.width, size.height));
+  const padding = Math.round(Math.min(56, Math.max(34, shortest * 0.045)));
+  return {
+    topLeft: { x: padding, y: padding },
+    bottomRight: { x: padding, y: padding }
+  };
+}
+
+function isFiniteLatLng(latlng) {
+  return Boolean(
+    latlng &&
+      Number.isFinite(Number(latlng.lat)) &&
+      Number.isFinite(Number(latlng.lng)) &&
+      Number(latlng.lat) >= -90 &&
+      Number(latlng.lat) <= 90 &&
+      Number(latlng.lng) >= -180 &&
+      Number(latlng.lng) <= 180
+  );
+}
+
+function isUsableBounds(bounds) {
+  return Boolean(
+    bounds?.isValid?.() &&
+      isFiniteLatLng(bounds.getSouthWest?.()) &&
+      isFiniteLatLng(bounds.getNorthEast?.())
+  );
+}
+
+function getUsableFeatureBounds(L, feature) {
+  const bounds = getFeatureBounds(L, feature);
+  return isUsableBounds(bounds) ? bounds : null;
+}
+
+function getMaxPrintZoom(scope) {
+  if (scope.type === "desa") return 17;
+  if (scope.type === "kecamatan") return 15;
+  return 13;
+}
+
+function constrainPrintStage(printRoot, mapContainer) {
+  const stage = mapContainer?.closest?.(".print-map-stage");
+  if (!stage) return null;
+
+  const size = getPrintMapSize();
+
+  stage.style.position = "relative";
+  stage.style.width = `${size.width}px`;
+  stage.style.height = `${size.height}px`;
+  stage.style.minWidth = "0";
+  stage.style.minHeight = "0";
+  stage.style.maxWidth = `${size.width}px`;
+  stage.style.maxHeight = `${size.height}px`;
+  stage.style.flex = "0 0 auto";
+  stage.style.overflow = "hidden";
+  stage.style.gridColumn = "1";
+  stage.style.gridRow = "1";
+
+  mapContainer.style.position = "absolute";
+  mapContainer.style.inset = "0";
+  mapContainer.style.width = `${size.width}px`;
+  mapContainer.style.height = `${size.height}px`;
+
+  return { stage, size };
+}
+
+export function lockPrintViewport(map, printLayoutRef) {
+  const mapContainer = map?.getContainer?.();
+  const printRoot = mapContainer?.closest?.("#map");
+  if (!printRoot || !mapContainer) return null;
+
+  if (!printLayoutRef.current) {
+    const stage = mapContainer.closest?.(".print-map-stage");
+    printLayoutRef.current = {
+      root: printRoot,
+      stage,
+      rootStyle: printRoot.getAttribute("style"),
+      stageStyle: stage?.getAttribute?.("style") ?? null,
+      mapStyle: mapContainer.getAttribute("style")
+    };
+  }
+
+  const page = PRINT_PAGE_CSS_PX;
+  printRoot.style.position = "fixed";
+  printRoot.style.inset = "0";
+  printRoot.style.width = `${page.width}px`;
+  printRoot.style.height = `${page.height}px`;
+  printRoot.style.margin = "0";
+  printRoot.style.padding = "0";
+  printRoot.style.overflow = "hidden";
+  printRoot.style.display = "block";
+
+  return constrainPrintStage(printRoot, mapContainer);
+}
+
+export function restorePrintViewport(map, printLayoutRef) {
+  const snapshot = printLayoutRef.current;
+  if (!snapshot) return;
+
+  if (snapshot.rootStyle == null) snapshot.root.removeAttribute("style");
+  else snapshot.root.setAttribute("style", snapshot.rootStyle);
+
+  if (snapshot.stage) {
+    if (snapshot.stageStyle == null) snapshot.stage.removeAttribute("style");
+    else snapshot.stage.setAttribute("style", snapshot.stageStyle);
+  }
+
+  const mapContainer = map?.getContainer?.();
+  if (mapContainer) {
+    if (snapshot.mapStyle == null) mapContainer.removeAttribute("style");
+    else mapContainer.setAttribute("style", snapshot.mapStyle);
+  }
+
+  printLayoutRef.current = null;
+}
+
 export function fitMapForPrint(map, scope, printLayoutRef) {
-  if (!map || !scope?.bounds) return false;
-  lockPrintViewport(map, printLayoutRef);
+  if (!map || !isUsableBounds(scope?.bounds)) return false;
+
+  const layout = lockPrintViewport(map, printLayoutRef);
+  if (!layout?.size) return false;
+
+  const mapContainer = map.getContainer?.();
+  if (mapContainer) {
+    // Force layout before asking Leaflet for its container size. This keeps
+    // the fit calculation independent from the interactive viewport.
+    void mapContainer.offsetWidth;
+    void mapContainer.offsetHeight;
+  }
+
   map.invalidateSize({ pan: false, debounceMoveend: false });
 
-  const size = map.getSize();
-  const shortest = Math.max(1, Math.min(size.x, size.y));
-  const edgePadding = Math.round(Math.min(84, Math.max(42, shortest * 0.065)));
-  const padding = [edgePadding, edgePadding];
-  const maxZoom = scope.type === "desa" ? 17 : scope.type === "kecamatan" ? 15 : 13;
-  const zoom = map.getBoundsZoom(scope.bounds, false, padding);
-  const safeZoom = Number.isFinite(zoom) ? Math.min(zoom, maxZoom) : 12;
+  const measured = map.getSize?.();
+  const size =
+    measured &&
+    Number.isFinite(Number(measured.x)) &&
+    Number.isFinite(Number(measured.y)) &&
+    measured.x > 1 &&
+    measured.y > 1
+      ? measured
+      : layout.size;
 
-  map.setView(scope.bounds.getCenter(), safeZoom, { animate: false });
+  const padding = getPrintFitPadding(size);
+  const maxZoom = getMaxPrintZoom(scope);
+  const bounds = scope.bounds;
+
+  try {
+    map.fitBounds(bounds, {
+      paddingTopLeft: [padding.topLeft.x, padding.topLeft.y],
+      paddingBottomRight: [padding.bottomRight.x, padding.bottomRight.y],
+      maxZoom,
+      animate: false
+    });
+  } catch (error) {
+    const center = bounds.getCenter?.();
+    if (!isFiniteLatLng(center)) return false;
+
+    map.setView?.(center, Math.min(maxZoom, map.getZoom?.() || maxZoom), {
+      animate: false
+    });
+  }
+
   map.invalidateSize({ pan: false, debounceMoveend: false });
   return true;
 }
-

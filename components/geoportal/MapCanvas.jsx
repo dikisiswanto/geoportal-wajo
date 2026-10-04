@@ -12,7 +12,7 @@ import {
 import { withAssetVersion } from "../../lib/assetVersion";
 import { createGeoJsonLayer } from "./map/geoLayer";
 import { bindMapInteraction } from "./map/interaction";
-import { DEFAULT_VIEW, fitWajoBounds, findFeatureLayerAtLatLng } from "./map/geometry";
+import { DEFAULT_VIEW, fitWajoBounds, findFeatureLayerAtLatLng, getInteractiveMapFitOptions } from "./map/geometry";
 import {
   getAdminContextKey,
   filterGeoJsonForLayer,
@@ -729,7 +729,12 @@ const MapCanvas = forwardRef(function MapCanvas(
           if (!feature) return;
           const bounds = L.geoJSON(feature).getBounds();
           if (bounds.isValid()) {
-            mapRef.current.fitBounds(bounds, { padding: [56, 56], maxZoom: 13, animate: true });
+            mapRef.current.fitBounds(bounds, getInteractiveMapFitOptions(mapRef.current, {
+              horizontal: 56,
+              vertical: 56,
+              maxZoom: 13,
+              animate: true
+            }));
           }
         });
       },
@@ -855,11 +860,15 @@ const MapCanvas = forwardRef(function MapCanvas(
         const renderedLayer = layerRefs.current[layerId];
         const renderedBounds = renderedLayer?.getBounds?.();
         if (renderedBounds?.isValid?.()) {
-          mapRef.current.fitBounds(renderedBounds, {
-            padding: [44, 44],
-            maxZoom: regionFilterRef.current ? 15 : 14,
-            animate: true
-          });
+          mapRef.current.fitBounds(
+            renderedBounds,
+            getInteractiveMapFitOptions(mapRef.current, {
+              horizontal: 44,
+              vertical: 44,
+              maxZoom: regionFilterRef.current ? 15 : 14,
+              animate: true
+            })
+          );
           return;
         }
 
@@ -877,11 +886,15 @@ const MapCanvas = forwardRef(function MapCanvas(
           );
           const bounds = L.geoJSON(scoped).getBounds();
           if (bounds.isValid()) {
-            mapRef.current.fitBounds(bounds, {
-              padding: [44, 44],
-              maxZoom: regionFilterRef.current ? 15 : 14,
-              animate: true
-            });
+            mapRef.current.fitBounds(
+              bounds,
+              getInteractiveMapFitOptions(mapRef.current, {
+                horizontal: 44,
+                vertical: 44,
+                maxZoom: regionFilterRef.current ? 15 : 14,
+                animate: true
+              })
+            );
           }
         });
       },
@@ -908,13 +921,12 @@ const MapCanvas = forwardRef(function MapCanvas(
             ) {
               mapRef.current.fitBounds(
                 bounds,
-                {
-                  padding: [
-                    44,
-                    44
-                  ],
-                  maxZoom: 17
-                }
+                getInteractiveMapFitOptions(mapRef.current, {
+                  horizontal: 44,
+                  vertical: 44,
+                  maxZoom: 17,
+                  animate: false
+                })
               );
             }
           }
