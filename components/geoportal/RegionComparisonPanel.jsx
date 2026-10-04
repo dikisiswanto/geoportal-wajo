@@ -19,8 +19,8 @@ function districtFeatureByName(data, name) {
 
 function areaKm2(data, name) {
   const feature = districtFeatureByName(data, name);
-  const hectares = Number(feature?.properties?.luas_wilayah_ha ?? feature?.properties?.LUASWH);
-  return Number.isFinite(hectares) && hectares > 0 ? hectares / 100 : null;
+  const value = Number(feature?.properties?.luas_wilayah_km2 ?? feature?.properties?.LUASWH);
+  return Number.isFinite(value) && value > 0 ? value : null;
 }
 
 function Metric({ label, left, right }) {

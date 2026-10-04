@@ -741,7 +741,7 @@ export default function GeoPortal() {
                     className="map-button rounded-lg border border-slate-200 px-3 py-2 !text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     onClick={() => closeDesktopViewNotice(true)}
                   >
-                    Jangan  tampilkan lagi
+                    Jangan tampilkan lagi
                   </button>
                   <button
                     type="button"

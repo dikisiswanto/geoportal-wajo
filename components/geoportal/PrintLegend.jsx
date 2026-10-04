@@ -64,7 +64,7 @@ function formatArea(properties) {
     if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} km²`;
   }
 
-  const value = firstValue(properties, ["luas_wilayah_ha", "LUASWH"]);
+  const value = firstValue(properties, ["LUASWH"]);
   if (!value) return "—";
   const numeric = Number(value.replace?.(/,/g, ".") ?? value);
   if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} km²`;

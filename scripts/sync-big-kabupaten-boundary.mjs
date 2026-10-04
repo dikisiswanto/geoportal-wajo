@@ -54,13 +54,12 @@ try {
   const districtData = JSON.parse(districtRaw);
   const districtFeatures = Array.isArray(districtData.features) ? districtData.features : [];
   const districtAreas = districtFeatures
-    .map((feature) => Number(feature?.properties?.luas_wilayah_km2 ?? feature?.properties?.LUASWH ?? feature?.properties?.luas_wilayah_ha))
-    .filter(Number.isFinite);
+    .map((feature) => Number(feature?.properties?.luas_wilayah_km2 ?? feature?.properties?.LUASWH))
+    .filter((value) => Number.isFinite(value) && value > 0);
   if (districtAreas.length === districtFeatures.length && districtFeatures.length > 0) {
     const totalKm2 = districtAreas.reduce((sum, value) => sum + value, 0);
     derivedArea = {
       luas_wilayah_km2: Number(totalKm2.toFixed(6)),
-      luas_wilayah_ha: Number((totalKm2 * 100).toFixed(4)),
       luas_wilayah_metode: `Penjumlahan luas ${districtFeatures.length} kecamatan`,
       jumlah_kecamatan_luas: districtFeatures.length,
     };

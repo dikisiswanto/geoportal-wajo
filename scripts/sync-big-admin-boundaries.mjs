@@ -63,6 +63,14 @@ function featureProperties(feature) {
   return feature?.properties || feature?.attributes || {};
 }
 
+function normalizeAreaProperties(props) {
+  const raw = readProperty(props, ["LUASWH"]);
+  const areaKm2 = Number(raw);
+  return Number.isFinite(areaKm2) && areaKm2 > 0
+    ? { luas_wilayah_km2: areaKm2 }
+    : {};
+}
+
 function belongsToWajo(feature) {
   const props = featureProperties(feature);
   const codes = ["KDBBPS", "KDPKAB"]
@@ -328,6 +336,7 @@ function enrichKecamatanRows(rows) {
       ...feature,
       properties: {
         ...props,
+        ...normalizeAreaProperties(props),
         Kecamatan: master.nameBps,
         nama_kecamatan: master.nameBps,
         kode_kecamatan: master.codeKemendagri,
@@ -397,6 +406,7 @@ function enrichDesaRows(rows) {
       ...feature,
       properties: {
         ...props,
+        ...normalizeAreaProperties(props),
         Desa: village.nameBps,
         nama_desa: village.nameBps,
         Kecamatan: kec.nameBps,
