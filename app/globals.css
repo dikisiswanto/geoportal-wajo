@@ -33,6 +33,25 @@ select {
 /* Theme changes should feel like one coordinated surface transition rather than
    a collection of elements switching at different speeds. Keep the animation
    on UI paint properties only; Leaflet's map renderer stays immediate. */
+[data-theme] body,
+[data-theme] body :where(
+  [class*="bg-"],
+  [class*="text-"],
+  [class*="border-"],
+  [class*="ring-"],
+  [class*="shadow-"],
+  input,
+  select,
+  textarea,
+  button,
+  a,
+  svg
+) {
+  transition-property: background-color, fill, stroke, box-shadow, opacity;
+  transition-duration: 120ms;
+  transition-timing-function: ease;
+}
+
 /* Elements that own their own motion keep that motion intact. */
 [data-theme] body :where(
   .leaflet-container,
