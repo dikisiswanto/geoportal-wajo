@@ -738,6 +738,9 @@ export default function GeoPortal() {
           activeLayers={activeLayers}
           kecamatanLegend={printKecamatanLegend}
           scopeTitle={printScopeTitle}
+          selectedFeature={selected}
+          focusAdmin={focusAdmin}
+          selectedRegion={selectedRegion}
         />
       </main>
     </div>

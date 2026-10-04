@@ -26,7 +26,134 @@ function LegendSwatch({ kind, color }) {
   );
 }
 
-export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle }) {
+function geometryLabel(feature) {
+  const type = String(feature?.geometry?.type || "");
+  if (type === "Point" || type === "MultiPoint") return "Titik";
+  if (type.includes("LineString")) return "Garis";
+  if (type.includes("Polygon")) return "Area";
+  return type || "—";
+}
+
+function collectCoordinatePairs(coordinates, pairs = []) {
+  if (!Array.isArray(coordinates)) return pairs;
+  if (
+    coordinates.length >= 2 &&
+    Number.isFinite(Number(coordinates[0])) &&
+    Number.isFinite(Number(coordinates[1]))
+  ) {
+    pairs.push([Number(coordinates[0]), Number(coordinates[1])]);
+    return pairs;
+  }
+
+  coordinates.forEach((item) => collectCoordinatePairs(item, pairs));
+  return pairs;
+}
+
+function representativeCoordinate(feature) {
+  const type = feature?.geometry?.type;
+  const coordinates = feature?.geometry?.coordinates;
+  const pairs = collectCoordinatePairs(coordinates);
+  if (!pairs.length) return null;
+
+  if (type === "Point") return pairs[0];
+
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lng, lat] of pairs) {
+    minLng = Math.min(minLng, lng);
+    maxLng = Math.max(maxLng, lng);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+  }
+
+  if (![minLng, maxLng, minLat, maxLat].every(Number.isFinite)) return null;
+  return [(minLng + maxLng) / 2, (minLat + maxLat) / 2];
+}
+
+function formatCoordinate(coordinate) {
+  if (!coordinate) return "—";
+  const [lng, lat] = coordinate;
+  return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+}
+
+function firstValue(properties, keys) {
+  for (const key of keys) {
+    const value = properties?.[key];
+    if (value != null && String(value).trim() !== "") return String(value).trim();
+  }
+  return "";
+}
+
+function formatArea(properties) {
+  const value = firstValue(properties, ["luas_wilayah_ha", "LUASWH"]);
+  if (!value) return "—";
+  const numeric = Number(value.replace?.(/,/g, ".") ?? value);
+  if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ha`;
+  return value;
+}
+
+function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion }) {
+  const activeFeature = selectedFeature?.feature ?? focusAdmin?.feature ?? null;
+  if (!activeFeature) {
+    return {
+      name: scopeTitle || "Kabupaten Wajo",
+      geometry: "—",
+      location: selectedRegion ? `Berada di ${selectedRegion}` : "Kabupaten Wajo",
+      area: "—",
+      coordinate: "—"
+    };
+  }
+
+  const properties = activeFeature.properties ?? {};
+  const featureType = selectedFeature?.layer?.geometry || focusAdmin?.type || "";
+  const adminType = focusAdmin?.type;
+  const name =
+    adminType === "desa"
+      ? firstValue(properties, ["Desa", "WADMKD", "nama_desa", "nama_desa_kemendagri"])
+      : adminType === "kecamatan"
+        ? firstValue(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "NAMOBJ"])
+        : adminType === "kabupaten"
+          ? firstValue(properties, ["nama_kabupaten", "WADMKK", "NAMOBJ"])
+          : firstValue(properties, [
+            selectedFeature?.layer?.labelField,
+            selectedFeature?.layer?.categoricalField,
+            "NAMOBJ",
+            "nama",
+            "NAMA"
+          ]) || scopeTitle || "Fitur terpilih";
+
+  const district = firstValue(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "kecamatan"]);
+  const location = adminType === "desa"
+    ? district ? `Berada di Kecamatan ${district}` : "Berada di wilayah Kabupaten Wajo"
+    : adminType === "kecamatan"
+      ? "Berada di Kabupaten Wajo"
+      : adminType === "kabupaten"
+        ? "Kabupaten Wajo"
+        : district
+          ? `Berada di Kecamatan ${district}`
+          : selectedRegion
+            ? `Berada di ${selectedRegion}`
+            : "Lokasi wilayah belum tersedia";
+
+  const area = adminType || selectedFeature?.layer?.id?.startsWith("adm-")
+    ? formatArea(properties)
+    : "—";
+
+  return {
+    name,
+    geometry: geometryLabel(activeFeature) || geometryLabel({ geometry: { type: featureType } }),
+    location,
+    area,
+    coordinate: formatCoordinate(representativeCoordinate(activeFeature))
+  };
+}
+
+export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion }) {
+  const info = buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion });
+
   return (
     <aside className="print-only-legend" aria-label="Legenda peta untuk cetak">
       <div className="print-only-header">
@@ -47,6 +174,32 @@ export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle 
           <p className="print-only-note">{scopeTitle || "Tampilan saat ini"}</p>
         </div>
       </div>
+
+      <section className="print-only-map-info" aria-labelledby="print-map-info-title">
+        <p id="print-map-info-title" className="print-only-section-title">Informasi peta</p>
+        <dl className="print-only-info-grid">
+          <div>
+            <dt>Nama</dt>
+            <dd>{info.name}</dd>
+          </div>
+          <div>
+            <dt>Lokasi</dt>
+            <dd>{info.location}</dd>
+          </div>
+          <div>
+            <dt>Luas wilayah</dt>
+            <dd>{info.area}</dd>
+          </div>
+          <div>
+            <dt>Geometri</dt>
+            <dd>{info.geometry}</dd>
+          </div>
+          <div className="print-only-coordinate">
+            <dt>{info.geometry === "Titik" ? "Koordinat" : "Titik referensi"}</dt>
+            <dd>{info.coordinate}</dd>
+          </div>
+        </dl>
+      </section>
 
       <div className="print-only-legend-items">
         {activeLayers.map((layer) => {

@@ -423,6 +423,52 @@ a:focus-visible {
     white-space: nowrap !important;
   }
 
+  .print-only-map-info {
+    margin: 0 0 9px !important;
+    padding: 8px 9px !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-only-info-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 5px !important;
+    margin: 0 !important;
+  }
+
+  .print-only-info-grid > div {
+    display: grid !important;
+    grid-template-columns: 70px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+  }
+
+  .print-only-info-grid dt {
+    margin: 0 !important;
+    color: #64748b !important;
+    font-size: 8px !important;
+    line-height: 1.25 !important;
+    font-weight: 600 !important;
+  }
+
+  .print-only-info-grid dd {
+    margin: 0 !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+    color: #0f172a !important;
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+    font-weight: 700 !important;
+  }
+
+  .print-only-coordinate dd {
+    font-variant-numeric: tabular-nums !important;
+    letter-spacing: 0.01em !important;
+  }
+
   .print-only-legend-items {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
