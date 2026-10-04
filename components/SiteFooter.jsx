@@ -4,7 +4,7 @@ import { PUBLISHER_NAME, SITE_NAME } from "../lib/seo";
 export default function SiteFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div>
           <p className="text-sm font-semibold text-slate-900">{SITE_NAME}</p>
           <p className="mt-1 text-xs text-slate-500">

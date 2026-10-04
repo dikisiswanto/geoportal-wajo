@@ -153,6 +153,7 @@ function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion 
 
 export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion }) {
   const info = buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion });
+  const interactiveMapUrl = typeof window !== "undefined" ? window.location.href : "/";
 
   return (
     <aside className="print-only-legend" aria-label="Legenda peta untuk cetak">
@@ -233,7 +234,10 @@ export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle,
         </div>
       )}
 
-      <p className="print-only-footer">Dikelola oleh Diskominfotik Kabupaten Wajo</p>
+      <div className="print-only-footer">
+        <span>Dikelola oleh Diskominfotik Kabupaten Wajo</span>
+        <a href={interactiveMapUrl}>Buka peta interaktif</a>
+      </div>
     </aside>
   );
 }

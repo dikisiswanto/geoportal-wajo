@@ -520,11 +520,33 @@ a:focus-visible {
   }
 
   .print-only-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
     margin-top: 10px !important;
     padding-top: 7px !important;
     border-top: 1px solid #e2e8f0 !important;
     font-size: 8px !important;
+    line-height: 1.3 !important;
     color: #64748b !important;
+  }
+
+  .print-only-footer > span {
+    min-width: 0 !important;
+  }
+
+  .print-only-footer > a {
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .print-only-footer > a:visited {
+    color: #0369a1 !important;
   }
 }
 

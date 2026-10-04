@@ -67,7 +67,7 @@ export default function DataCatalogPage() {
     <div className="min-h-screen bg-slate-50">
       <SiteHeader active="data" title="Geoportal Kabupaten Wajo" kicker="Pemerintah Kabupaten Wajo" />
       <main>
-      <div className="mx-auto max-w-6xl px-5 pb-10 pt-10 sm:px-6 sm:pt-11 lg:px-8">
+      <div className="mx-auto max-w-5xl px-5 pb-10 pt-10 sm:px-6 sm:pt-11 lg:px-8">
         <header className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             {PUBLISHER_NAME}
