@@ -1,21 +1,8 @@
 import Image from "next/image";
 import { absoluteUrl } from "../../lib/seo";
-import { markerIconMarkup, pointKind } from "../../lib/geo/markers";
-import { styleFor } from "../../lib/geo/styles";
 
-function LegendSwatch({ kind, color, layer, feature }) {
+function LegendSwatch({ kind, color }) {
   const safeColor = color || "#64748b";
-
-  if (kind === "point") {
-    const markup = markerIconMarkup(pointKind(layer || {}, feature || {}), safeColor);
-    return (
-      <div
-        className="print-only-point-icon"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: markup }}
-      />
-    );
-  }
 
   if (kind === "line") {
     return (
@@ -25,125 +12,19 @@ function LegendSwatch({ kind, color, layer, feature }) {
     );
   }
 
+  if (kind === "point") {
+    return (
+      <svg className="print-only-swatch-svg" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
+        <circle cx="7" cy="7" r="4.5" fill={safeColor} stroke="#334155" strokeWidth="1" />
+      </svg>
+    );
+  }
+
   return (
     <svg className="print-only-swatch-svg" viewBox="0 0 14 14" aria-hidden="true" focusable="false">
       <rect x="1" y="1" width="12" height="12" rx="2" fill={safeColor} fillOpacity="0.62" stroke={safeColor} strokeWidth="1.3" />
     </svg>
   );
-}
-
-function legendKind(layer) {
-  const geometry = String(layer?.geometry || "").toLowerCase();
-  if (geometry.includes("point")) return "point";
-  if (geometry.includes("line")) return "line";
-  return "area";
-}
-
-function normalizeLegendLabel(value) {
-  const text = String(value ?? "").trim();
-  if (!text) return "Data tersedia";
-  return text.replace(/\s+/g, " ");
-}
-
-function pointKindLabel(kind, layer) {
-  const labels = {
-    bridge: "Jembatan",
-    terminal: "Terminal",
-    port: "Pelabuhan",
-    fish: "Tempat pendaratan ikan",
-    train: "Stasiun",
-    scale: "Jembatan timbang",
-    building: "Bangunan",
-    government: "Kantor pemerintah",
-    power: "Pembangkit listrik",
-    bolt: "Gardu listrik",
-    gas: "Fasilitas migas",
-    telecom: "Fasilitas telekomunikasi",
-    water: "Fasilitas sumber daya air",
-    recycle: "Fasilitas persampahan",
-    trash: "Fasilitas persampahan",
-    sanitation: "Sanitasi",
-    education: "Satuan pendidikan",
-    health: "Puskesmas",
-    evacuation: "Titik evakuasi",
-    place: layer?.title || "Lokasi"
-  };
-  return labels[kind] || normalizeLegendLabel(kind);
-}
-
-function categoricalLegendLabel(layer, value) {
-  const label = normalizeLegendLabel(value);
-  if (layer?.categoricalField === "KLASIFIKAS") return `Klasifikasi ${label}`;
-  return label;
-}
-
-function buildLayerLegendEntries(layer, data) {
-  if (!layer) return [];
-
-  const features = Array.isArray(data?.features) ? data.features : [];
-  const kind = legendKind(layer);
-  const field = layer.categoricalField;
-
-  // Point layers reuse the exact marker glyph used on the map. If a point
-  // layer contains multiple marker kinds, expose each kind once.
-  if (kind === "point") {
-    const entries = [];
-    const seen = new Set();
-    for (const feature of features) {
-      const key = pointKind(layer, feature);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      entries.push({
-        key: `${layer.id}:${key}`,
-        label: pointKindLabel(key, layer),
-        kind,
-        color: layer.color,
-        feature
-      });
-      if (entries.length >= 8) break;
-    }
-    return entries.length ? entries : [{
-      key: `${layer.id}:default`,
-      label: layer.title,
-      kind,
-      color: layer.color,
-      feature: null
-    }];
-  }
-
-  // Categorical layers (roads, infrastructure, potentials, etc.) derive
-  // their legend directly from the same style function used by the map.
-  if (field && features.length) {
-    const entries = [];
-    const seen = new Set();
-    for (const feature of features) {
-      const value = feature?.properties?.[field];
-      if (value == null || String(value).trim() === "") continue;
-      const label = categoricalLegendLabel(layer, value);
-      const style = styleFor(layer, feature);
-      const color = style?.fillColor || style?.color || layer.color;
-      const key = `${label}:${color}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      entries.push({
-        key: `${layer.id}:${key}`,
-        label,
-        kind,
-        color,
-        feature
-      });
-      if (entries.length >= 12) break;
-    }
-    if (entries.length) return entries;
-  }
-
-  return [{
-    key: `${layer.id}:default`,
-    label: layer.title,
-    kind,
-    color: layer.color,
-    feature: features[0] || null
-  }];
 }
 
 function geometryLabel(feature) {
@@ -215,6 +96,21 @@ function formatArea(properties) {
   return value;
 }
 
+
+function CompassRose() {
+  return (
+    <div className="print-only-compass" aria-label="Arah mata angin: utara, timur, selatan, barat">
+      <span className="print-only-compass-label print-only-compass-n">U</span>
+      <span className="print-only-compass-label print-only-compass-e">T</span>
+      <span className="print-only-compass-label print-only-compass-s">S</span>
+      <span className="print-only-compass-label print-only-compass-w">B</span>
+      <span className="print-only-compass-center" aria-hidden="true" />
+      <span className="print-only-compass-needle print-only-compass-needle-n" aria-hidden="true" />
+      <span className="print-only-compass-needle print-only-compass-needle-s" aria-hidden="true" />
+    </div>
+  );
+}
+
 function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion }) {
   const activeFeature = selectedFeature?.feature ?? focusAdmin?.feature ?? null;
   if (!activeFeature) {
@@ -271,7 +167,7 @@ function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion 
   };
 }
 
-export default function PrintLegend({ activeLayers, layerData, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion, printScale }) {
+export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion, printScale }) {
   const info = buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion });
   const interactiveMapUrl = absoluteUrl("/");
 
@@ -297,7 +193,10 @@ export default function PrintLegend({ activeLayers, layerData, kecamatanLegend, 
       </div>
 
       <section className="print-only-map-info" aria-labelledby="print-map-info-title">
-        <p id="print-map-info-title" className="print-only-section-title">Informasi peta</p>
+        <div className="print-only-info-heading">
+          <p id="print-map-info-title" className="print-only-section-title">Informasi peta</p>
+          <CompassRose />
+        </div>
         <dl className="print-only-info-grid">
           <div>
             <dt>Nama</dt>
@@ -327,24 +226,20 @@ export default function PrintLegend({ activeLayers, layerData, kecamatanLegend, 
       </section>
 
       <div className="print-only-legend-items">
-        {activeLayers.flatMap((layer) => {
-          const entries = buildLayerLegendEntries(layer, layerData?.[layer.id]);
-          return [
-            <div key={`${layer.id}:heading`} className="print-only-legend-layer-title">
-              {layer.title}
-            </div>,
-            ...entries.map((entry) => (
-              <div key={entry.key} className="print-only-legend-item print-only-legend-detail">
-                <LegendSwatch
-                  kind={entry.kind}
-                  color={entry.color}
-                  layer={layer}
-                  feature={entry.feature}
-                />
-                <span>{entry.label}</span>
-              </div>
-            ))
-          ];
+        {activeLayers.map((layer) => {
+          const geometry = String(layer.geometry || "").toLowerCase();
+          const swatchKind = layer.styleMode === "admin-county-outline" || geometry.includes("line")
+            ? "line"
+            : geometry.includes("point")
+              ? "point"
+              : "area";
+
+          return (
+            <div key={layer.id} className="print-only-legend-item">
+              <LegendSwatch kind={swatchKind} color={layer.color} />
+              <span>{layer.title}</span>
+            </div>
+          );
         })}
       </div>
 
