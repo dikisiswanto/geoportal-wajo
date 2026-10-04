@@ -3,6 +3,7 @@ import {
   administrationFeatureMatchesTarget,
   isAdministrativeLayerId
 } from "./context";
+import { applyFeatureHoverVisual, restoreFeatureHoverVisual } from "./layerStyles";
 
 const ADMIN_POINTER_DISTANCE = 7;
 const NATIVE_ADMIN_TAP_WINDOW = 750;
@@ -49,6 +50,7 @@ export function bindMapInteraction({
   let cursorFrame = 0;
   let latestCursorLatLng = null;
   let pointerState = null;
+  let hoveredAdminTarget = null;
 
   const flushCoords = () => {
     coordsTimer = 0;
@@ -67,6 +69,25 @@ export function bindMapInteraction({
     cursorFrame = window.requestAnimationFrame(() => {
       cursorFrame = 0;
       const target = resolveAdministrativeTarget(latestCursorLatLng);
+
+      if (hoveredAdminTarget !== target) {
+        if (hoveredAdminTarget) {
+          restoreFeatureHoverVisual(
+            hoveredAdminTarget,
+            hoveredAdminTarget.__wajoBaseStyle || {}
+          );
+        }
+
+        hoveredAdminTarget = target;
+        if (hoveredAdminTarget) {
+          applyFeatureHoverVisual(
+            hoveredAdminTarget,
+            { styleMode: hoveredAdminTarget.__wajoLayerStyleMode },
+            hoveredAdminTarget.__wajoBaseStyle || {}
+          );
+        }
+      }
+
       setInteractiveCursor(map, vectorRenderers, target);
     });
   };
@@ -258,6 +279,13 @@ export function bindMapInteraction({
       coordsTimer = 0;
     }
     cancelCursorFrame();
+    if (hoveredAdminTarget) {
+      restoreFeatureHoverVisual(
+        hoveredAdminTarget,
+        hoveredAdminTarget.__wajoBaseStyle || {}
+      );
+      hoveredAdminTarget = null;
+    }
     setInteractiveCursor(map, vectorRenderers, null);
     nativeAdminTapRef.current = null;
     pointerState = null;

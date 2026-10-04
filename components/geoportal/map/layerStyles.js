@@ -59,7 +59,7 @@ export function selectedStyleFor(layer, baseStyle, isPolygon) {
       ...baseStyle,
       weight: 2.5,
       color: "#1e293b",
-      fillOpacity: 0.46
+      fillOpacity: 0.14
     };
   }
 
@@ -68,7 +68,7 @@ export function selectedStyleFor(layer, baseStyle, isPolygon) {
       ...baseStyle,
       weight: 2.2,
       color: "#334155",
-      fillOpacity: 0.18
+      fillOpacity: 0.06
     };
   }
 

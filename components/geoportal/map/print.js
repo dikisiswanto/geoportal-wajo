@@ -108,11 +108,13 @@ export function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
               feature?.properties?.WADMKC ??
               feature?.properties?.NAMOBJ
             )
-          : "#cbd5e1",
-        fillOpacity: selected ? 0.36 : 0,
-        weight: selected ? 2.15 : 1.15,
-        color: selected ? "#1e293b" : "#64748b",
-        opacity: selected ? 0.98 : 0.88
+          : base.fillColor,
+        fillOpacity: selected
+          ? 0.12
+          : 0.02,
+        weight: selected ? 2.15 : Math.max(Number(base.weight ?? 1.15), 1.15),
+        color: selected ? "#1e293b" : base.color,
+        opacity: selected ? 0.98 : Number(base.opacity ?? 0.88)
       });
     });
   }
@@ -128,11 +130,13 @@ export function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {
       featureLayer.__wajoPrintStyleSnapshot = base;
       featureLayer.setStyle?.({
         ...base,
-        fillColor: selected ? "#64748b" : "#cbd5e1",
-        fillOpacity: selected ? 0.24 : 0,
-        weight: selected ? 1.55 : 0.9,
-        color: selected ? "#334155" : "#94a3b8",
-        opacity: selected ? 0.96 : 0.8
+        fillColor: selected ? "#64748b" : base.fillColor,
+        fillOpacity: selected
+          ? 0.08
+          : 0.01,
+        weight: selected ? 1.55 : Math.max(Number(base.weight ?? 0.9), 0.9),
+        color: selected ? "#334155" : base.color,
+        opacity: selected ? 0.96 : Number(base.opacity ?? 0.8)
       });
     });
   }

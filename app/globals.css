@@ -529,6 +529,12 @@ a:focus-visible {
     background: #f8fafc !important;
   }
 
+  /* Keep active administrative boundaries readable above thematic areas/lines.
+     Point layers remain above them through their higher thematic pane z-index. */
+  #map .leaflet-pane.adminCounty { z-index: 675 !important; }
+  #map .leaflet-pane.adminDistrict { z-index: 665 !important; }
+  #map .leaflet-pane.adminVillage { z-index: 655 !important; }
+
   #map,
   #map > div {
     box-sizing: border-box !important;
@@ -845,9 +851,8 @@ a:focus-visible {
 
   .print-only-legend-item > span:last-child {
     min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
   }
 
   .print-only-swatch-svg {
@@ -858,6 +863,49 @@ a:focus-visible {
     display: block !important;
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
+  }
+
+  .print-only-point-icon {
+    flex: 0 0 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  .print-only-point-icon .geo-marker {
+    width: 18px !important;
+    height: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .print-only-point-icon svg {
+    width: 17px !important;
+    height: 17px !important;
+    display: block !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .print-only-legend-layer-title {
+    grid-column: 1 / -1 !important;
+    margin-top: 4px !important;
+    padding-top: 5px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    font-size: 8px !important;
+    line-height: 1.25 !important;
+    font-weight: 800 !important;
+    color: #334155 !important;
+  }
+
+  .print-only-legend-layer-title:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: 0 !important;
   }
 
   .print-only-footer {
@@ -1224,4 +1272,21 @@ a:focus-visible {
   .admin-tab-content {
     animation: none !important;
   }
+}
+
+/* Administrative boundaries remain visually above thematic vectors while
+   geometry-based map interaction resolves their clicks independently. */
+#map .leaflet-pane.adminCounty,
+#map .leaflet-pane.adminDistrict,
+#map .leaflet-pane.adminVillage,
+#map .leaflet-pane.adminLabel {
+  pointer-events: none !important;
+}
+
+@media print {
+  #map .leaflet-pane.adminCounty { z-index: 690 !important; pointer-events: none !important; }
+  #map .leaflet-pane.adminDistrict { z-index: 700 !important; pointer-events: none !important; }
+  #map .leaflet-pane.adminVillage { z-index: 710 !important; pointer-events: none !important; }
+  #map .leaflet-pane.adminLabel { z-index: 750 !important; pointer-events: none !important; }
+
 }

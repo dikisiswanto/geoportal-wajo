@@ -738,11 +738,13 @@ export default function GeoPortal() {
 
         <PrintLegend
           activeLayers={activeLayers}
+          layerData={layerData}
           kecamatanLegend={printKecamatanLegend}
           scopeTitle={printScopeTitle}
           selectedFeature={selected}
           focusAdmin={focusAdmin}
           selectedRegion={selectedRegion}
+          regionFilter={regionFilter}
           printScale={printScale}
         />
       </main>

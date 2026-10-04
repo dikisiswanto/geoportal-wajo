@@ -77,6 +77,9 @@ const MapCanvas = forwardRef(function MapCanvas(
     if (!latlng) return null;
 
     const visibleNow = visibleRef.current || {};
+    const villageLayer = visibleNow["adm-desa"]
+      ? layerRefs.current["adm-desa"]
+      : null;
     const districtLayer = visibleNow["adm-kecamatan"]
       ? layerRefs.current["adm-kecamatan"]
       : null;
@@ -85,6 +88,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       : null;
 
     return (
+      findFeatureLayerAtLatLng(villageLayer, latlng) ||
       findFeatureLayerAtLatLng(districtLayer, latlng) ||
       findFeatureLayerAtLatLng(countyLayer, latlng)
     );
@@ -286,16 +290,19 @@ const MapCanvas = forwardRef(function MapCanvas(
         "none";
 
       const adminCountyPane = map.createPane("adminCounty");
-      adminCountyPane.style.zIndex = "320";
+      adminCountyPane.style.zIndex = "650";
+      adminCountyPane.style.pointerEvents = "none";
 
       const adminDistrictPane = map.createPane("adminDistrict");
-      adminDistrictPane.style.zIndex = "330";
+      adminDistrictPane.style.zIndex = "660";
+      adminDistrictPane.style.pointerEvents = "none";
 
       const adminVillagePane = map.createPane("adminVillage");
-      adminVillagePane.style.zIndex = "340";
+      adminVillagePane.style.zIndex = "670";
+      adminVillagePane.style.pointerEvents = "none";
 
       const adminLabelPane = map.createPane("adminLabel");
-      adminLabelPane.style.zIndex = "350";
+      adminLabelPane.style.zIndex = "730";
       adminLabelPane.style.pointerEvents = "none";
 
       const featureTooltipPane = map.createPane("featureTooltip");
