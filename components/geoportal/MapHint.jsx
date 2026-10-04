@@ -4,22 +4,22 @@ import { regionDisplayName } from "../../lib/geo/region";
 export default function MapHint({ step = "layer", regionName = "", onAction }) {
   const content = regionName
     ? {
-        title: `${regionDisplayName(regionName)} siap dijelajahi`,
-        text: "Pilih wilayah atau lokasi di peta untuk melihat informasinya.",
-        action: "Lihat data",
+        title: `Lihat ${regionDisplayName(regionName)} di peta`,
+        text: "Pilih wilayah atau lokasi di peta untuk melihat detailnya.",
+        action: "Lihat detail",
         icon: IconMapPin
       }
     : step === "feature"
       ? {
-          title: "Coba pilih wilayah di peta",
-          text: "Pilih wilayah atau lokasi untuk melihat informasi dan data terkait.",
+          title: "Pilih wilayah di peta",
+          text: "Pilih wilayah atau lokasi untuk melihat detailnya.",
           action: "Jelajahi",
           icon: IconInfoCircle
         }
       : {
-          title: "Mulai eksplorasi",
-          text: "Pilih data peta untuk menampilkannya di peta.",
-          action: "Buka data peta",
+          title: "Mulai menjelajah",
+          text: "Pilih data untuk ditampilkan di peta.",
+          action: "Pilih data",
           icon: IconInfoCircle
         };
 
@@ -27,12 +27,12 @@ export default function MapHint({ step = "layer", regionName = "", onAction }) {
 
   return (
     <div
-      className="map-ui-chrome pointer-events-auto absolute bottom-20 left-1/2 z-[830] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-5"
+      className="map-ui-chrome pointer-events-auto absolute bottom-20 left-1/2 z-[830] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-5 ui-fade-in"
       role="status"
       aria-live="polite"
     >
       <div className="flex items-start gap-2">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-50 text-slate-500" aria-hidden="true">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sky-100 text-sky-700" aria-hidden="true">
           <Icon size={16} />
         </div>
         <div className="min-w-0 flex-1">
@@ -41,7 +41,7 @@ export default function MapHint({ step = "layer", regionName = "", onAction }) {
           <button
             type="button"
             onClick={onAction}
-            className="mt-1.5 inline-flex items-center gap-1 map-text-compact font-semibold text-slate-700 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+            className="ui-micro-interaction mt-1.5 inline-flex items-center gap-1 map-text-compact font-semibold text-sky-800 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
           >
             {content.action}
             <IconArrowRight size={14} aria-hidden="true" />

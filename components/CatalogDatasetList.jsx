@@ -83,7 +83,7 @@ export default function CatalogDatasetList({ layers, groups }) {
       {!filtered.length && (
         <div className="rounded-lg border border-dashed border-slate-200 bg-white px-5 py-10 text-center">
           <p className="text-sm font-medium text-slate-800">Data tidak ditemukan</p>
-          <p className="mt-1 text-xs text-slate-500">Coba nama data, wilayah, kelompok, atau sumber data.</p>
+          <p className="mt-1 text-xs text-slate-500">Coba nama data, wilayah, kategori, atau sumber.</p>
         </div>
       )}
     </>

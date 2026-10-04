@@ -74,7 +74,7 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
   const contextCount = regionFilter
     ? (stats.loaded ? stats.mappedCount : summaryContextCount)
     : null;
-  const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Keterangan sumber mengikuti informasi yang tersedia pada data.";
+  const sourceNote = currentLayer.sourceNote || SOURCE_HELP[sourceType] || "Catatan sumber mengikuti informasi pada data.";
 
   return (
     <aside
@@ -90,10 +90,10 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
         <div className="min-w-0 flex-1">
           <p className="map-text-micro font-semibold uppercase tracking-[0.14em] text-slate-400">Tentang data</p>
           <h2 className="mt-1 map-text-compact font-semibold text-slate-900">{currentLayer.title}</h2>
-          <p className="mt-0.5 map-text-compact leading-5 text-slate-500">{currentLayer.description || "Keterangan tentang data belum tersedia."}</p>
+          <p className="mt-0.5 map-text-compact leading-5 text-slate-500">{currentLayer.description || "Catatan data belum tersedia."}</p>
           <div className="mt-2"><SourceBadge sourceType={currentLayer.sourceType} /></div>
         </div>
-        <button type="button" onClick={onClose} className="grid size-8 shrink-0 place-items-center text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" aria-label="Tutup informasi data">
+        <button type="button" onClick={onClose} className="ui-micro-interaction grid size-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" aria-label="Tutup informasi data">
           <IconX size={17} aria-hidden="true" />
         </button>
       </div>
@@ -106,13 +106,13 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
           <StatNumber value={stats.unmappedCount > 0 ? stats.total : (coverageCount || stats.geometryCounts.length)} label={stats.unmappedCount > 0 ? "Jumlah data" : (coverageCount ? "Kecamatan tercakup" : "Jumlah data")} />
         </div>
         {regionFilter && contextCount == null && (
-          <p className="mt-2 map-text-micro leading-4 text-slate-500">Jumlah data untuk wilayah ini belum dapat dihitung.</p>
+          <p className="mt-2 map-text-micro leading-4 text-slate-500">Jumlah data di wilayah ini belum tersedia.</p>
         )}
 
         <section className="mt-4 rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
             <IconInfoCircle size={15} className="text-slate-400" aria-hidden="true" />
-            <h3 className="map-text-compact font-semibold text-slate-900">Sumber dan pembaruan</h3>
+            <h3 className="map-text-compact font-semibold text-slate-900">Sumber data</h3>
           </div>
           <dl className="divide-y divide-slate-100">
             <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
@@ -121,21 +121,21 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
             </div>
             <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
               <dt className="map-text-micro text-slate-500">Penyedia data</dt>
-              <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.publisher || (sourceType === "Ina-Geoportal BIG" ? "Badan Informasi Geospasial (BIG)" : sourceType === "Kemendikdasmen" ? "Kementerian Pendidikan Dasar dan Menengah" : "Sesuai keterangan sumber data")}</dd>
+              <dd className="break-words map-text-compact font-medium leading-5 text-slate-800">{currentLayer.publisher || (sourceType === "Ina-Geoportal BIG" ? "Badan Informasi Geospasial (BIG)" : sourceType === "Kemendikdasmen" ? "Kementerian Pendidikan Dasar dan Menengah" : "Mengikuti keterangan sumber")}</dd>
             </div>
             <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
-              <dt className="map-text-micro text-slate-500">Tahun data</dt>
+              <dt className="map-text-micro text-slate-500">Tahun</dt>
               <dd className="map-text-compact font-medium leading-5 text-slate-800">{currentLayer.dataYear || "Belum dicantumkan"}</dd>
             </div>
             {currentLayer.latestDataYear && currentLayer.latestDataYear !== currentLayer.dataYear && (
               <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
-                <dt className="map-text-micro text-slate-500">Pembaruan</dt>
+                <dt className="map-text-micro text-slate-500">Terakhir diperbarui</dt>
                 <dd className="map-text-compact font-medium leading-5 text-slate-800">BIG · Edisi Juni {currentLayer.latestDataYear}</dd>
               </div>
             )}
             {currentLayer.localDataStatus && (
               <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-3">
-                <dt className="map-text-micro text-slate-500">Keterangan</dt>
+                <dt className="map-text-micro text-slate-500">Catatan</dt>
                 <dd className="map-text-compact font-medium leading-5 text-amber-700">{currentLayer.localDataStatus}</dd>
               </div>
             )}
@@ -150,7 +150,7 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
 
         {!stats.loaded && stats.unmappedCount > 0 && (
           <div className="mt-3.5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 map-text-compact leading-5 text-slate-500">
-            Catatan: {stats.unmappedCount.toLocaleString("id-ID")} data belum dapat ditampilkan pada peta karena lokasi belum tersedia atau belum dapat dipastikan.
+            Catatan: {stats.unmappedCount.toLocaleString("id-ID")} data belum bisa tampil karena lokasinya belum tersedia atau belum jelas.
           </div>
         )}
 
@@ -159,7 +159,7 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
           : stats.distribution.length + stats.kecamatanDistribution.length) > 0 && (
           <details className="mt-4 rounded-lg border border-slate-200 bg-white group">
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 map-text-compact font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
-              <span>Rincian data</span>
+              <span>Detail data</span>
               <span className="map-text-micro font-medium text-slate-400 group-open:hidden">Buka</span>
               <span className="hidden map-text-micro font-medium text-slate-400 group-open:inline">Tutup</span>
             </summary>
@@ -183,7 +183,7 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
       </div>
 
       {error && !loading && (
-        <div className="border-t border-amber-100 bg-amber-50 px-4 py-2 map-text-micro text-amber-800" role="status">Data belum dapat ditampilkan. Periksa koneksi internet lalu coba lagi.</div>
+        <div className="border-t border-amber-100 bg-amber-50 px-4 py-2 map-text-micro text-amber-800" role="status">Data belum bisa ditampilkan. Periksa koneksi internet lalu coba lagi.</div>
       )}
 
       <div className="border-t border-slate-200 bg-white px-4 py-3">
@@ -193,11 +193,11 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
             {loading ? "Menyiapkan…" : error ? "Coba lagi" : active ? "Sembunyikan dari peta" : stats.loaded ? "Tampilkan di peta" : "Tampilkan di peta"}
           </button>
           {stats.loaded && (
-            <button type="button" onClick={() => onZoomToLayer?.(currentLayer)} className="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-300 px-3 py-2 map-text-compact font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Tampilkan seluruh data ini pada peta">
-              Zoom
+            <button type="button" onClick={() => onZoomToLayer?.(currentLayer)} className="inline-flex shrink-0 items-center justify-center rounded-md border border-slate-300 px-3 py-2 map-text-compact font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Tampilkan semua data di peta">
+              Lihat di peta
             </button>
           )}
-          <button type="button" onClick={onShare} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 map-text-compact font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Bagikan data dan tampilan peta">
+          <button type="button" onClick={onShare} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 map-text-compact font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Bagikan data dan peta">
             <IconLink size={14} aria-hidden="true" />
             Bagikan
           </button>

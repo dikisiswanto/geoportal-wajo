@@ -27,10 +27,10 @@ export default function MapControls({
         <IconButton label="Perkecil peta" tone="slate" placement="right" disabled={!mapReady} onClick={onZoomOut}>
           <IconMinus size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Tampilkan seluruh Kabupaten Wajo" tone="amber" placement="right" disabled={!mapReady} onClick={onHome}>
+        <IconButton label="Kembali ke Kabupaten Wajo" tone="blue" placement="right" disabled={!mapReady} onClick={onHome}>
           <IconTarget size={18} stroke={1.8} />
         </IconButton>
-        <IconButton label="Gunakan lokasi perangkat" tone="emerald" placement="right" disabled={!mapReady} onClick={onLocate}>
+        <IconButton label="Gunakan lokasi saya" tone="emerald" placement="right" disabled={!mapReady} onClick={onLocate}>
           <IconCurrentLocation size={18} stroke={1.8} />
         </IconButton>
         <IconButton label="Cetak peta" tone="violet" placement="right" disabled={!mapReady} onClick={onPrint}>
@@ -40,7 +40,7 @@ export default function MapControls({
 
       {!sidebarOpen && (
         <div className="pointer-events-auto absolute left-3 top-3">
-          <IconButton label="Tampilkan data peta" tone="blue" placement="right" onClick={onOpenSidebar}>
+          <IconButton label="Buka daftar data" tone="blue" placement="right" onClick={onOpenSidebar}>
             <IconLayersIntersect size={18} stroke={1.8} />
           </IconButton>
         </div>

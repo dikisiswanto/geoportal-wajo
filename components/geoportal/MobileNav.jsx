@@ -30,7 +30,7 @@ export default function MobileNav({ active = "" }) {
         aria-expanded={open}
         aria-controls="mobile-main-navigation"
         onClick={() => setOpen((value) => !value)}
-        className="relative z-[3] grid size-10 place-items-center rounded-md text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+        className="ui-micro-interaction relative z-[3] grid size-10 place-items-center rounded-md text-slate-600 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
         title={open ? "Tutup navigasi" : "Buka navigasi"}
       >
         {open ? <IconX size={19} stroke={1.8} aria-hidden="true" /> : <IconMenu2 size={19} stroke={1.8} aria-hidden="true" />}

@@ -41,7 +41,7 @@ export default function IconButton({
       aria-label={label}
       aria-pressed={active || undefined}
       title={label}
-      className={`group relative grid size-10 place-items-center rounded-md shadow-sm ring-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-40 ${tones[tone]} ${className}`}
+      className={`group ui-icon-button relative grid size-10 place-items-center rounded-md shadow-sm ring-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-40 ${tones[tone]} ${className}`}
     >
       {children}
       <span

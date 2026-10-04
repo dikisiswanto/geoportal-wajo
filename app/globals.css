@@ -25,6 +25,18 @@ select {
   font: inherit;
 }
 
+button:not(:disabled),
+a[href],
+summary,
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -145,6 +157,35 @@ a:focus-visible {
 .legend-scroll::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: #cbd5e1;
+}
+
+.desktop-best-view-toast {
+  display: none;
+  text-align: left;
+}
+
+@media (max-width: 1023px) {
+  .desktop-best-view-toast {
+    display: block;
+    animation: desktop-best-view-toast-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-best-view-toast {
+    animation: none;
+  }
+}
+
+@keyframes desktop-best-view-toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-50%, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 .map-status {
@@ -602,4 +643,102 @@ a:focus-visible {
 .catalog-card-body {
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+
+/* Stable interaction layer: feedback uses paint properties, not layout movement. */
+.ui-micro-interaction {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 180ms ease,
+    opacity 140ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-micro-interaction:not(:disabled):hover {
+    box-shadow: none;
+  }
+}
+
+.ui-micro-interaction:not(:disabled):active {
+  opacity: 0.92;
+}
+
+.ui-micro-interaction:focus-visible,
+.ui-field:focus-visible {
+  outline: 2px solid rgb(14 165 233 / 0.38);
+  outline-offset: 2px;
+}
+
+.ui-icon-button {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 180ms ease,
+    opacity 140ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-icon-button:not(:disabled):hover {
+    box-shadow: 0 3px 10px rgb(15 23 42 / 0.08);
+  }
+}
+
+.ui-icon-button:not(:disabled):active {
+  opacity: 0.92;
+}
+
+.ui-fade-in {
+  animation: ui-fade-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Segmented admin tabs: fixed-height controls and a transform-only active surface. */
+.admin-tab-toggle {
+  position: relative;
+  isolation: isolate;
+}
+
+.admin-tab-indicator {
+  position: absolute;
+  inset-block: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border: 1px solid rgb(125 211 252 / 0.65);
+  border-radius: 0.375rem;
+  background: rgb(240 249 255 / 0.96);
+  box-shadow: 0 2px 8px rgb(14 165 233 / 0.08);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.admin-tab-indicator-info { transform: translate3d(0, 0, 0); }
+.admin-tab-indicator-stats { transform: translate3d(100%, 0, 0); }
+
+.admin-tab-content {
+  animation: admin-tab-content-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes admin-tab-content-enter {
+  from { opacity: 0; transform: translate3d(0, 5px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-micro-interaction,
+  .ui-icon-button,
+  .admin-tab-indicator {
+    transition: none !important;
+  }
+
+  .ui-fade-in,
+  .admin-tab-content {
+    animation: none !important;
+  }
 }

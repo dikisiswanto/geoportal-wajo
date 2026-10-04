@@ -159,7 +159,7 @@ export default async function DatasetPage({ params }) {
         <nav aria-label="Breadcrumb" className="text-sm text-slate-500">
           <Link href="/" className="hover:text-slate-900">Peta Wajo</Link>
           <span className="mx-2" aria-hidden="true">/</span>
-          <Link href="/data" className="hover:text-slate-900">Katalog Data</Link>
+          <Link href="/data" className="hover:text-slate-900">Data</Link>
           <span className="mx-2" aria-hidden="true">/</span>
           <span className="text-slate-700">{layer.title}</span>
         </nav>
@@ -209,8 +209,8 @@ export default async function DatasetPage({ params }) {
           </dl>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={`/?layer=${encodeURIComponent(layer.id)}&catalog=1`} className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Buka pada peta interaktif</Link>
-            <Link href="/data" className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Katalog data</Link>
+            <Link href={`/?layer=${encodeURIComponent(layer.id)}&catalog=1`} className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Lihat di peta interaktif</Link>
+            <Link href="/data" className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Lihat semua data</Link>
           </div>
 
           <section className="mt-9 border-t border-slate-200 pt-6" aria-labelledby="dataset-statistik">
@@ -240,18 +240,18 @@ export default async function DatasetPage({ params }) {
 
           <section className="mt-9 border-t border-slate-200 pt-6" aria-labelledby="dataset-konteks">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Tentang data</p>
-            <h2 id="dataset-konteks" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Sumber dan keterangan</h2>
+            <h2 id="dataset-konteks" className="mt-1 text-base font-semibold text-slate-900 lg:text-lg">Sumber data</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 lg:text-base lg:leading-7">{layer.sourceNote || sourceMeta.description} {layer.description || `Data ${layer.title} Kabupaten Wajo.`}</p>
           </section>
 
           {related.length > 0 && (
             <section className="mt-9 border-t border-slate-200 pt-6" aria-labelledby="dataset-terkait">
-              <h2 id="dataset-terkait" className="text-base font-semibold text-slate-900 lg:text-lg">Data lain yang terkait</h2>
+              <h2 id="dataset-terkait" className="text-base font-semibold text-slate-900 lg:text-lg">Data terkait</h2>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {related.map((item) => (
                   <Link key={item.id} href={`/data/${datasetSlug(item)}`} className="rounded-lg border border-slate-200 px-3 py-3 hover:border-slate-300 hover:bg-slate-50">
                     <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.group} · Lihat data</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.group} · Buka data</p>
                   </Link>
                 ))}
               </div>

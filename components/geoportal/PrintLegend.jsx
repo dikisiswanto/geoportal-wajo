@@ -67,7 +67,7 @@ export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle 
         </div>
       )}
 
-      <p className="print-only-footer">Peta Interaktif oleh Diskominfotik Kabupaten Wajo</p>
+      <p className="print-only-footer">Dikelola oleh Diskominfotik Kabupaten Wajo</p>
     </aside>
   );
 }

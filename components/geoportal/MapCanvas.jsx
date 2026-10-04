@@ -199,7 +199,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         .catch((error) => {
           const message =
             error.message ||
-            "Data belum dapat ditampilkan";
+            "Data belum bisa ditampilkan";
 
           setErrors((previous) => ({
             ...previous,
@@ -336,7 +336,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         "tileerror",
         () =>
           onStatusRef.current?.(
-            "Peta dasar tidak dapat dimuat"
+            "Peta dasar belum bisa dimuat"
           )
       );
 
@@ -770,7 +770,7 @@ const MapCanvas = forwardRef(function MapCanvas(
           !mapRef.current
         ) {
           onStatus?.(
-            "Lokasi perangkat tidak tersedia"
+            "Lokasi saya tidak tersedia"
           );
 
           return;
@@ -972,8 +972,8 @@ const MapCanvas = forwardRef(function MapCanvas(
         id="map-instructions"
         className="sr-only"
       >
-        Gunakan daftar data untuk menampilkan informasi pada peta.
-        Pilih wilayah atau lokasi pada peta untuk melihat informasinya.
+        Pilih data dari daftar untuk menampilkannya di peta.
+        Klik wilayah atau lokasi di peta untuk melihat detailnya.
       </p>
 
       <div

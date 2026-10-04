@@ -77,9 +77,9 @@ export default function LayerCatalog({
           <label className="relative block">
             <span className="sr-only">Cari data atau wilayah</span>
             <IconSearch aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari tempat, fasilitas, atau data…" className="h-9 w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-8 map-text-compact outline-none focus:border-slate-400 focus:bg-white" />
+            <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari tempat, fasilitas, atau data…" className="ui-field h-9 w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-8 map-text-compact outline-none focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100" />
             {search && (
-              <button type="button" onClick={() => onSearch("")} className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center text-slate-400 hover:text-slate-800" aria-label="Hapus pencarian" title="Hapus pencarian">
+              <button type="button" onClick={() => onSearch("")} className="ui-micro-interaction absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center text-slate-400 hover:text-sky-800" aria-label="Hapus pencarian" title="Hapus pencarian">
                 <IconX size={14} aria-hidden="true" />
               </button>
             )}
@@ -87,10 +87,10 @@ export default function LayerCatalog({
         </div>
 
         {regionMatches.length > 0 && (
-          <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 p-1" aria-label="Hasil wilayah">
+          <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 p-1" aria-label="Wilayah yang ditemukan">
             <p className="px-2 py-1 map-text-micro font-semibold uppercase tracking-[0.14em] text-slate-400">Wilayah</p>
             {regionMatches.map((region) => (
-              <button key={region} type="button" onClick={() => { onRegionFilter(region); onSearch(""); }} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left map-text-compact font-medium text-slate-700 hover:bg-white hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-700">
+              <button key={region} type="button" onClick={() => { onRegionFilter(region); onSearch(""); }} className="ui-micro-interaction flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left map-text-compact font-medium text-slate-700 hover:bg-white hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-700">
                 <IconMapPin size={14} className="text-slate-400" aria-hidden="true" />
                 <span className="truncate">{regionDisplayName(region)}</span>
               </button>
@@ -99,21 +99,21 @@ export default function LayerCatalog({
         )}
 
         <div className="mt-1.5 flex items-center justify-between gap-3">
-          <p className="map-text-compact font-semibold text-slate-900">Data peta</p>
-          <button type="button" onClick={onReset} className="inline-flex shrink-0 items-center gap-1 map-text-micro font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Kembalikan tampilan peta ke awal"><IconRefresh size={13} stroke={1.8} /> Reset</button>
+          <p className="map-text-compact font-semibold text-slate-900">Data</p>
+          <button type="button" onClick={onReset} className="ui-micro-interaction inline-flex shrink-0 items-center gap-1 map-text-micro font-semibold text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Kembalikan tampilan peta ke awal"><IconRefresh size={13} stroke={1.8} /> Atur ulang</button>
         </div>
 
         <div className="mt-1.5 grid grid-cols-2 gap-1">
           <label className="min-w-0 pb-0.5">
-            <span className="sr-only">Kelompok data</span>
-            <select id="group-filter" value={groupFilter} onChange={(event) => onGroupFilter(event.target.value)} className="h-9 w-full min-w-0 truncate rounded-md border border-slate-200 bg-white px-2.5 map-text-compact text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
-              <option value="Semua">Semua kelompok</option>
+            <span className="sr-only">Kategori data</span>
+            <select id="group-filter" value={groupFilter} onChange={(event) => onGroupFilter(event.target.value)} className="h-9 w-full min-w-0 truncate rounded-md border border-slate-200 bg-white px-2.5 map-text-compact text-slate-700 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
+              <option value="Semua">Semua kategori</option>
               {groupOrder.map((group) => <option key={group}>{group}</option>)}
             </select>
           </label>
           <label className="min-w-0 pb-0.5">
             <span className="sr-only">Wilayah</span>
-            <select value={regionFilter} onChange={(event) => onRegionFilter(event.target.value)} className="h-9 w-full min-w-0 truncate rounded-md border border-slate-200 bg-white px-2.5 map-text-compact text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+            <select value={regionFilter} onChange={(event) => onRegionFilter(event.target.value)} className="h-9 w-full min-w-0 truncate rounded-md border border-slate-200 bg-white px-2.5 map-text-compact text-slate-700 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
               <option value="">Seluruh Wajo</option>
               {regionOptions.map((region) => <option key={region} value={region}>{regionDisplayName(region)}</option>)}
             </select>
@@ -163,7 +163,7 @@ export default function LayerCatalog({
           <div className="px-4 py-10 text-center">
             <IconSquareX className="mx-auto text-slate-300" size={28} stroke={1.5} />
             <p className="mt-3 map-text-compact font-medium text-slate-800">Data tidak ditemukan</p>
-            <p className="mt-1 map-text-compact text-slate-500">Coba nama tempat, fasilitas, jenis data, atau nama kecamatan.</p>
+            <p className="mt-1 map-text-compact text-slate-500">Coba nama tempat, fasilitas, jenis data, atau kecamatan.</p>
           </div>
         )}
       </div>

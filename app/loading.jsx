@@ -30,7 +30,7 @@ export default function Loading() {
             className="size-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700"
             aria-hidden="true"
           />
-          <span>Menyiapkan peta…</span>
+          <span>Memuat peta…</span>
         </div>
       </section>
     </main>

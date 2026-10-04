@@ -29,7 +29,7 @@ export default function SiteHeader({
     <header className="site-header relative z-[1800] flex min-h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-5">
       <Link
         href="/"
-        className="flex min-w-0 items-center gap-2.5 rounded-md py-1 pr-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+        className="ui-micro-interaction flex min-w-0 items-center gap-2.5 rounded-md py-1 pr-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
         aria-label="Buka Peta Interaktif Kabupaten Wajo"
       >
         <Image
@@ -63,7 +63,7 @@ export default function SiteHeader({
               value={search}
               onChange={(event) => onSearch?.(event.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 map-text-compact text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
+              className="ui-field w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 map-text-compact text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100"
             />
           </label>
         </div>
@@ -78,9 +78,9 @@ export default function SiteHeader({
               key={item.key}
               href={item.href}
               aria-current={active === item.key ? "page" : undefined}
-              className={`rounded-md px-2.5 py-1.5 map-text-compact font-medium transition ${
+              className={`ui-micro-interaction rounded-md px-2.5 py-1.5 map-text-compact font-medium ${
                 active === item.key
-                  ? "bg-slate-100 text-slate-950"
+                  ? "bg-sky-50 text-sky-800"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
               }`}
             >

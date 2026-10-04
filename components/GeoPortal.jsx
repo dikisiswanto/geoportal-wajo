@@ -22,6 +22,7 @@ import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
 import MapHint from "./geoportal/MapHint";
 import Image from "next/image";
+import { IconDeviceDesktop } from "@tabler/icons-react";
 import { withAssetVersion } from "../lib/assetVersion";
 
 const DEFAULT_VISIBLE = Object.freeze(
@@ -230,7 +231,7 @@ export default function GeoPortal() {
       .filter((item) => (item.id === layer.id ? nextVisible : visible[item.id]))
       .map((item) => item.id);
     setHasInteracted(true);
-    setStatus(`${layer.title} ${nextVisible ? "ditampilkan" : "disembunyikan"}`);
+    setStatus(`${nextVisible ? "Menampilkan" : "Menyembunyikan"} ${layer.title} ${nextVisible ? "di peta" : "dari peta"}`);
 
     if (!nextVisible && selected?.layer?.id === layer.id) {
       mapApi.current?.clearSelection?.();
@@ -617,6 +618,25 @@ export default function GeoPortal() {
         )}
 
         <div className="print-map-stage relative min-w-0 flex-1">
+          <div
+            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-20 left-1/2 z-[1600] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-5 ui-fade-in"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-start gap-2">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-sky-100 text-sky-700" aria-hidden="true">
+                <IconDeviceDesktop size={17} stroke={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="map-text-compact font-semibold text-slate-900">
+                  Tampilan terbaik pada layar desktop
+                </p>
+                <p className="mt-0.5 map-text-compact leading-5 text-slate-600">
+                  Peta Interaktif Kabupaten Wajo lebih nyaman digunakan di layar desktop.
+                </p>
+              </div>
+            </div>
+          </div>
           <ActiveLayersBar activeLayers={activeLayers} layerData={layerData} dataSummary={DATA_SUMMARY} regionFilter={regionFilter} regionSummary={REGION_SUMMARY} onSelectLayer={handleActiveLayerSelect} onCloseLayer={hideActiveLayer} onClearRegion={() => handleRegionFilter("")} />
           {!hasInteracted && !layerInfo && !selected && (
             <MapHint

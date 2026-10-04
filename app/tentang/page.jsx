@@ -58,7 +58,7 @@ export default function AboutPage() {
                 {PUBLISHER_NAME}
               </p>
               <h1 className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight text-slate-950 sm:text-[28px]">
-                Peta Wajo, untuk memahami wilayah dari satu tempat.
+                Peta Wajo untuk melihat wilayah dalam satu tempat.
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                 {SITE_NAME} adalah portal Kabupaten Wajo yang membantu masyarakat dan
@@ -75,7 +75,7 @@ export default function AboutPage() {
                   </h2>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Menjelajahi wilayah</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Melihat wilayah</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
                         Lihat batas administrasi, jaringan, fasilitas, dan data tematik langsung pada peta.
                       </p>
@@ -83,19 +83,19 @@ export default function AboutPage() {
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">Mencari data</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Temukan data berdasarkan kelompok, wilayah, atau kata kunci lalu buka lokasinya di peta.
+                        Cari data berdasarkan kategori, wilayah, atau kata kunci, lalu lihat lokasinya di peta.
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Memahami informasi</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Melihat detail data</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Setiap data dilengkapi keterangan sumber, wilayah, tahun data, dan ringkasan statistik bila tersedia.
+                        Setiap data dilengkapi sumber, wilayah, tahun, dan ringkasan bila tersedia.
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Membagikan temuan</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Membagikan peta</h3>
                       <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                        Tampilan peta dan lokasi tertentu dapat dibagikan melalui tautan yang dapat dibuka kembali.
+                        Bagikan peta atau lokasi tertentu lewat tautan yang bisa dibuka kembali.
                       </p>
                     </div>
                   </div>
@@ -103,7 +103,7 @@ export default function AboutPage() {
 
                 <section aria-labelledby="sumber-data" className="mt-9 border-t border-slate-200 pt-7">
                   <h2 id="sumber-data" className="text-base font-semibold text-slate-900">
-                    Tentang sumber data
+                    Sumber data
                   </h2>
                   <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
                     <p>
@@ -112,13 +112,13 @@ export default function AboutPage() {
                       Pendidikan Dasar dan Menengah.
                     </p>
                     <p>
-                      Data lainnya dihimpun dari sumber terbuka dan layanan ArcGIS.
-                      Sumber dan penyedia data dicantumkan agar pengguna dapat mengetahui asal informasi yang ditampilkan.
+                      Data lainnya berasal dari sumber terbuka dan layanan ArcGIS.
+                      Sumber dan penyedia data dicantumkan agar asal data mudah diketahui.
                     </p>
                     <p>
                       Portal ini menyajikan data untuk membantu eksplorasi dan pemahaman wilayah.
-                      Tahun, wilayah, dan keterangan pada masing-masing data perlu diperhatikan
-                      ketika data digunakan untuk analisis atau kebutuhan resmi.
+                      Perhatikan tahun, wilayah, dan catatan data saat menggunakannya
+                      untuk analisis atau keperluan resmi.
                     </p>
                   </div>
                 </section>
@@ -132,7 +132,7 @@ export default function AboutPage() {
                   Diskominfotik Kabupaten Wajo
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Aplikasi ini dikembangkan dan dikelola sebagai bagian dari penyediaan informasi
+                  Aplikasi ini dikembangkan dan dikelola untuk menyediakan informasi
                   geospasial yang mudah diakses melalui kanal digital Pemerintah Kabupaten Wajo.
                 </p>
 

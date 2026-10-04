@@ -76,7 +76,7 @@ export default function DataCatalogPage() {
             Data Geospasial Kabupaten Wajo
           </h1>
           <p className="mt-4 text-sm leading-6 text-slate-600 lg:text-base lg:leading-7">
-            Jelajahi data geospasial Kabupaten Wajo melalui ringkasan sumber, statistik, wilayah, dan tautan ke peta interaktif.
+            Lihat data geospasial Kabupaten Wajo, sumbernya, ringkasannya, lalu buka di peta.
           </p>
           <Link
             href="/"
