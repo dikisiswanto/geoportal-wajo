@@ -50,6 +50,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     onCoords,
     onViewChange,
     onPrintScale,
+    onPerformance,
     regionFilter,
     focusAdmin = null,
     retryTokens = {}
@@ -114,6 +115,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     useRef(onFeatureSelect);
   const onViewChangeRef = useRef(onViewChange);
   const onPrintScaleRef = useRef(onPrintScale);
+  const onPerformanceRef = useRef(onPerformance);
 
   useEffect(() => {
     onStatusRef.current = onStatus;
@@ -126,6 +128,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     onPrintScaleRef.current = onPrintScale;
   }, [onPrintScale]);
+
+  useEffect(() => {
+    onPerformanceRef.current = onPerformance;
+  }, [onPerformance]);
 
   useEffect(() => {
     onLayerLoadingRef.current = onLayerLoading;
@@ -740,6 +746,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     const map = mapRef.current;
     const L = leafletRef.current;
     if (!map || !L) return;
+    const renderStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
 
     const contextKey = getAdminContextKey(regionFilter, focusAdmin);
     const contextChanged =
@@ -853,6 +860,23 @@ const MapCanvas = forwardRef(function MapCanvas(
         fitWajoBounds(map, L, adminLayer.toGeoJSON());
       }
       map._wajoInitialFit = true;
+    }
+
+    if (process.env.NODE_ENV !== "production" && onPerformanceRef.current) {
+      const activeVectorLayers = layers.filter((layer) => {
+        if (!visible[layer.id] || isAdministrativeLayerId(layer.id)) return false;
+        const geometry = String(layer.geometry ?? "").toLowerCase();
+        return geometry.includes("line") || geometry.includes("polygon");
+      }).length;
+      const featureCount = layers.reduce((total, layer) => {
+        if (!visible[layer.id]) return total;
+        return total + Number(loadedData.current[layer.id]?.features?.length || 0);
+      }, 0);
+      onPerformanceRef.current({
+        renderMs: Math.max(0, (typeof performance !== "undefined" ? performance.now() : 0) - renderStartedAt),
+        activeVectorLayers,
+        featureCount
+      });
     }
   }, [layers, visible, renderVersion, regionFilter, focusAdmin, resolveAdministrativeTarget]);
 

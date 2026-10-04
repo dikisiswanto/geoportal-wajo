@@ -58,10 +58,16 @@ function formatCoordinate(coordinate) {
 }
 
 function formatArea(properties) {
+  const km2 = firstValue(properties, ["luas_wilayah_km2"]);
+  if (km2 != null && String(km2).trim() !== "") {
+    const numeric = Number(String(km2).replace?.(/,/g, ".") ?? km2);
+    if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} km²`;
+  }
+
   const value = firstValue(properties, ["luas_wilayah_ha", "LUASWH"]);
   if (!value) return "—";
   const numeric = Number(value.replace?.(/,/g, ".") ?? value);
-  if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ha`;
+  if (Number.isFinite(numeric)) return `${numeric.toLocaleString("id-ID", { maximumFractionDigits: 2 })} km²`;
   return value;
 }
 

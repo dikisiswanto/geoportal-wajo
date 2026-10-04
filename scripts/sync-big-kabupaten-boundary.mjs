@@ -47,6 +47,29 @@ if (wajo.length !== 1) throw new Error(`BIG kabupaten Wajo: expected exactly 1 f
 const p = wajo[0].properties || {};
 const geometry = wajo[0].geometry;
 if (!geometry) throw new Error("BIG kabupaten Wajo: geometry tidak tersedia");
+let derivedArea = null;
+try {
+  const districtPath = path.resolve("public/geo-data/batas-kecamatan.geojson");
+  const districtRaw = await fs.readFile(districtPath, "utf8");
+  const districtData = JSON.parse(districtRaw);
+  const districtFeatures = Array.isArray(districtData.features) ? districtData.features : [];
+  const districtAreas = districtFeatures
+    .map((feature) => Number(feature?.properties?.luas_wilayah_km2 ?? feature?.properties?.LUASWH ?? feature?.properties?.luas_wilayah_ha))
+    .filter(Number.isFinite);
+  if (districtAreas.length === districtFeatures.length && districtFeatures.length > 0) {
+    const totalKm2 = districtAreas.reduce((sum, value) => sum + value, 0);
+    derivedArea = {
+      luas_wilayah_km2: Number(totalKm2.toFixed(6)),
+      luas_wilayah_ha: Number((totalKm2 * 100).toFixed(4)),
+      luas_wilayah_metode: `Penjumlahan luas ${districtFeatures.length} kecamatan`,
+      jumlah_kecamatan_luas: districtFeatures.length,
+    };
+    console.log(`Luas Wajo dihitung dari ${districtFeatures.length} kecamatan: ${derivedArea.luas_wilayah_km2.toLocaleString("id-ID", { maximumFractionDigits: 6 })} km²`);
+  }
+} catch (error) {
+  console.warn(`Luas wilayah Wajo tidak dapat dihitung dari batas kecamatan lokal: ${error.message}`);
+}
+
 const output = {
   type: "FeatureCollection",
   name: "Batas Kabupaten Wajo — BIG 2026",
@@ -60,6 +83,7 @@ const output = {
       tahun_data: 2026,
       sumber_data: "Badan Informasi Geospasial (BIG)",
       status_data: "Feature kabupaten BIG edisi Juni 2026",
+      ...(derivedArea || {}),
     },
     geometry,
   }],

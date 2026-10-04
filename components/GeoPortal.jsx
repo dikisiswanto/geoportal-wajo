@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { groupOrder, layers } from "../lib/layers";
 import { buildKecamatanLegend } from "../lib/geo/format";
 import { kecamatanColor } from "../lib/geo/styles";
@@ -23,6 +23,9 @@ import ActiveLayersBar from "./geoportal/ActiveLayersBar";
 import PrintPreflightNotice from "./geoportal/PrintPreflightNotice";
 import { getPrintPreflight } from "./geoportal/map/print";
 import MapHint from "./geoportal/MapHint";
+import MapOrientation from "./geoportal/MapOrientation";
+import MapPerformance from "./geoportal/MapPerformance";
+import RegionComparisonPanel from "./geoportal/RegionComparisonPanel";
 import Image from "next/image";
 import { IconDeviceDesktop } from "@tabler/icons-react";
 import { withAssetVersion } from "../lib/assetVersion";
@@ -30,6 +33,21 @@ import { withAssetVersion } from "../lib/assetVersion";
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
 );
+
+const DESKTOP_VIEW_NOTICE_KEY = "geoportal-wajo:desktop-view-notice-dismissed";
+
+function subscribeDesktopViewNotice() {
+  return () => {};
+}
+
+function getDesktopViewNoticeSnapshot() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(DESKTOP_VIEW_NOTICE_KEY) !== "1";
+}
+
+function getDesktopViewNoticeServerSnapshot() {
+  return false;
+}
 
 export default function GeoPortal() {
   const mapApi = useRef(null);
@@ -57,6 +75,21 @@ export default function GeoPortal() {
   const [requestedFeature, setRequestedFeature] = useState("");
   const [catalogLayerId, setCatalogLayerId] = useState("");
   const [retryTokens, setRetryTokens] = useState({});
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [mapPerformance, setMapPerformance] = useState(null);
+  const showDesktopViewNotice = useSyncExternalStore(
+    subscribeDesktopViewNotice,
+    getDesktopViewNoticeSnapshot,
+    getDesktopViewNoticeServerSnapshot
+  );
+  const [desktopViewNoticeOpen, setDesktopViewNoticeOpen] = useState(true);
+
+  const closeDesktopViewNotice = useCallback((remember = false) => {
+    if (remember) {
+      window.localStorage.setItem(DESKTOP_VIEW_NOTICE_KEY, "1");
+    }
+    setDesktopViewNoticeOpen(false);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -370,6 +403,50 @@ export default function GeoPortal() {
     }
   }, [updateMapQuery]);
 
+  const handleSearchResult = useCallback((result) => {
+    if (!result) return;
+
+    setSearch("");
+    setHasInteracted(true);
+
+    if (result.kind === "region") {
+      handleRegionFilter(result.key || result.label);
+      setSidebarOpen(false);
+      return;
+    }
+
+    if (result.kind === "layer") {
+      const layer = layers.find((item) => item.id === result.layerId);
+      if (!layer) return;
+      setSidebarOpen(true);
+      setCatalogLayerId(layer.id);
+      handleLayerInfo(layer);
+      return;
+    }
+
+    const layer = layers.find((item) => item.id === result.layerId);
+    if (!layer || result.key == null) return;
+
+    requestedFeatureHandledRef.current = "";
+    setVisible((previous) => ({ ...previous, [layer.id]: true }));
+    setSidebarOpen(false);
+    setRequestedFeature(String(result.key));
+    updateMapQuery({
+      layers: layers
+        .filter((item) => visible[item.id] || item.id === layer.id)
+        .map((item) => item.id)
+        .join(","),
+      layer: layer.id,
+      feature: String(result.key),
+      catalog: null
+    });
+    setStatus(`Menyiapkan ${result.label}…`);
+  }, [handleLayerInfo, handleRegionFilter, updateMapQuery, visible]);
+
+  const openRegionComparison = useCallback(() => {
+    setComparisonOpen(true);
+  }, []);
+
   const handleMapViewChange = useCallback((view) => {
     if (!view) return;
     updateMapQuery(view);
@@ -460,11 +537,12 @@ export default function GeoPortal() {
       if (event.key !== "Escape") return;
       if (selected) { closeInspector(); return; }
       if (layerInfo) { closeLayerInfo(); return; }
+      if (comparisonOpen) { setComparisonOpen(false); return; }
       if (window.matchMedia("(max-width: 1023px)").matches && sidebarOpen) closeCatalog();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selected, layerInfo, sidebarOpen, closeInspector, closeLayerInfo, closeCatalog]);
+  }, [comparisonOpen, selected, layerInfo, sidebarOpen, closeInspector, closeLayerInfo, closeCatalog]);
 
   const handleActiveLayerSelect = useCallback((layer) => {
     setHasInteracted(true);
@@ -597,6 +675,7 @@ export default function GeoPortal() {
             setSidebarOpen(true);
           }
         }}
+        onSearchResult={handleSearchResult}
       />
 
       <main id="map" className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -634,25 +713,48 @@ export default function GeoPortal() {
         )}
 
         <div className="print-map-stage relative min-w-0 flex-1">
-          <div
-            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-[12rem] left-1/2 z-[1000] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-20 ui-fade-in"
-            role="status"
-            aria-live="polite"
-          >
-            <div className="flex items-start gap-2">
-              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-100 text-sky-700" aria-hidden="true">
-                <IconDeviceDesktop size={17} stroke={1.8} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="map-text-compact font-semibold text-slate-900">
-                  Tampilan terbaik pada layar desktop
-                </p>
-                <p className="mt-0.5 map-text-compact leading-5 text-slate-600">
-                  Peta Interaktif Kabupaten Wajo lebih nyaman digunakan di layar desktop.
-                </p>
+          {showDesktopViewNotice && desktopViewNoticeOpen && (
+            <div className="desktop-best-view-modal fixed inset-0 z-[1800] grid place-items-center px-4" role="dialog" aria-modal="true" aria-labelledby="desktop-view-notice-title">
+              <button
+                type="button"
+                className="absolute inset-0 cursor-default bg-slate-950/25 backdrop-blur-[2px]"
+                aria-label="Tutup pemberitahuan"
+                onClick={() => closeDesktopViewNotice(false)}
+              />
+              <div className="desktop-best-view-dialog relative w-[min(390px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300" aria-hidden="true">
+                    <IconDeviceDesktop size={19} stroke={1.8} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p id="desktop-view-notice-title" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      Tampilan terbaik pada layar desktop
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                      Peta Interaktif Kabupaten Wajo lebih nyaman digunakan di layar desktop agar ruang peta dan informasi dapat terlihat lebih leluasa.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="map-button rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    onClick={() => closeDesktopViewNotice(true)}
+                  >
+                    Jangan tampilkan lagi
+                  </button>
+                  <button
+                    type="button"
+                    autoFocus
+                    className="map-button rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-sky-700"
+                    onClick={() => closeDesktopViewNotice(false)}
+                  >
+                    Oke
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           <ActiveLayersBar activeLayers={activeLayers} layerData={layerData} dataSummary={DATA_SUMMARY} regionFilter={regionFilter} regionSummary={REGION_SUMMARY} onSelectLayer={handleActiveLayerSelect} onCloseLayer={hideActiveLayer} onClearRegion={() => handleRegionFilter("")} />
           {!hasInteracted && !layerInfo && !selected && (
             <MapHint
@@ -676,6 +778,7 @@ export default function GeoPortal() {
             onCoords={handleMapCoords}
             onViewChange={handleMapViewChange}
             onPrintScale={setPrintScale}
+            onPerformance={setMapPerformance}
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
@@ -707,12 +810,18 @@ export default function GeoPortal() {
               setHasInteracted(true);
               handlePrint();
             }}
+            onShare={() => {
+              setHasInteracted(true);
+              handleShare("peta ini");
+            }}
             sidebarOpen={sidebarOpen}
             onOpenSidebar={() => {
               setHasInteracted(true);
               setSidebarOpen(true);
             }}
           />
+          <MapOrientation />
+          <MapPerformance stats={mapPerformance} />
           <LegendPanel
             activeLayers={activeLayers}
             layerData={layerData}
@@ -750,6 +859,14 @@ export default function GeoPortal() {
             relatedItems={relatedItems}
             onExploreRelated={handleExploreRelated}
             onExploreAdminLayer={handleExploreAdminLayer}
+            onCompareRegion={selected?.layer?.id === "adm-kecamatan" ? openRegionComparison : undefined}
+          />
+          <RegionComparisonPanel
+            key={`${comparisonOpen}:${selected?.featureKey || selected?.feature?.properties?.Kecamatan || regionFilter || ""}`}
+            open={comparisonOpen}
+            initialRegion={selected?.regionName || regionFilter || (selected?.layer?.id === "adm-kecamatan" ? selected?.feature?.properties?.Kecamatan : "")}
+            districtData={layerData["adm-kecamatan"]}
+            onClose={() => setComparisonOpen(false)}
           />
           <MobileActions
             onOpenSidebar={() => {
@@ -762,6 +879,7 @@ export default function GeoPortal() {
             }}
             selected={selected}
             onOpenInspector={() => setInspectOpen(true)}
+            onShare={() => handleShare("peta ini")}
             sidebarOpen={sidebarOpen}
             legendOpen={legendOpen}
           />

@@ -45,7 +45,14 @@
       "empty_geometry": 0,
       "point_or_representative_outside_local_mask": 0,
       "status": "Lulus pemeriksaan",
-      "note": "Satu feature Kabupaten Wajo diambil langsung dari layanan BIG edisi Juni 2026. Layer digunakan sebagai garis dasar tanpa fill agar tidak menutupi data lain."
+      "note": "Satu feature Kabupaten Wajo diambil langsung dari layanan BIG edisi Juni 2026. Layer digunakan sebagai garis dasar tanpa fill agar tidak menutupi data lain. Metadata luas wilayah kabupaten diturunkan dari penjumlahan luas 14 kecamatan dan disimpan sebagai luas_wilayah_km2.",
+      "area_metadata": {
+        "field": "luas_wilayah_km2",
+        "value": 2504.860969,
+        "unit": "km²",
+        "method": "Penjumlahan luas 14 kecamatan pada batas-kecamatan.geojson",
+        "equivalent_hectares": 250486.0969
+      }
     },
     {
       "dataset": "batas-kecamatan.geojson",

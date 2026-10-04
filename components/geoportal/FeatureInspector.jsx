@@ -92,7 +92,8 @@ export default function FeatureInspector({
   regionName,
   relatedItems = [],
   onExploreRelated,
-  onExploreAdminLayer
+  onExploreAdminLayer,
+  onCompareRegion
 }) {
   const [adminTab, setAdminTab] = useState("info");
   const { rendered, visible } = useSheetPresence(Boolean(open && selected));
@@ -172,8 +173,8 @@ export default function FeatureInspector({
       <div className="mt-4 flex items-center gap-2">
         <IconChartBar size={16} className="text-slate-400" aria-hidden="true" />
         <div>
-          <h3 className="map-text-compact font-semibold text-slate-900">Data yang tersedia di wilayah ini</h3>
-          <p className="mt-0.5 map-text-micro text-slate-500">Menampilkan data yang tersedia di wilayah ini.</p>
+          <h3 className="map-text-compact font-semibold text-slate-900">Data di sekitar wilayah ini</h3>
+          <p className="mt-0.5 map-text-micro text-slate-500">Jelajahi data yang tersedia dalam wilayah terpilih.</p>
         </div>
       </div>
 
@@ -234,6 +235,11 @@ export default function FeatureInspector({
           <button type="button" onClick={onShare} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 map-text-compact font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Bagikan lokasi">
             <IconLink size={14} aria-hidden="true" /> Bagikan
           </button>
+          {isAdministrative && adminType === "kecamatan" && onCompareRegion && (
+            <button type="button" onClick={onCompareRegion} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 map-text-compact font-medium text-slate-700 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Bandingkan dengan kecamatan lain">
+              <IconChartBar size={14} aria-hidden="true" /> Bandingkan
+            </button>
+          )}
           <button type="button" onClick={onClose} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 map-text-compact font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Tutup">
             <IconArrowBackUp size={14} aria-hidden="true" /> Tutup
           </button>

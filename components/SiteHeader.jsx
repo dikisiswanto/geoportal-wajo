@@ -5,6 +5,7 @@ import ThemeToggle from "./ThemeToggle";
 import { IconSearch } from "@tabler/icons-react";
 import MobileNav from "./geoportal/MobileNav";
 import { withAssetVersion } from "../lib/assetVersion";
+import MapSearchResults from "./geoportal/search/MapSearchResults";
 
 const SITE_LOGO = withAssetVersion("/brand/logo-kabupaten-wajo.png");
 
@@ -21,6 +22,7 @@ export default function SiteHeader({
   mapSearch = false,
   search = "",
   onSearch,
+  onSearchResult,
   searchPlaceholder = "Cari data atau wilayah…",
   titleAs = "span"
 }) {
@@ -52,7 +54,7 @@ export default function SiteHeader({
       </Link>
 
       {mapSearch ? (
-        <div className="mx-auto hidden w-full max-w-md px-8 md:block">
+        <div className="relative mx-auto hidden w-full max-w-md px-8 md:block">
           <label className="relative block">
             <span className="sr-only">Cari tempat, fasilitas, atau data</span>
             <IconSearch
@@ -67,6 +69,7 @@ export default function SiteHeader({
               className="ui-field w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 map-text-compact text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100"
             />
           </label>
+          <MapSearchResults query={search} onSelect={onSearchResult} />
         </div>
       ) : (
         <div className="hidden flex-1 md:block" />

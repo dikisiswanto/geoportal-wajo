@@ -5,7 +5,7 @@ Nama file menggunakan lowercase-kebab-case dan tidak memasukkan tahun sumber.
 
 Kelompok data:
 - Administrasi:
-    - batas-kabupaten.geojson — 1 feature (outline dasar, BIG edisi Juni 2026)
+    - batas-kabupaten.geojson — 1 feature (outline dasar, BIG edisi Juni 2026; metadata luas wilayah kabupaten dihitung dari penjumlahan 14 kecamatan)
     - batas-kecamatan.geojson — 14 feature
     - batas-desa-kelurahan.geojson — 190 feature
 - Pemerintahan:

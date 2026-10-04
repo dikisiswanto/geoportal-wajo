@@ -5,6 +5,7 @@ import {
   IconPlus,
   IconTarget,
   IconPrinter,
+  IconShare2,
 } from "@tabler/icons-react";
 import IconButton from "./IconButton";
 
@@ -17,6 +18,7 @@ export default function MapControls({
   sidebarOpen,
   onOpenSidebar,
   onPrint,
+  onShare,
 }) {
   return (
     <div className="map-ui-chrome pointer-events-none absolute inset-0 z-[800]">
@@ -35,6 +37,9 @@ export default function MapControls({
         </IconButton>
         <IconButton label="Cetak peta" tone="violet" placement="right" disabled={!mapReady} onClick={onPrint}>
           <IconPrinter size={18} stroke={1.8} />
+        </IconButton>
+        <IconButton label="Bagikan peta ini" tone="slate" placement="right" disabled={!mapReady} onClick={onShare}>
+          <IconShare2 size={17} stroke={1.8} />
         </IconButton>
       </div>
 
