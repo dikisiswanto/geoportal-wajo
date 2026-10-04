@@ -25,7 +25,8 @@ import {
   restorePrintViewport,
   applyPrintAdministrationStyles,
   restorePrintAdministrationStyles,
-  fitMapForPrint
+  fitMapForPrint,
+  waitForPrintImages
 } from "./map/print";
 import {
   layerPaneName,
@@ -843,13 +844,12 @@ const MapCanvas = forwardRef(function MapCanvas(
 
         await new Promise((resolve) => {
           window.requestAnimationFrame(() => {
-            window.requestAnimationFrame(() => {
-              fitMapForPrint(map, scope, printLayoutRef);
-              map.invalidateSize({ pan: false, debounceMoveend: false });
-              resolve();
-            });
+            window.requestAnimationFrame(resolve);
           });
         });
+        fitMapForPrint(map, scope, printLayoutRef);
+        map.invalidateSize({ pan: false, debounceMoveend: false });
+        await waitForPrintImages(document);
 
         return true;
       },

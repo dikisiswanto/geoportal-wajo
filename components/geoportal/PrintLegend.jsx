@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 function LegendSwatch({ kind, color }) {
   const safeColor = color || "#64748b";
 
@@ -28,11 +30,22 @@ export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle 
   return (
     <aside className="print-only-legend" aria-label="Legenda peta untuk cetak">
       <div className="print-only-header">
-        <div>
-          <p className="print-only-kicker">Pemerintah Kabupaten Wajo</p>
-          <h2>Legenda Peta</h2>
+        <div className="print-only-brand-row">
+          <Image
+            src="/brand/logo-kabupaten-wajo.png"
+            alt="Lambang Kabupaten Wajo"
+            width={28}
+            height={33}
+            className="print-only-logo"
+            unoptimized
+            priority
+          />
+          <h1 className="print-only-kicker">Pemerintah Kabupaten Wajo</h1>
         </div>
-        <p className="print-only-note">{scopeTitle || "Tampilan saat ini"}</p>
+        <div className="print-only-title-row">
+          <h2>Legenda Peta</h2>
+          <p className="print-only-note">{scopeTitle || "Tampilan saat ini"}</p>
+        </div>
       </div>
 
       <div className="print-only-legend-items">

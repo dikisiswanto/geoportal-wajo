@@ -279,6 +279,34 @@ export function restorePrintViewport(map, printLayoutRef) {
   printLayoutRef.current = null;
 }
 
+
+export async function waitForPrintImages(root = document) {
+  const images = Array.from(root?.querySelectorAll?.(".print-only-legend img") ?? []);
+  if (!images.length) return;
+
+  await Promise.all(
+    images.map(async (image) => {
+      if (!image.complete) {
+        await new Promise((resolve) => {
+          const done = () => {
+            image.removeEventListener("load", done);
+            image.removeEventListener("error", done);
+            resolve();
+          };
+          image.addEventListener("load", done, { once: true });
+          image.addEventListener("error", done, { once: true });
+        });
+      }
+
+      try {
+        await image.decode?.();
+      } catch {
+        // Browser print may still render a decoded image even when decode() rejects.
+      }
+    })
+  );
+}
+
 export function fitMapForPrint(map, scope, printLayoutRef) {
   if (!map || !isUsableBounds(scope?.bounds)) return false;
 
