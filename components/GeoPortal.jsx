@@ -20,6 +20,8 @@ import LayerInfoPanel from "./geoportal/LayerInfoPanel";
 import MapStatus from "./geoportal/MapStatus";
 import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
+import PrintPreflightNotice from "./geoportal/PrintPreflightNotice";
+import { getPrintPreflight } from "./geoportal/map/print";
 import MapHint from "./geoportal/MapHint";
 import Image from "next/image";
 import { IconDeviceDesktop } from "@tabler/icons-react";
@@ -35,6 +37,7 @@ export default function GeoPortal() {
   const [visible, setVisible] = useState(() => ({ ...DEFAULT_VISIBLE }));
   const [loading, setLoading] = useState({});
   const [printScale, setPrintScale] = useState(null);
+  const [printNotice, setPrintNotice] = useState(null);
   const [errors, setErrors] = useState({});
   const [layerData, setLayerData] = useState({});
   const [selected, setSelected] = useState(null);
@@ -232,6 +235,7 @@ export default function GeoPortal() {
       .filter((item) => (item.id === layer.id ? nextVisible : visible[item.id]))
       .map((item) => item.id);
     setHasInteracted(true);
+    setPrintNotice(null);
     setStatus(`${nextVisible ? "Menampilkan" : "Menyembunyikan"} ${layer.title} ${nextVisible ? "di peta" : "dari peta"}`);
 
     if (!nextVisible && selected?.layer?.id === layer.id) {
@@ -504,6 +508,18 @@ export default function GeoPortal() {
   const handleMapCoords = useCallback((nextCoords) => setCoords(nextCoords), []);
   const handlePrint = useCallback(async () => {
     if (typeof window === "undefined") return;
+
+    const preflight = getPrintPreflight(layers, visible);
+    if (preflight.tooManyLayers) {
+      setPrintNotice({
+        activeLayers: preflight.activeVectorLayers,
+        maxLayers: preflight.maxVectorLayers
+      });
+      setStatus(`Cetak dibatasi maksimal ${preflight.maxVectorLayers} layer garis/area.`);
+      return;
+    }
+
+    setPrintNotice(null);
     setStatus("Menyiapkan peta untuk dicetak…");
     const prepared = await mapApi.current?.preparePrint?.();
     if (prepared === false) {
@@ -512,7 +528,7 @@ export default function GeoPortal() {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => window.print());
     });
-  }, []);
+  }, [visible]);
 
   const handleMapReadyStatus = useCallback((nextStatus) => {
     setMapReady((current) => current || true);
@@ -664,6 +680,17 @@ export default function GeoPortal() {
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
           />
+          {printNotice && (
+            <PrintPreflightNotice
+              activeLayers={printNotice.activeLayers}
+              maxLayers={printNotice.maxLayers}
+              onClose={() => setPrintNotice(null)}
+              onOpenLayers={() => {
+                setPrintNotice(null);
+                setSidebarOpen(true);
+              }}
+            />
+          )}
           <MapControls
             mapReady={mapReady}
             onZoomIn={() => mapApi.current?.zoomIn?.()}
@@ -688,7 +715,12 @@ export default function GeoPortal() {
           />
           <LegendPanel
             activeLayers={activeLayers}
+            layerData={layerData}
             kecamatanLegend={kecamatanLegend}
+            selectedFeature={selected}
+            focusAdmin={focusAdmin}
+            regionFilter={regionFilter}
+            boundaryData={layerData["adm-kecamatan"]}
             open={legendOpen}
             onClose={() => setLegendOpen(false)}
           />

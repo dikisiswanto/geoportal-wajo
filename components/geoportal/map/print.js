@@ -86,6 +86,22 @@ function isThematicVectorLayer(layer) {
 export const MAX_PRINT_VECTOR_LAYERS = 8;
 export const MAX_PRINT_VECTOR_FEATURES = 10000;
 
+export function getActivePrintVectorLayers(layers = [], visible = {}) {
+  return (Array.isArray(layers) ? layers : []).filter(
+    (layer) => visible?.[layer.id] && isThematicVectorLayer(layer)
+  );
+}
+
+export function getPrintPreflight(layers = [], visible = {}) {
+  const activeVectorLayers = getActivePrintVectorLayers(layers, visible);
+  return {
+    activeVectorLayers,
+    activeVectorLayerCount: activeVectorLayers.length,
+    maxVectorLayers: MAX_PRINT_VECTOR_LAYERS,
+    tooManyLayers: activeVectorLayers.length > MAX_PRINT_VECTOR_LAYERS
+  };
+}
+
 function getPrintThematicStyle(layer, feature, { polygonLayerCount = 1 } = {}) {
   const base = styleFor(layer, feature) || {};
   const geometryType = String(feature?.geometry?.type ?? "").toLowerCase();
@@ -146,12 +162,13 @@ export function getPrintLayerPlan({
 
   // Preflight layer count before touching any feature data. This avoids the
   // expensive filtering step when the user has already exceeded the print cap.
-  const activeVectorLayers = (Array.isArray(layers) ? layers : []).filter(
-    (layer) => visible?.[layer.id] && isThematicVectorLayer(layer)
-  );
-  const activeVectorLayerCount = activeVectorLayers.length;
+  const {
+    activeVectorLayers,
+    activeVectorLayerCount,
+    tooManyLayers: preflightTooManyLayers
+  } = getPrintPreflight(layers, visible);
 
-  if (activeVectorLayerCount > MAX_PRINT_VECTOR_LAYERS) {
+  if (preflightTooManyLayers) {
     const activeTitles = activeVectorLayers.map((layer) => layer.title).filter(Boolean);
     const disableCount = Math.max(0, activeVectorLayerCount - MAX_PRINT_VECTOR_LAYERS);
     const disableTitles = activeTitles.slice(0, 4);

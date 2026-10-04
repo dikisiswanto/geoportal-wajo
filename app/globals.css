@@ -1290,3 +1290,62 @@ a:focus-visible {
   #map .leaflet-pane.adminLabel { z-index: 750 !important; pointer-events: none !important; }
 
 }
+
+/* Shared legend symbols keep the interactive legend visually aligned with print. */
+.legend-point-symbol,
+.legend-line-symbol,
+.legend-area-symbol {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend-point-symbol {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.legend-point-symbol .geo-marker {
+  width: 18px;
+  height: 18px;
+  box-shadow: none;
+}
+
+.legend-point-symbol svg {
+  width: 16px;
+  height: 16px;
+}
+
+.legend-line-symbol {
+  width: 20px;
+  height: 12px;
+  overflow: visible;
+}
+
+.legend-area-symbol {
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+}
+
+[data-theme="dark"] .legend-point-symbol .geo-marker {
+  border-color: rgb(148 163 184 / 0.5);
+  background: rgb(31 31 31 / 0.94);
+}
+
+[data-theme="dark"] .print-preflight-list {
+  background: #222222;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .print-preflight-notice {
+  border-color: #92400e;
+  background: rgb(31 31 31 / 0.96);
+}
+
+[data-theme="dark"] .print-preflight-notice .print-preflight-icon {
+  background: rgb(120 53 15 / 0.24);
+  color: #fcd34d;
+}
