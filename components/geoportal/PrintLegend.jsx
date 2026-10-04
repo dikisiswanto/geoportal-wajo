@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { absoluteUrl } from "../../lib/seo";
 
 function LegendSwatch({ kind, color }) {
   const safeColor = color || "#64748b";
@@ -153,7 +154,7 @@ function buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion 
 
 export default function PrintLegend({ activeLayers, kecamatanLegend, scopeTitle, selectedFeature, focusAdmin, selectedRegion }) {
   const info = buildMapInfo({ selectedFeature, focusAdmin, scopeTitle, selectedRegion });
-  const interactiveMapUrl = typeof window !== "undefined" ? window.location.href : "/";
+  const interactiveMapUrl = absoluteUrl("/");
 
   return (
     <aside className="print-only-legend" aria-label="Legenda peta untuk cetak">
