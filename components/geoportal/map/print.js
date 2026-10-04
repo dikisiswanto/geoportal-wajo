@@ -2,9 +2,15 @@ import {
   featureAdministrativeCodes,
   normalizeRegionName
 } from "../../../lib/geo/region";
-import { administrationFeatureMatchesTarget, administrativeName } from "./context";
+import {
+  administrationFeatureMatchesTarget,
+  administrativeName,
+  filterGeoJsonForLayer,
+  isAdministrativeLayerId
+} from "./context";
 import { getFeatureBounds } from "./geometry";
 import { styleFor, kecamatanColor } from "../../../lib/geo/styles";
+import { layerPaneName, ensureLayerPane } from "./layerStyles";
 
 export function getPrintScope(L, { regionFilter, focusAdmin, countyData, districtData, villageData }) {
   if (focusAdmin?.feature) {
@@ -68,6 +74,322 @@ function districtMatchesPrintScope(feature, scope) {
 function villageMatchesPrintScope(feature, scope) {
   if (!feature || !scope || scope.type !== "desa") return false;
   return administrationFeatureMatchesTarget(feature, scope.feature, "desa");
+}
+
+
+function isThematicVectorLayer(layer) {
+  if (!layer || isAdministrativeLayerId(layer.id)) return false;
+  const geometry = String(layer.geometry ?? "").toLowerCase();
+  return geometry.includes("line") || geometry.includes("polygon");
+}
+
+export const MAX_PRINT_VECTOR_LAYERS = 8;
+export const MAX_PRINT_VECTOR_FEATURES = 10000;
+
+function getPrintThematicStyle(layer, feature, { polygonLayerCount = 1 } = {}) {
+  const base = styleFor(layer, feature) || {};
+  const geometryType = String(feature?.geometry?.type ?? "").toLowerCase();
+
+  if (geometryType.includes("polygon")) {
+    const fillOpacity = Number(base.fillOpacity);
+    const opacity = Number(base.opacity);
+    // Multiple thematic areas may overlap. Keep every fill readable instead of
+    // allowing a later polygon to visually erase the one underneath it.
+    const fillCap = polygonLayerCount > 1 ? 0.18 : 0.3;
+    return {
+      ...base,
+      fillOpacity: Number.isFinite(fillOpacity)
+        ? Math.min(fillCap, Math.max(0.08, fillOpacity))
+        : Math.min(fillCap, 0.18),
+      opacity: Number.isFinite(opacity) ? Math.min(0.86, opacity) : 0.82,
+      weight: Math.min(1.55, Math.max(0.75, Number(base.weight) || 1))
+    };
+  }
+
+  if (geometryType.includes("line")) {
+    const opacity = Number(base.opacity);
+    return {
+      ...base,
+      opacity: Number.isFinite(opacity) ? Math.min(0.82, opacity) : 0.8,
+      weight: Math.min(2.0, Math.max(0.95, Number(base.weight) || 1.25))
+    };
+  }
+
+  return base;
+}
+
+export function getPrintLayerPlan({
+  L,
+  layers,
+  visible,
+  loadedData,
+  errors = {},
+  regionFilter,
+  focusAdmin,
+  boundaryData
+} = {}) {
+  if (!L) {
+    return {
+      ok: false,
+      vectorLayers: [],
+      activeVectorLayers: [],
+      activeVectorLayerCount: 0,
+      filteredFeatureCount: 0,
+      notReady: [],
+      failed: [],
+      empty: [],
+      tooManyLayers: false,
+      tooManyFeatures: false,
+      reason: "Peta belum siap"
+    };
+  }
+
+  // Preflight layer count before touching any feature data. This avoids the
+  // expensive filtering step when the user has already exceeded the print cap.
+  const activeVectorLayers = (Array.isArray(layers) ? layers : []).filter(
+    (layer) => visible?.[layer.id] && isThematicVectorLayer(layer)
+  );
+  const activeVectorLayerCount = activeVectorLayers.length;
+
+  if (activeVectorLayerCount > MAX_PRINT_VECTOR_LAYERS) {
+    const activeTitles = activeVectorLayers.map((layer) => layer.title).filter(Boolean);
+    const disableCount = Math.max(0, activeVectorLayerCount - MAX_PRINT_VECTOR_LAYERS);
+    const disableTitles = activeTitles.slice(0, 4);
+    const disableSummary = disableTitles.length
+      ? ` Nonaktifkan: ${disableTitles.join(", ")}${disableCount > disableTitles.length ? ", dan layer lainnya." : "."}`
+      : "";
+
+    return {
+      ok: false,
+      vectorLayers: [],
+      activeVectorLayers,
+      activeVectorLayerCount,
+      filteredFeatureCount: 0,
+      notReady: [],
+      failed: [],
+      empty: [],
+      tooManyLayers: true,
+      tooManyFeatures: false,
+      reason: `Cetak dibatasi maksimal ${MAX_PRINT_VECTOR_LAYERS} layer garis/area. Saat ini ${activeVectorLayerCount} layer aktif.${disableSummary}`
+    };
+  }
+
+  const vectorLayers = [];
+  const notReady = [];
+  const failed = [];
+  const empty = [];
+  let filteredFeatureCount = 0;
+
+  activeVectorLayers.forEach((layer) => {
+    if (errors?.[layer.id]) {
+      failed.push({ id: layer.id, title: layer.title, message: errors[layer.id] });
+      return;
+    }
+
+    const data = loadedData?.[layer.id];
+    if (!Array.isArray(data?.features)) {
+      notReady.push({ id: layer.id, title: layer.title });
+      return;
+    }
+
+    const renderData = filterGeoJsonForLayer(
+      layer,
+      data,
+      regionFilter,
+      boundaryData,
+      focusAdmin
+    );
+    const features = Array.isArray(renderData?.features) ? renderData.features : [];
+
+    if (!features.length) {
+      empty.push({ id: layer.id, title: layer.title });
+      return;
+    }
+
+    filteredFeatureCount += features.length;
+    vectorLayers.push({ layer, renderData, featureCount: features.length });
+  });
+
+  const tooManyFeatures = filteredFeatureCount > MAX_PRINT_VECTOR_FEATURES;
+  const ok = !tooManyFeatures && !notReady.length && !failed.length;
+
+  let reason = "";
+  if (tooManyFeatures) {
+    reason = `Data tematik terlalu banyak untuk sekali cetak (lebih dari ${MAX_PRINT_VECTOR_FEATURES.toLocaleString("id-ID")} fitur).`;
+  } else if (notReady.length) {
+    reason = `Data belum siap: ${notReady.map((item) => item.title).join(", ")}.`;
+  } else if (failed.length) {
+    reason = `Data bermasalah: ${failed.map((item) => item.title).join(", ")}.`;
+  }
+
+  return {
+    ok,
+    vectorLayers,
+    activeVectorLayers,
+    activeVectorLayerCount,
+    filteredFeatureCount,
+    notReady,
+    failed,
+    empty,
+    tooManyLayers: false,
+    tooManyFeatures,
+    reason
+  };
+}
+
+export function preparePrintThematicLayers({
+  L,
+  map,
+  plan
+} = {}) {
+  if (!L || !map || !plan?.ok) return null;
+
+  const records = [];
+  const canvasSnapshots = new Map();
+  const polygonLayerCount = plan.vectorLayers.filter(({ layer }) =>
+    String(layer.geometry ?? "").toLowerCase().includes("polygon")
+  ).length;
+
+  const familyBuckets = new Map();
+  plan.vectorLayers.forEach(({ layer, renderData, featureCount }) => {
+    const paneName = layerPaneName(layer);
+    const bucket = familyBuckets.get(paneName);
+    const entry = { layer, renderData, featureCount };
+    if (bucket) bucket.push(entry);
+    else familyBuckets.set(paneName, [entry]);
+  });
+
+  try {
+    familyBuckets.forEach((entries, paneName) => {
+      const representativeLayer = entries[0]?.layer;
+      const pane = map.getPane?.(paneName) || (
+        representativeLayer ? ensureLayerPane(map, representativeLayer) : null
+      );
+      if (!pane) {
+        throw new Error(`Pane thematic tidak tersedia: ${representativeLayer?.title ?? paneName}`);
+      }
+
+      if (!canvasSnapshots.has(paneName)) {
+        const canvasNodes = Array.from(pane.querySelectorAll?.("canvas") ?? []);
+        const snapshot = canvasNodes.map((canvas) => ({
+          canvas,
+          visibility: canvas.style.visibility,
+          display: canvas.style.display
+        }));
+        canvasNodes.forEach((canvas) => {
+          canvas.style.visibility = "hidden";
+        });
+        canvasSnapshots.set(paneName, snapshot);
+      }
+
+      const featureCollection = {
+        type: "FeatureCollection",
+        features: []
+      };
+      const layerById = new Map();
+
+      entries.forEach(({ layer, renderData }) => {
+        layerById.set(layer.id, layer);
+        const features = Array.isArray(renderData?.features) ? renderData.features : [];
+        features.forEach((feature) => {
+          // Temporary metadata is attached only to this in-memory print copy.
+          featureCollection.features.push({
+            ...feature,
+            __wajoPrintLayerId: layer.id
+          });
+        });
+      });
+
+      const renderer = L.svg({ pane: paneName, padding: 0.45 });
+      const printLayer = L.geoJSON(featureCollection, {
+        renderer,
+        pane: paneName,
+        interactive: false,
+        bubblingMouseEvents: false,
+        style: (feature) => {
+          const layer = layerById.get(feature?.__wajoPrintLayerId) || representativeLayer;
+          return {
+            ...getPrintThematicStyle(layer, feature, { polygonLayerCount }),
+            className: "print-thematic-vector"
+          };
+        }
+      }).addTo(map);
+
+      records.push({
+        layer: printLayer,
+        renderer,
+        canvasVisibility: canvasSnapshots.get(paneName),
+        paneName,
+        featureCount: featureCollection.features.length
+      });
+    });
+  } catch (error) {
+    restorePrintThematicLayers(records);
+    canvasSnapshots.forEach((snapshot) => {
+      snapshot?.forEach?.(({ canvas, visibility, display }) => {
+        if (!canvas) return;
+        canvas.style.visibility = visibility || "";
+        canvas.style.display = display || "";
+      });
+    });
+    throw error;
+  }
+
+  return records;
+}
+
+export function restorePrintThematicLayers(records) {
+  if (!Array.isArray(records) || !records.length) return;
+
+  const renderers = new Set();
+  const canvases = new Map();
+
+  // Remove feature groups first while their shared SVG renderer still exists.
+  records.forEach(({ layer, renderer, canvasVisibility }) => {
+    layer?.remove?.();
+    if (renderer) renderers.add(renderer);
+    canvasVisibility?.forEach((snapshot) => {
+      if (snapshot?.canvas && !canvases.has(snapshot.canvas)) {
+        canvases.set(snapshot.canvas, snapshot);
+      }
+    });
+  });
+
+  // A renderer is shared by all thematic layers in the same geometry family.
+  // Remove it once, after all feature groups have been detached.
+  renderers.forEach((renderer) => renderer.remove?.());
+
+  canvases.forEach(({ canvas, visibility, display }) => {
+    canvas.style.visibility = visibility || "";
+    canvas.style.display = display || "";
+  });
+}
+
+/**
+ * Restore interactive Canvas renderers after the print viewport has been
+ * restored. This function is intentionally synchronous: only the existing
+ * Canvas renderers are shown and redrawn once; no layer is rebuilt.
+ */
+export function restoreInteractiveThematicRenderers(map, vectorRenderers) {
+  if (!map || !vectorRenderers?.forEach) return;
+
+  const renderers = [];
+  const seen = new Set();
+
+  vectorRenderers.forEach((renderer) => {
+    if (!renderer || seen.has(renderer)) return;
+    seen.add(renderer);
+
+    const canvas = renderer.getContainer?.();
+    if (!canvas || String(canvas.tagName).toLowerCase() !== "canvas") return;
+
+    canvas.style.visibility = "";
+    canvas.style.display = "";
+    renderers.push(renderer);
+  });
+
+  if (!map._loaded) return;
+  renderers.forEach((renderer) => renderer._redraw?.());
 }
 
 export function applyPrintAdministrationStyles(layerRefs, loadedData, scope) {

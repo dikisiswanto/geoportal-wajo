@@ -2,28 +2,50 @@ import { kecamatanColor, styleFor } from "../../../lib/geo/styles";
 import { normalizeRegionName } from "../../../lib/geo/region";
 import { administrationFeatureMatchesTarget, administrativeName, isAdministrativeLayerId } from "./context";
 
+function layerGeometryFamily(layer) {
+  const geometry = String(layer?.geometry ?? "").toLowerCase();
+
+  if (geometry.includes("point")) return "point";
+  if (geometry.includes("line")) return "line";
+  if (geometry.includes("polygon")) return "polygon";
+
+  return "other";
+}
+
 export function layerPaneName(layer) {
   if (layer?.styleMode === "admin-county-outline") return "adminCounty";
   if (layer?.styleMode === "admin") return "adminDistrict";
   if (layer?.styleMode === "admin-village") return "adminVillage";
-  return `wajoData-${String(layer?.id ?? "layer").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+  // Data tematik berbagi renderer berdasarkan kelompok geometri.
+  // Ini menjaga semua feature tetap hidup dalam satu composite renderer tanpa
+  // membuat satu Canvas baru untuk setiap layer.
+  switch (layerGeometryFamily(layer)) {
+    case "polygon":
+      return "thematicPolygon";
+    case "line":
+      return "thematicLine";
+    case "point":
+      return "thematicPoint";
+    default:
+      return "thematicOther";
+  }
 }
 
-function dataPaneZIndex(layer, index) {
-  const geometry = String(layer?.geometry ?? "").toLowerCase();
-
-  // Semua data tematik berada di atas batas administrasi. Di dalam data tematik,
-  // titik berada paling atas, kemudian jaringan, lalu area/polygon.
-  const base = geometry.includes("point")
-    ? 700
-    : geometry.includes("line")
-      ? 600
-      : 500;
-
-  return String(base + Math.min(index, 99));
+function dataPaneZIndex(layer) {
+  switch (layerGeometryFamily(layer)) {
+    case "point":
+      return "700";
+    case "line":
+      return "600";
+    case "polygon":
+      return "500";
+    default:
+      return "550";
+  }
 }
 
-export function ensureLayerPane(map, layer, index) {
+export function ensureLayerPane(map, layer) {
   const paneName = layerPaneName(layer);
   const existing = map.getPane?.(paneName);
 
@@ -31,7 +53,7 @@ export function ensureLayerPane(map, layer, index) {
 
   const pane = map.createPane(paneName);
   pane.classList.add("leaflet-wajo-data-pane");
-  pane.style.zIndex = dataPaneZIndex(layer, index);
+  pane.style.zIndex = dataPaneZIndex(layer);
   pane.style.pointerEvents = "auto";
   return paneName;
 }
@@ -141,6 +163,10 @@ export function setFeatureSelectedVisual(featureLayer, layer, baseStyle, isPolyg
     );
   }
 
+  if (selected) {
+    featureLayer.bringToFront?.();
+  }
+
   if (typeof featureLayer.setZIndexOffset === "function") {
     const baseOffset = featureLayer.__wajoBaseZIndexOffset ?? 0;
     featureLayer.setZIndexOffset(selected ? baseOffset + 500 : baseOffset);
@@ -153,6 +179,8 @@ export function applyFeatureHoverVisual(featureLayer, layer, baseStyle) {
   if (typeof featureLayer.setStyle === "function") {
     featureLayer.setStyle(hoverStyleFor(layer, baseStyle));
   }
+
+  featureLayer.bringToFront?.();
 
   if (typeof featureLayer.setZIndexOffset === "function") {
     const baseOffset = featureLayer.__wajoBaseZIndexOffset ?? 0;

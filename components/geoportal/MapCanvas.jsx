@@ -26,7 +26,11 @@ import {
   applyPrintAdministrationStyles,
   restorePrintAdministrationStyles,
   fitMapForPrint,
-  waitForPrintImages
+  waitForPrintImages,
+  getPrintLayerPlan,
+  preparePrintThematicLayers,
+  restorePrintThematicLayers,
+  restoreInteractiveThematicRenderers
 } from "./map/print";
 import {
   layerPaneName,
@@ -68,6 +72,7 @@ const MapCanvas = forwardRef(function MapCanvas(
   const leafletRef = useRef(null);
   const printStyleRef = useRef(false);
   const printScopeRef = useRef(null);
+  const printThematicLayersRef = useRef([]);
   const visibleRef = useRef(visible);
   const layersRefForImperative = useRef(layers);
   const regionFilterRef = useRef(regionFilter);
@@ -95,6 +100,7 @@ const MapCanvas = forwardRef(function MapCanvas(
   }, []);
 
   const [errors, setErrors] = useState({});
+  const errorsRef = useRef(errors);
   const [renderVersion, setRenderVersion] = useState(0);
   const retryTokensRef = useRef({});
 
@@ -146,6 +152,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     visibleRef.current = visible;
   }, [visible]);
+
+  useEffect(() => {
+    errorsRef.current = errors;
+  }, [errors]);
 
   useEffect(() => {
     layersRefForImperative.current = layers;
@@ -385,19 +395,118 @@ const MapCanvas = forwardRef(function MapCanvas(
         );
       });
 
-      const beforePrint = () => {
-        if (!mapRef.current) return;
+      const capturePrintView = () => {
+        if (printViewRef.current) return printViewRef.current;
 
-        if (!printViewRef.current) {
-          const center = map.getCenter();
-          printViewRef.current = {
-            lat: center.lat,
-            lng: center.lng,
-            zoom: map.getZoom()
+        const center = map.getCenter();
+        const view = {
+          lat: Number(center.lat),
+          lng: Number(center.lng),
+          zoom: Number(map.getZoom())
+        };
+        printViewRef.current = view;
+        return view;
+      };
+
+      let printCleanupQueued = false;
+
+      const cleanupPrintSession = () => {
+        if (printCleanupQueued) return;
+
+        const hasPrintState = Boolean(
+          printStyleRef.current ||
+          printScopeRef.current ||
+          printLayoutRef.current ||
+          printThematicLayersRef.current.length
+        );
+        if (!hasPrintState) return;
+
+        printCleanupQueued = true;
+        const view = printViewRef.current;
+        const printedScope = printScopeRef.current;
+
+        window.requestAnimationFrame(() => {
+          if (mapRef.current !== map) {
+            restorePrintThematicLayers(printThematicLayersRef.current);
+            printThematicLayersRef.current = [];
+            restorePrintAdministrationStyles(layerRefs.current);
+            restorePrintViewport(map, printLayoutRef);
+            printStyleRef.current = false;
+            printScopeRef.current = null;
+            onPrintScaleRef.current?.(null);
+            printViewRef.current = null;
+            printCleanupQueued = false;
+            return;
+          }
+
+          map.stop?.();
+          restorePrintThematicLayers(printThematicLayersRef.current);
+          printThematicLayersRef.current = [];
+          restorePrintAdministrationStyles(layerRefs.current);
+
+          if (printedScope?.type === "kecamatan" || printedScope?.type === "desa") {
+            applyActiveAdministrationStyles(
+              layerRefs.current,
+              loadedData.current,
+              {
+                focusAdmin: {
+                  type: printedScope.type,
+                  feature: printedScope.feature
+                },
+                regionFilter:
+                  printedScope.type === "kecamatan"
+                    ? administrativeName(printedScope.feature, "kecamatan")
+                    : ""
+              }
+            );
+          }
+
+          printStyleRef.current = false;
+          printScopeRef.current = null;
+          restorePrintViewport(map, printLayoutRef);
+          onPrintScaleRef.current?.(null);
+
+          // Restore the exact interactive viewport before redrawing. The
+          // second restore after the layout frame handles the browser reflow
+          // caused by the print root moving back from A4 dimensions.
+          const restoreInteractiveView = () => {
+            if (
+              !view ||
+              !Number.isFinite(view.lat) ||
+              !Number.isFinite(view.lng) ||
+              !Number.isFinite(view.zoom)
+            ) return;
+
+            const center = map.getCenter?.();
+            const zoom = Number(map.getZoom?.());
+            const sameCenter = center &&
+              Math.abs(Number(center.lat) - view.lat) < 1e-7 &&
+              Math.abs(Number(center.lng) - view.lng) < 1e-7;
+            if (!sameCenter || Math.abs(zoom - view.zoom) > 1e-7) {
+              map.setView([view.lat, view.lng], view.zoom, { animate: false });
+            }
           };
-        }
 
-        const scope = printScopeRef.current || getPrintScope(L, {
+          map.invalidateSize({ pan: false, debounceMoveend: false });
+          restoreInteractiveView();
+          restoreInteractiveThematicRenderers(map, vectorRenderersRef.current);
+
+          window.requestAnimationFrame(() => {
+            if (mapRef.current !== map || !map._loaded) return;
+            map.invalidateSize({ pan: false, debounceMoveend: false });
+            restoreInteractiveView();
+            printViewRef.current = null;
+            printCleanupQueued = false;
+            onStatusRef.current?.("Peta siap");
+          });
+        });
+      };
+
+      const preparePrintState = () => {
+        if (!mapRef.current || printStyleRef.current) return true;
+
+        const view = capturePrintView();
+        const scope = getPrintScope(L, {
           regionFilter: regionFilterRef.current,
           focusAdmin: focusAdminRef.current,
           countyData: loadedData.current["adm-kabupaten"],
@@ -405,52 +514,96 @@ const MapCanvas = forwardRef(function MapCanvas(
           villageData: loadedData.current["adm-desa"]
         });
 
-        if (scope) {
-          applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
-          printStyleRef.current = true;
-          const printScale = fitMapForPrint(map, scope, printLayoutRef);
-          onPrintScaleRef.current?.(printScale);
+        if (!scope) {
+          printViewRef.current = null;
+          return false;
         }
-      };
 
-      const afterPrint = () => {
-        if (!mapRef.current || !printViewRef.current) {
+        const plan = getPrintLayerPlan({
+          L,
+          layers: layersRefForImperative.current,
+          visible: visibleRef.current,
+          loadedData: loadedData.current,
+          errors: errorsRef.current,
+          regionFilter: regionFilterRef.current,
+          focusAdmin: focusAdminRef.current,
+          boundaryData: loadedData.current["adm-kecamatan"]
+        });
+
+        if (!plan.ok) {
+          onStatusRef.current?.(plan.reason || "Peta belum siap dicetak");
+          printViewRef.current = null;
+          return false;
+        }
+
+        onStatusRef.current?.(
+          `Menyiapkan ${plan.activeVectorLayerCount} layer garis/area untuk dicetak…`
+        );
+
+        try {
+          restorePrintThematicLayers(printThematicLayersRef.current);
+          printThematicLayersRef.current = preparePrintThematicLayers({
+            L,
+            map,
+            plan
+          }) || [];
+
           restorePrintAdministrationStyles(layerRefs.current);
+          printScopeRef.current = scope;
+          applyPrintAdministrationStyles(
+            layerRefs.current,
+            loadedData.current,
+            scope
+          );
+
+          const printScale = fitMapForPrint(map, scope, printLayoutRef);
+          if (!printScale) throw new Error("Peta tidak dapat disiapkan untuk cetak");
+
+          printStyleRef.current = true;
+          onPrintScaleRef.current?.(printScale);
+          return true;
+        } catch (error) {
+          restorePrintThematicLayers(printThematicLayersRef.current);
+          printThematicLayersRef.current = [];
+          restorePrintAdministrationStyles(layerRefs.current);
+          restorePrintViewport(map, printLayoutRef);
           printStyleRef.current = false;
           printScopeRef.current = null;
           onPrintScaleRef.current?.(null);
-          restorePrintViewport(map, printLayoutRef);
-          return;
-        }
 
-        const view = printViewRef.current;
-
-        window.requestAnimationFrame(() => {
-          const printedScope = printScopeRef.current;
-          restorePrintAdministrationStyles(layerRefs.current);
-          if (printedScope?.type === "kecamatan" || printedScope?.type === "desa") {
-            applyActiveAdministrationStyles(
-              layerRefs.current,
-              loadedData.current,
-              {
-                focusAdmin: { type: printedScope.type, feature: printedScope.feature },
-                regionFilter: printedScope.type === "kecamatan" ? administrativeName(printedScope.feature, "kecamatan") : ""
-              }
-            );
-          }
-          printStyleRef.current = false;
-          printScopeRef.current = null;
-          restorePrintViewport(map, printLayoutRef);
           map.invalidateSize({ pan: false, debounceMoveend: false });
-
-          map.setView([view.lat, view.lng], view.zoom, { animate: false });
-
-          window.requestAnimationFrame(() => {
-            map.invalidateSize({ pan: false });
-            printViewRef.current = null;
-          });
-        });
+          if (
+            view &&
+            Number.isFinite(view.lat) &&
+            Number.isFinite(view.lng) &&
+            Number.isFinite(view.zoom)
+          ) {
+            map.setView([view.lat, view.lng], view.zoom, { animate: false });
+          }
+          restoreInteractiveThematicRenderers(map, vectorRenderersRef.current);
+          printViewRef.current = null;
+          onStatusRef.current?.("Peta belum siap dicetak");
+          return false;
+        }
       };
+
+      const beforePrint = () => {
+        preparePrintState();
+      };
+
+      const afterPrint = () => {
+        cleanupPrintSession();
+      };
+
+      const printMediaQuery = window.matchMedia?.("print");
+      const handlePrintMediaChange = (event) => {
+        if (!event.matches) cleanupPrintSession();
+      };
+      if (printMediaQuery?.addEventListener) {
+        printMediaQuery.addEventListener("change", handlePrintMediaChange);
+      } else {
+        printMediaQuery?.addListener?.(handlePrintMediaChange);
+      }
 
       window.addEventListener(
         "beforeprint",
@@ -464,7 +617,9 @@ const MapCanvas = forwardRef(function MapCanvas(
 
       map._wajoPrintHandlers = {
         beforePrint,
-        afterPrint
+        afterPrint,
+        printMediaQuery,
+        handlePrintMediaChange
       };
 
       onStatusRef.current?.(
@@ -492,6 +647,13 @@ const MapCanvas = forwardRef(function MapCanvas(
           map._wajoPrintHandlers
             .afterPrint
         );
+
+        const { printMediaQuery, handlePrintMediaChange } = map._wajoPrintHandlers;
+        if (printMediaQuery?.removeEventListener) {
+          printMediaQuery.removeEventListener("change", handlePrintMediaChange);
+        } else {
+          printMediaQuery?.removeListener?.(handlePrintMediaChange);
+        }
       }
 
       map?._wajoInteractionCleanup?.();
@@ -506,6 +668,8 @@ const MapCanvas = forwardRef(function MapCanvas(
       leafletRef.current = null;
       tileRef.current = null;
       printViewRef.current = null;
+      restorePrintThematicLayers(printThematicLayersRef.current);
+      printThematicLayersRef.current = [];
       restorePrintAdministrationStyles(layerRefsSnapshot);
       printStyleRef.current = false;
       printScopeRef.current = null;
@@ -646,7 +810,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         focusAdmin
       );
 
-      const paneName = ensureLayerPane(map, layer, layerIndex);
+      const paneName = ensureLayerPane(map, layer);
 
       let vectorRenderer = vectorRenderersRef.current.get(paneName);
       if (!vectorRenderer) {
@@ -827,17 +991,54 @@ const MapCanvas = forwardRef(function MapCanvas(
       preparePrint: async () => {
         const map = mapRef.current;
         if (!map) return false;
+        if (printStyleRef.current) return true;
 
         const L = await import("leaflet");
+        const center = map.getCenter();
+        const view = {
+          lat: Number(center.lat),
+          lng: Number(center.lng),
+          zoom: Number(map.getZoom())
+        };
+        printViewRef.current = view;
 
-        if (!printViewRef.current) {
-          const center = map.getCenter();
-          printViewRef.current = { lat: center.lat, lng: center.lng, zoom: map.getZoom() };
+        // Check the layer-count limit before waiting for data. This prevents
+        // unnecessary network/render work when print would be rejected anyway.
+        const initialPlan = getPrintLayerPlan({
+          L,
+          layers,
+          visible,
+          loadedData: loadedData.current,
+          errors: errorsRef.current,
+          regionFilter,
+          focusAdmin,
+          boundaryData: loadedData.current["adm-kecamatan"]
+        });
+        if (initialPlan.tooManyLayers) {
+          onStatusRef.current?.(initialPlan.reason || "Peta belum siap dicetak");
+          printViewRef.current = null;
+          return false;
         }
 
-        const activeIds = layers.filter((layer) => visible[layer.id]).map((layer) => layer.id);
+        const activeIds = layers
+          .filter((layer) => visible[layer.id])
+          .map((layer) => layer.id);
+
+        // Reuse any requests that are already in flight instead of triggering
+        // another render/data cycle. The short polling fallback only covers
+        // the gap between a layer toggle and its load request being registered.
+        const pendingRequests = activeIds
+          .map((id) => requestCache.current[id])
+          .filter(Boolean);
+        if (pendingRequests.length) {
+          await Promise.allSettled(pendingRequests);
+        }
+
         const startedAt = performance.now();
-        while (activeIds.some((id) => !loadedData.current[id] && !errors[id]) && performance.now() - startedAt < 5000) {
+        while (
+          activeIds.some((id) => !loadedData.current[id] && !errorsRef.current[id]) &&
+          performance.now() - startedAt < 1500
+        ) {
           await new Promise((resolve) => window.setTimeout(resolve, 80));
         }
 
@@ -848,27 +1049,73 @@ const MapCanvas = forwardRef(function MapCanvas(
           districtData: loadedData.current["adm-kecamatan"],
           villageData: loadedData.current["adm-desa"]
         });
+        if (!scope) {
+          onStatusRef.current?.("Peta belum siap dicetak");
+          printViewRef.current = null;
+          return false;
+        }
 
-        if (!scope) return false;
+        const plan = getPrintLayerPlan({
+          L,
+          layers,
+          visible,
+          loadedData: loadedData.current,
+          errors: errorsRef.current,
+          regionFilter,
+          focusAdmin,
+          boundaryData: loadedData.current["adm-kecamatan"]
+        });
+        if (!plan.ok) {
+          onStatusRef.current?.(plan.reason || "Peta belum siap dicetak");
+          printViewRef.current = null;
+          return false;
+        }
 
-        restorePrintAdministrationStyles(layerRefs.current);
-        printScopeRef.current = scope;
-        applyPrintAdministrationStyles(layerRefs.current, loadedData.current, scope);
-        printStyleRef.current = true;
-        const printScale = fitMapForPrint(map, scope, printLayoutRef);
-        onPrintScaleRef.current?.(printScale);
+        onStatusRef.current?.(
+          `Menyiapkan ${plan.activeVectorLayerCount} layer garis/area untuk dicetak…`
+        );
 
-        await new Promise((resolve) => {
-          window.requestAnimationFrame(() => {
+        try {
+          restorePrintThematicLayers(printThematicLayersRef.current);
+          printThematicLayersRef.current = preparePrintThematicLayers({
+            L,
+            map,
+            plan
+          }) || [];
+          restorePrintAdministrationStyles(layerRefs.current);
+          printScopeRef.current = scope;
+          applyPrintAdministrationStyles(
+            layerRefs.current,
+            loadedData.current,
+            scope
+          );
+
+          const printScale = fitMapForPrint(map, scope, printLayoutRef);
+          if (!printScale) throw new Error("Peta tidak dapat disiapkan untuk cetak");
+
+          printStyleRef.current = true;
+          onPrintScaleRef.current?.(printScale);
+
+          await new Promise((resolve) => {
             window.requestAnimationFrame(resolve);
           });
-        });
-        const finalPrintScale = fitMapForPrint(map, scope, printLayoutRef);
-        onPrintScaleRef.current?.(finalPrintScale);
-        map.invalidateSize({ pan: false, debounceMoveend: false });
-        await waitForPrintImages(document);
-
-        return true;
+          await waitForPrintImages(document);
+          return true;
+        } catch (error) {
+          restorePrintThematicLayers(printThematicLayersRef.current);
+          printThematicLayersRef.current = [];
+          restorePrintAdministrationStyles(layerRefs.current);
+          restorePrintViewport(map, printLayoutRef);
+          printStyleRef.current = false;
+          printScopeRef.current = null;
+          onPrintScaleRef.current?.(null);
+          map.invalidateSize({ pan: false, debounceMoveend: false });
+          map.setView([view.lat, view.lng], view.zoom, { animate: false });
+          restoreInteractiveThematicRenderers(map, vectorRenderersRef.current);
+          printViewRef.current = null;
+          onStatusRef.current?.("Peta belum siap dicetak");
+          return false;
+        }
       },
 
       zoomToLayer: (layerId) => {

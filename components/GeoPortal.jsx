@@ -507,7 +507,6 @@ export default function GeoPortal() {
     setStatus("Menyiapkan peta untuk dicetak…");
     const prepared = await mapApi.current?.preparePrint?.();
     if (prepared === false) {
-      setStatus("Peta belum siap dicetak");
       return;
     }
     window.requestAnimationFrame(() => {
