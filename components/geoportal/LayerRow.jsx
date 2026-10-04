@@ -13,7 +13,7 @@ export default function LayerRow({ layer, active, busy, error, onToggle, onInfo,
     : regionFilter && regionScoped ? `Belum ada data di ${regionDisplayName(regionFilter)}` : "";
 
   return (
-    <div className={`relative flex items-start gap-2 px-2.5 py-2.5 transition ${active ? "bg-sky-50/60" : "bg-white hover:bg-slate-50/80"}`}>
+    <div className={`relative flex items-start gap-2 px-2.5 py-2.5 transition ${active ? "bg-slate-50" : "bg-white hover:bg-slate-50/80"}`}>
       {active && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-sky-700" aria-hidden="true" />}
       <button type="button" onClick={() => onToggle(layer)} className="group ui-micro-interaction relative grid size-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-white hover:text-sky-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" aria-label={active ? `Sembunyikan ${layer.title}` : `Tampilkan ${layer.title}`} aria-pressed={active} title={active ? `Sembunyikan ${layer.title}` : `Tampilkan ${layer.title}`}>
         {active ? <IconEye size={16} stroke={1.8} /> : <IconEyeOff size={16} stroke={1.7} />}

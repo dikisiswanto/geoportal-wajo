@@ -228,7 +228,7 @@ export default function FeatureInspector({
 
       <div className="border-b border-slate-200 px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onZoom} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50/80 px-2.5 py-1.5 map-text-compact font-medium text-sky-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Lihat di peta">
+          <button type="button" onClick={onZoom} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 map-text-compact font-medium text-sky-800 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Lihat di peta">
             <IconTarget size={14} aria-hidden="true" /> Lihat di peta
           </button>
           <button type="button" onClick={onShare} className="ui-micro-interaction inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1.5 map-text-compact font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" title="Bagikan lokasi">

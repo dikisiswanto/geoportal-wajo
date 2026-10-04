@@ -92,8 +92,13 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={inter.variable}>
+    <html lang="id" className={inter.variable} suppressHydrationWarning>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{const stored=window.localStorage.getItem("wajo-theme");const theme=stored==="dark"?"dark":"light";document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;}catch{document.documentElement.dataset.theme="light";document.documentElement.style.colorScheme="light";}})();`
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(async()=>{try{const expected=new URL(${JSON.stringify(withAssetVersion("/sw.js"))},location.origin).href;const regs=await navigator.serviceWorker?.getRegistrations?.()||[];const stale=regs.some(r=>r.active&&r.active.scriptURL!==expected);if(stale){await Promise.all(regs.map(r=>r.unregister()));location.reload();}}catch{}})();`

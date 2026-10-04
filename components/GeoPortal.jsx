@@ -619,12 +619,12 @@ export default function GeoPortal() {
 
         <div className="print-map-stage relative min-w-0 flex-1">
           <div
-            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-[12rem] left-1/2 z-[1000] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-20 ui-fade-in"
+            className="desktop-best-view-toast map-ui-chrome pointer-events-none absolute bottom-[12rem] left-1/2 z-[1000] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-20 ui-fade-in"
             role="status"
             aria-live="polite"
           >
             <div className="flex items-start gap-2">
-              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-sky-100 text-sky-700" aria-hidden="true">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-100 text-sky-700" aria-hidden="true">
                 <IconDeviceDesktop size={17} stroke={1.8} />
               </span>
               <div className="min-w-0 flex-1">

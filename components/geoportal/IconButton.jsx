@@ -13,8 +13,8 @@ export default function IconButton({
       ? "bg-slate-200 text-slate-900 ring-slate-300"
       : "bg-white/95 text-slate-700 ring-slate-200 hover:bg-slate-50",
     blue: active
-      ? "bg-blue-100 text-blue-800 ring-blue-300"
-      : "bg-blue-50 text-blue-700 ring-blue-200 hover:bg-blue-100",
+      ? "bg-slate-100 text-sky-800 ring-slate-300"
+      : "bg-slate-50 text-sky-700 ring-slate-200 hover:bg-slate-100",
     amber: active
       ? "bg-amber-100 text-amber-800 ring-amber-300"
       : "bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100",

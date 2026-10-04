@@ -1,28 +1,43 @@
 # Peta Interaktif Kabupaten Wajo
 
-Web GIS / GeoPortal Kabupaten Wajo untuk menampilkan dan menjelajahi data geospasial secara interaktif.
+Web GIS / GeoPortal Kabupaten Wajo untuk menjelajahi data wilayah dan data geospasial secara interaktif.
 
-Aplikasi dibangun dengan **Next.js, React, Leaflet, dan GeoJSON statis**. Fokus utamanya adalah navigasi wilayah, thematic layer, feature inspection, dan interaksi peta yang ringan serta konsisten.
+Aplikasi menyediakan peta administrasi, data tematik, jaringan, fasilitas publik, pendidikan, kesehatan, serta potensi wilayah. Pengguna dapat memilih layer, menjelajahi wilayah hingga tingkat desa/kelurahan, melihat detail feature, dan mencetak peta.
 
-## Stack
+## Teknologi
 
-* Next.js App Router
-* React
-* JavaScript / JSX
-* Tailwind CSS
-* Leaflet
-* GeoJSON
-* Tabler Icons
-* `next/font/google`
-* Service Worker / PWA
+- Next.js 16 — App Router
+- React 19
+- JavaScript / JSX
+- Tailwind CSS 4
+- Leaflet
+- GeoJSON
+- Tabler Icons
+- PWA / Service Worker
 
-## Struktur Utama
+## Fitur Utama
+
+- Peta administrasi Kabupaten, Kecamatan, dan Desa/Kelurahan
+- Layer tematik dan jaringan
+- Data fasilitas dan infrastruktur
+- Navigasi wilayah dan filtering berdasarkan konteks wilayah
+- Informasi detail setiap feature
+- Statistik wilayah
+- Katalog data dan halaman detail dataset
+- Mode **Light / Dark**
+- Peta siap cetak dalam format A4 Landscape
+- PWA dan dukungan offline dasar
+- SEO metadata, sitemap, dan Open Graph
+
+## Struktur Proyek
 
 ```text
 app/
-├── layout.jsx          # metadata, font, layout
-├── page.jsx            # halaman utama
-├── globals.css         # global styles + Leaflet
+├── page.jsx                 # Halaman utama peta
+├── data/                    # Katalog dan detail dataset
+├── tentang/                 # Halaman informasi
+├── globals.css              # Global UI, tema, dan Leaflet
+├── layout.jsx               # Root layout dan metadata
 ├── loading.jsx
 ├── error.jsx
 ├── manifest.js
@@ -30,70 +45,111 @@ app/
 └── sitemap.js
 
 components/
-├── GeoPortal.jsx       # state & orkestrasi aplikasi
-├── PwaRegister.jsx
+├── GeoPortal.jsx            # Orkestrasi utama aplikasi
+├── SiteHeader.jsx
+├── SiteFooter.jsx
+├── ThemeToggle.jsx
 └── geoportal/
-    ├── GeoPortalHeader.jsx
+    ├── MapCanvas.jsx        # Lifecycle dan rendering Leaflet
     ├── LayerCatalog.jsx
     ├── LayerRow.jsx
-    ├── LayerGlyph.jsx
-    ├── MapCanvas.jsx   # lifecycle Leaflet & feature
-    ├── MapControls.jsx
-    ├── IconButton.jsx
-    ├── LegendPanel.jsx
     ├── FeatureInspector.jsx
-    ├── MapStatus.jsx
-    ├── MobileActions.jsx
-    └── PrintLegend.jsx
+    ├── LayerInfoPanel.jsx
+    ├── LegendPanel.jsx
+    ├── PrintLegend.jsx
+    └── map/
+        ├── context.js       # Context wilayah
+        ├── geoLayer.js      # Pembuatan thematic layer
+        ├── geometry.js      # Utility geometri
+        ├── interaction.js   # Interaksi feature dan administrasi
+        ├── layerStyles.js   # Style layer
+        └── print.js         # Mode dan layout print
 
 lib/
-├── layers.js           # registry utama layer
+├── layers.js                # Registry utama layer
+├── seo.js                   # Metadata dan URL SEO
 └── geo/
     ├── format.js
     ├── markers.js
-    └── styles.js
+    ├── styles.js
+    ├── region.js
+    ├── relations.js
+    ├── dataFilter.js
+    ├── dataSummary.js
+    ├── administrationStats.js
+    └── statistics.js
 
 public/
+├── geo-data/                # Dataset GeoJSON
 ├── brand/
 ├── pwa/
-├── geo-data/           # dataset GeoJSON
+├── seo/
+├── offline.html
 └── sw.js
+
+scripts/
+├── sync-big-admin-boundaries.mjs
+├── sync-big-kabupaten-boundary.mjs
+├── validate-admin.mjs
+├── validate-geo-membership.mjs
+└── build-region-summary.mjs
 ```
 
-## Layer Registry
+## Instalasi
 
-`lib/layers.js` adalah **source of truth** untuk layer.
+Pastikan Node.js dan npm sudah tersedia.
 
-Informasi layer seperti:
+```bash
+npm install
+```
 
-* nama;
-* file;
-* kelompok;
-* geometry;
-* sumber;
-* tahun;
-* style;
-* inspector;
-* marker;
-* konfigurasi wilayah
+Jalankan development server:
 
-didefinisikan di sini.
+```bash
+npm run dev
+```
 
-Aturan GIS jangan disebar ke banyak component.
+Aplikasi tersedia secara default di:
 
-* `lib/geo/styles.js` → simbologi
-* `lib/geo/markers.js` → marker/icon
-* `lib/geo/format.js` → formatting dan legenda
+```text
+http://localhost:3000
+```
 
-## Data
+Build production:
 
-GeoJSON disimpan di:
+```bash
+npm run build
+npm start
+```
+
+## Konfigurasi Environment
+
+Salin file environment:
+
+```bash
+cp .env.example .env.local
+```
+
+Konfigurasi utama:
+
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+BUILD_VERSION=
+```
+
+Untuk production, `NEXT_PUBLIC_SITE_URL` harus menggunakan URL publik Geoportal.
+
+## Data Geospasial
+
+Dataset disimpan di:
 
 ```text
 public/geo-data/
 ```
 
-Gunakan nama file:
+Format utama adalah GeoJSON.
+
+Nama file menggunakan format:
 
 ```text
 lowercase-kebab-case.geojson
@@ -109,239 +165,188 @@ puskesmas.geojson
 potensi-pertanian.geojson
 ```
 
-Nama layer di UI tidak perlu menyertakan tahun. Tahun disimpan sebagai metadata.
+### Layer Registry
 
-## Administrasi Wajo
+`lib/layers.js` merupakan **source of truth** untuk konfigurasi layer.
 
-Hirarki wilayah:
+Informasi seperti nama layer, file, kelompok, geometri, sumber data, tahun, style, inspector, marker, dan konfigurasi wilayah didefinisikan di sini.
 
-```text
-Kabupaten
-  └── Kecamatan
-       └── Desa/Kelurahan
-```
-
-Identitas wilayah menggunakan **kode**, bukan nama.
-
-Referensi dapat menyimpan:
+Untuk style dan utility GIS:
 
 ```text
-kode_*_kemendagri
-kode_*_bps
-nama_*_kemendagri
-nama_*_bps
+lib/geo/styles.js
+lib/geo/markers.js
+lib/geo/format.js
 ```
 
-Saat ini data mencakup **14 kecamatan dan 190 desa/kelurahan**.
+## Wilayah Administrasi
 
-## Region Filtering
+Struktur wilayah:
 
-Feature yang mengikuti wilayah menggunakan:
+```text
+Kabupaten Wajo
+└── Kecamatan
+    └── Desa / Kelurahan
+```
+
+Identitas wilayah menggunakan **kode wilayah** sebagai referensi utama.
+
+Filtering antarwilayah menggunakan field seperti:
 
 ```text
 wilayah_kecamatan_kode
 wilayah_desa_kode
 ```
 
-Kode tersebut digunakan untuk filtering saat context wilayah berubah.
+Hindari menggunakan pencocokan nama sebagai mekanisme utama.
 
-Jangan menggunakan pencocokan nama sebagai mekanisme utama.
+Data administrasi saat ini mencakup:
 
-Feature tanpa lokasi yang dapat dipastikan tidak boleh diberi koordinat perkiraan.
+- 14 kecamatan
+- 190 desa/kelurahan
 
-## Interaksi Peta
+## Sinkronisasi & Validasi Data
 
-Tiga konsep berikut harus tetap dipisahkan:
+Perbarui ringkasan data wilayah:
 
-```text
-Visibility
-Interaction
-Selection / Highlight
+```bash
+npm run sync:data:region
 ```
 
-Mengaktifkan thematic layer **tidak boleh mematikan interaksi wilayah administrasi**.
+Sinkronisasi batas administrasi:
 
-Contoh yang harus selalu bekerja:
-
-```text
-Kabupaten → Kecamatan → Desa
-Desa → Kecamatan → Kabupaten
+```bash
+npm run sync:admin
 ```
 
-Thematic layer seperti sekolah, puskesmas, jalan, pertanian, peternakan, dan lainnya harus dapat hidup berdampingan dengan layer administrasi.
+Sinkronisasi batas desa/kelurahan:
 
-Saat wilayah berubah:
-
-```text
-Update context
-    ↓
-Filter feature
-    ↓
-Remove feature lama
-    ↓
-Build/update feature baru
-    ↓
-Bind interaction
-    ↓
-Update tooltip/popup
-    ↓
-Update viewport
+```bash
+npm run sync:admin:desa
 ```
 
-Jangan sampai feature atau event handler dari wilayah sebelumnya tertinggal.
+Sinkronisasi batas Kabupaten:
 
-## Performance
-
-GeoJSON dimuat secara lazy.
-
-Hindari:
-
-```text
-❌ recreate seluruh map saat layer berubah
-❌ rebuild semua layer untuk satu perubahan kecil
-❌ setState React pada setiap mousemove
-❌ duplicate event listener
-❌ operasi GeoJSON besar pada setiap hover/click
+```bash
+npm run sync:admin:kab
 ```
 
-Gunakan update incremental dan manfaatkan lifecycle Leaflet.
-
-## Layer & Pane
-
-Pastikan hierarchy layer benar sehingga:
-
-* polygon tidak menghalangi interaction yang seharusnya;
-* marker tetap clickable;
-* tooltip berada di atas marker;
-* popup tidak tertutup layer lain;
-* administrative layer tetap dapat diklik.
-
-Jangan menggunakan `z-index` secara acak sebagai workaround.
-
-## Administrative Coloring
-
-Saat satu kecamatan dipilih:
-
-```text
-Kecamatan terpilih → highlight
-Kecamatan lain     → tetap memiliki warna/style normal
-```
-
-Jangan menghapus warna kecamatan lain pada mode interaktif.
-
-Style khusus untuk kebutuhan print boleh berbeda.
-
-## Menambah Layer
-
-1. Tambahkan GeoJSON ke `public/geo-data/`.
-2. Register di `lib/layers.js`.
-3. Tambahkan style di `lib/geo/styles.js` bila perlu.
-4. Tambahkan marker mapping di `lib/geo/markers.js` bila perlu.
-5. Tambahkan region mapping bila layer mengikuti wilayah.
-6. Tambahkan konfigurasi inspector bila diperlukan.
-
-## Validasi & Sinkronisasi
-
-Validasi administrasi:
+Validasi data administrasi:
 
 ```bash
 npm run validate:admin
 ```
 
-Validasi region:
+Validasi hubungan data dengan wilayah:
 
 ```bash
 npm run validate:data:region
 ```
 
-Sinkronisasi BIG:
+`npm run build` juga menjalankan proses pembentukan ringkasan wilayah melalui `prebuild`.
 
-```bash
-npm run sync:admin:kab
-npm run sync:admin:desa
+## Interaksi Peta
+
+Layer administrasi dan thematic layer harus tetap dapat digunakan bersamaan.
+
+Mengaktifkan layer seperti:
+
+```text
+Jaringan
+Kontur
+Danau
+Sungai
+Infrastruktur
 ```
 
-`sync:admin:desa` menggunakan kode administrasi sebagai identity dan memiliki retry/fallback serta perlindungan terhadap accidental shrink.
+tidak boleh mematikan interaksi wilayah administrasi.
 
-## Development
+Perubahan konteks wilayah mengikuti alur:
 
-Install:
-
-```bash
-npm install
+```text
+Pilih wilayah
+    ↓
+Update context
+    ↓
+Filter feature
+    ↓
+Build/update layer
+    ↓
+Bind interaction
+    ↓
+Update informasi
+    ↓
+Update viewport
 ```
 
-Development:
+Hindari membuat ulang seluruh peta hanya karena satu layer atau konteks wilayah berubah.
 
-```bash
-npm run dev
+## Light / Dark Mode
+
+Tema default adalah **Light**.
+
+Pengguna dapat berpindah antara:
+
+```text
+Light
+Dark
 ```
 
-Lint:
+Tema diterapkan ke UI aplikasi tanpa mengubah tampilan hasil cetak. Peta cetak tetap menggunakan layout dan styling khusus untuk media print.
+
+## Cetak Peta
+
+Peta dapat dicetak dalam format:
+
+```text
+A4 Landscape
+```
+
+Layout print:
+
+```text
+┌───────────────────────────────┬───────────┐
+│             MAP               │  LEGEND   │
+│             75%               │    25%    │
+└───────────────────────────────┴───────────┘
+```
+
+Legenda memuat informasi wilayah, feature, layer aktif, dan tautan kembali ke peta interaktif.
+
+## Lint
+
+Periksa kode:
 
 ```bash
 npm run lint
 ```
 
-Production:
+Perbaiki otomatis:
 
 ```bash
-npm run build
-npm run start
-```
-
-## PWA & SEO
-
-PWA:
-
-```text
-app/manifest.js
-components/PwaRegister.jsx
-public/sw.js
-public/pwa/
-```
-
-SEO:
-
-```text
-metadata
-canonical
-Open Graph
-robots.js
-sitemap.js
-structured data
-```
-
-Production URL:
-
-```env
-NEXT_PUBLIC_SITE_URL=https://example.com
+npm run lint:fix
 ```
 
 ## Prinsip Pengembangan
 
-* Perbaiki **root cause**, bukan workaround.
-* Jangan ubah UI/HTML besar-besaran untuk bug logic.
-* Jangan membuat satu layer merusak layer lain.
-* Jangan recreate map tanpa alasan.
-* Jangan kehilangan interaction setelah pindah wilayah.
-* Jangan menggunakan nama sebagai identity jika tersedia kode.
-* Jangan mengarang lokasi data.
+Beberapa prinsip yang perlu dipertahankan:
 
-### Mental Model
+- `lib/layers.js` menjadi sumber konfigurasi layer.
+- Pisahkan **visibility**, **interaction**, dan **selection/highlight**.
+- Gunakan kode wilayah untuk relasi data.
+- Hindari event listener atau renderer Leaflet yang tertinggal.
+- Jangan melakukan rebuild seluruh map untuk perubahan kecil.
+- Jangan menggunakan koordinat perkiraan untuk feature yang lokasinya tidak dapat dipastikan.
+- UI dan teks harus tetap jelas pada Light maupun Dark Mode.
+- Perubahan visual sebaiknya tidak mengganggu behavior interaksi peta.
 
-```text
-GeoJSON
-   ↓
-Layer Registry
-   ↓
-GIS Rules
-   ↓
-MapCanvas / Leaflet
-   ↓
-Application State
-   ↓
-UI
-```
+## Sumber Data
 
-Sebelum mengubah behavior map, pastikan perubahan tidak merusak **layer lifecycle, region context, event handling, atau interaction layer lain**.
+Informasi sumber setiap dataset disimpan sebagai metadata pada konfigurasi layer.
+
+Salah satu sumber data dasar administrasi adalah **Ina-Geoportal Badan Informasi Geospasial (BIG)**. Dataset sektoral lainnya mengikuti keterangan sumber yang tercantum pada masing-masing layer.
+
+---
+
+**Peta Interaktif Kabupaten Wajo**  
+Dikelola oleh **Diskominfotik Kabupaten Wajo**

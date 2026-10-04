@@ -27,12 +27,12 @@ export default function MapHint({ step = "layer", regionName = "", onAction }) {
 
   return (
     <div
-      className="map-ui-chrome pointer-events-auto absolute bottom-20 left-1/2 z-[830] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-sky-200 bg-sky-50/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-5 ui-fade-in"
+      className="map-ui-chrome pointer-events-auto absolute bottom-20 left-1/2 z-[830] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 shadow-md backdrop-blur sm:bottom-5 ui-fade-in"
       role="status"
       aria-live="polite"
     >
       <div className="flex items-start gap-2">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sky-100 text-sky-700" aria-hidden="true">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-100 text-sky-700" aria-hidden="true">
           <Icon size={16} />
         </div>
         <div className="min-w-0 flex-1">

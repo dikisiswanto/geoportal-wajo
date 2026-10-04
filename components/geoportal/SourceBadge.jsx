@@ -1,5 +1,5 @@
 const SOURCE_STYLES = {
-  "Ina-Geoportal BIG": "border-sky-200 bg-sky-50 text-sky-700",
+  "Ina-Geoportal BIG": "border-slate-200 bg-slate-50 text-sky-700",
   "Kemendikdasmen": "border-indigo-200 bg-indigo-50 text-indigo-700",
   "Sumber terbuka / ArcGIS": "border-slate-200 bg-slate-50 text-slate-600"
 };

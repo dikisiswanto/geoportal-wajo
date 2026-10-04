@@ -54,12 +54,8 @@ export default function LayerGlyph({
     return (
       <span
         aria-hidden
-        className="inline-block h-[2px] w-4"
-        style={{
-          backgroundColor: active
-            ? layer.color
-            : "#cbd5e1"
-        }}
+        className={`inline-block h-[2px] w-4 theme-layer-glyph-line ${active ? "" : "theme-layer-glyph-muted"}`}
+        style={active ? { backgroundColor: layer.color } : undefined}
       />
     );
   }
@@ -67,15 +63,8 @@ export default function LayerGlyph({
   return (
     <span
       aria-hidden
-      className="inline-block h-3 w-3 border"
-      style={{
-        backgroundColor: active
-          ? layer.color
-          : "#fff",
-        borderColor: active
-          ? layer.color
-          : "#cbd5e1"
-      }}
+      className={`inline-block h-3 w-3 border theme-layer-glyph-area ${active ? "" : "theme-layer-glyph-muted"}`}
+      style={active ? { backgroundColor: layer.color, borderColor: layer.color } : undefined}
     />
   );
 }

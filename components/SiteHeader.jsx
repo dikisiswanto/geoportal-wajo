@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import PwaInstallButton from "./geoportal/PwaInstallButton";
+import ThemeToggle from "./ThemeToggle";
 import { IconSearch } from "@tabler/icons-react";
 import MobileNav from "./geoportal/MobileNav";
 import { withAssetVersion } from "../lib/assetVersion";
@@ -26,7 +27,7 @@ export default function SiteHeader({
   const TitleTag = titleAs === "h1" ? "h1" : "span";
 
   return (
-    <header className="site-header relative z-[1800] flex min-h-14 shrink-0 items-center border-b border-slate-200 bg-white px-3 sm:px-5">
+    <header className="site-header sticky top-0 z-[1800] flex min-h-14 shrink-0 items-center border-b border-slate-200 bg-white/95 px-3 backdrop-blur sm:px-5">
       <Link
         href="/"
         className="ui-micro-interaction flex min-w-0 items-center gap-2.5 rounded-md py-1 pr-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
@@ -80,7 +81,7 @@ export default function SiteHeader({
               aria-current={active === item.key ? "page" : undefined}
               className={`ui-micro-interaction rounded-md px-2.5 py-1.5 map-text-compact font-medium ${
                 active === item.key
-                  ? "bg-sky-50 text-sky-800"
+                  ? "bg-slate-100 text-sky-800"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
               }`}
             >
@@ -89,6 +90,7 @@ export default function SiteHeader({
           ))}
         </div>
         <MobileNav active={active} />
+        <ThemeToggle />
         <PwaInstallButton />
       </nav>
     </header>
