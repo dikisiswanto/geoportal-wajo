@@ -6,12 +6,18 @@ const { featureKey } = require("../lib/geo/format.js");
 
 const root = path.resolve(__dirname, "..");
 const dataDir = path.join(root, "public", "geo-data");
-const outputPath = path.join(dataDir, "../search-index.json");
+const outputPath = path.join(root, "public", "search-index.json");
 
 const GENERIC = new Set(["", "tidak ada", "tidak tersedia", "belum ada", "n/a", "na", "none", "null", "undefined", "-", "—", "/"]);
 const PRIORITY_FIELDS = [
   "NAMA_RUAS", "NAMA_OPD", "PUSKESMAS", "nama_sekolah", "NAMOBJ", "POTENSI", "PETERNAKAN",
   "Desa", "Kecamatan", "DESA", "KECAMATAN", "REMARK"
+];
+const SEARCH_FIELDS = [
+  ...PRIORITY_FIELDS,
+  "npsn", "bentuk_pendidikan", "status_sekolah", "alamat_jalan", "nama_dusun", "kode_pos",
+  "NO", "Alamat", "ALAMAT", "TITIK_KOOR", "KLASIFIKAS", "KATEGORI", "JENIS", "TYPE",
+  "NAMA_JALAN", "NAMA_RUAS", "NAMA_OPD", "website"
 ];
 
 function meaningful(value) {
@@ -27,11 +33,20 @@ function firstMeaningful(properties, keys) {
   return "";
 }
 
-function contextLabel(properties) {
-  const desa = firstMeaningful(properties, ["Desa", "WADMKD", "nama_desa", "DESA"]);
-  const kecamatan = firstMeaningful(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "KECAMATAN"]);
-  if (desa && kecamatan) return `${desa} · ${kecamatan}`;
-  return kecamatan || desa || "Kabupaten Wajo";
+function listValue(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+  const text = String(value ?? "").trim();
+  return text ? [text] : [];
+}
+
+function contextCodes(properties, type) {
+  if (type === "desa") return listValue(properties?.wilayah_desa_kode ?? properties?.kode_desa ?? properties?.kode_desa_kemendagri ?? properties?.KDEPUM);
+  return listValue(properties?.wilayah_kecamatan_kode ?? properties?.kode_kecamatan_kemendagri ?? properties?.kode_kecamatan ?? properties?.KDCPUM);
+}
+
+function contextNames(properties, type) {
+  if (type === "desa") return listValue(properties?.Desa ?? properties?.WADMKD ?? properties?.nama_desa ?? properties?.desa ?? properties?.DESA);
+  return listValue(properties?.Kecamatan ?? properties?.WADMKC ?? properties?.nama_kecamatan ?? properties?.kecamatan ?? properties?.KECAMATAN);
 }
 
 function featureType(layer) {
@@ -42,12 +57,57 @@ function featureType(layer) {
   return "other";
 }
 
+function canonicalRegionName(value) {
+  return String(value ?? "").trim().replace(/^kec\.?\s*/i, "");
+}
+
+function unique(values) {
+  const result = [];
+  const seen = new Set();
+  for (const rawValue of values.filter(Boolean)) {
+    const value = String(rawValue).trim();
+    if (!value) continue;
+    const canonical = canonicalRegionName(value);
+    const key = canonical.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(canonical);
+  }
+  return result;
+}
+
+function buildAdminLookup(data, type) {
+  const codeToName = new Map();
+  for (const feature of data?.features || []) {
+    const properties = feature?.properties || {};
+    const codes = contextCodes(properties, type);
+    const names = contextNames(properties, type);
+    const fallback = names[0] || "";
+    codes.forEach((code, index) => {
+      if (!codeToName.has(code)) codeToName.set(code, names[index] || fallback);
+    });
+  }
+  return codeToName;
+}
+
 const searchableLayers = new Map(layers.map((layer) => [layer.file, layer]));
 const items = [];
+
 async function main() {
+  const boundaryCache = new Map();
+  for (const file of ["batas-kecamatan.geojson", "batas-desa-kelurahan.geojson"]) {
+    try {
+      boundaryCache.set(file, JSON.parse(await fs.readFile(path.join(dataDir, file), "utf8")));
+    } catch {
+      boundaryCache.set(file, { features: [] });
+    }
+  }
+
+  const kecamatanByCode = buildAdminLookup(boundaryCache.get("batas-kecamatan.geojson"), "kecamatan");
+  const desaByCode = buildAdminLookup(boundaryCache.get("batas-desa-kelurahan.geojson"), "desa");
   const seen = new Set();
+
   for (const [file, layer] of searchableLayers) {
-    if (!layer?.file) continue;
     const filePath = path.join(dataDir, file);
     let data;
     try {
@@ -66,7 +126,7 @@ async function main() {
       const specificForSearch = firstMeaningful(properties, [
         "NAMA_RUAS", "NAMA_OPD", "PUSKESMAS", "nama_sekolah", "NAMOBJ", "POTENSI", "PETERNAKAN"
       ]);
-      const admin = featureType(layer) === "polygon" && layer.id?.startsWith("adm-")
+      const admin = type === "polygon" && layer.id?.startsWith("adm-")
         ? firstMeaningful(properties, ["Kecamatan", "Desa", "nama_kecamatan", "nama_desa", "NAMOBJ"])
         : "";
 
@@ -77,20 +137,41 @@ async function main() {
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
 
-      // Avoid filling the search index with generic land-cover records. Named
-      // polygons, points, networks, and administrative boundaries remain searchable.
       const includeGenericPolygon = type === "polygon" && !layer.id?.startsWith("adm-")
         ? meaningful(specificForSearch) && !["tidak ada", "belum ada"].includes(label.toLowerCase())
         : true;
       if (!includeGenericPolygon) continue;
+
+      const kecamatanCodes = contextCodes(properties, "kecamatan");
+      const desaCodes = contextCodes(properties, "desa");
+      const propertyKecamatanNames = contextNames(properties, "kecamatan");
+      const propertyDesaNames = contextNames(properties, "desa");
+
+      const regionNames = unique([
+        ...propertyKecamatanNames,
+        ...kecamatanCodes.map((code) => kecamatanByCode.get(code) || "")
+      ]);
+      const villageNames = unique([
+        ...propertyDesaNames,
+        ...desaCodes.map((code) => desaByCode.get(code) || "")
+      ]);
+
+      const region = regionNames[0] || "";
+      const contextSummary = regionNames.length > 1
+        ? `${regionNames.length} kecamatan`
+        : villageNames.length && region
+          ? `${villageNames[0]} · ${region}`
+          : region || villageNames[0] || "Kabupaten Wajo";
 
       const searchText = [
         layer.title,
         layer.group,
         label,
         specificForSearch,
-        contextLabel(properties),
-        ...PRIORITY_FIELDS.map((field) => properties[field])
+        contextSummary,
+        regionNames.join(" "),
+        villageNames.join(" "),
+        ...SEARCH_FIELDS.map((field) => properties[field])
       ].filter(meaningful).join(" ");
 
       items.push({
@@ -101,16 +182,22 @@ async function main() {
         type,
         key: String(key),
         label: admin || label,
-        subtitle: contextLabel(properties),
-        region: firstMeaningful(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "KECAMATAN"]),
-        village: firstMeaningful(properties, ["Desa", "WADMKD", "nama_desa", "DESA"]),
+        subtitle: contextSummary === "Kabupaten Wajo" ? `${layer.group} · Kabupaten Wajo` : `${contextSummary} · ${layer.group}`,
+        region,
+        regions: regionNames,
+        regionCodes: unique(kecamatanCodes),
+        village: villageNames[0] || "",
+        villages: villageNames,
+        villageCodes: unique(desaCodes),
+        contextSummary,
+        coverageCount: Math.max(1, regionNames.length),
         text: searchText
       });
     }
   }
 
   const payload = {
-    version: 1,
+    version: 2,
     items
   };
   await fs.writeFile(outputPath, `${JSON.stringify(payload)}\n`);

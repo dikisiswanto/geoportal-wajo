@@ -482,24 +482,38 @@ export default function GeoPortal() {
     setFocusAdmin(null);
     mapApi.current?.clearSelection?.();
 
-    // A search result is a feature request, so its spatial context takes
-    // precedence over the user's previous region filter. Point, line and
-    // polygon features are resolved against the current administrative
-    // boundaries only after the actual feature has been identified.
-    const context = feature
+    // Search context is resolved in two stages. The lightweight index gives
+    // us an administrative hint before the GeoJSON is downloaded; once the
+    // actual feature is loaded, geometry-aware resolution becomes authoritative.
+    const indexedRegions = Array.isArray(result.regionCodes) && result.regionCodes.length > 1
+      ? []
+      : [result.region, ...(result.regions || [])].filter(Boolean);
+    const indexedRegionNames = [...new Map(
+      indexedRegions.map((value) => [normalizeRegionName(value), String(value).trim()])
+    ).values()];
+    const indexedAmbiguous = Array.isArray(result.regionCodes)
+      ? result.regionCodes.length > 1
+      : indexedRegionNames.length > 1;
+    const indexedRegion = indexedAmbiguous ? "" : indexedRegionNames[0] || "";
+
+    const geometryContext = feature
       ? featureSearchRegionContext(feature, layerData["adm-kecamatan"])
       : null;
+    const context = geometryContext || {
+      regions: indexedRegion ? [indexedRegion] : indexedRegionNames,
+      region: indexedRegion,
+      ambiguous: indexedAmbiguous
+    };
 
-    const contextRegion = context?.ambiguous ? "" : context?.region || "";
-    if (context) {
-      if (contextRegion) {
-        setRegionFilter(contextRegion);
-      } else {
-        // A feature crossing multiple kecamatan must not be clipped by the
-        // previous region. Show the whole Kabupaten so the searched geometry
-        // remains complete.
-        setRegionFilter("");
-      }
+    const contextRegion = geometryContext
+      ? (geometryContext.ambiguous ? "" : geometryContext.region || "")
+      : indexedRegion;
+
+    if (context.ambiguous || contextRegion || indexedAmbiguous) {
+      // A feature crossing multiple kecamatan must not be clipped by the
+      // previous region. Show the whole Kabupaten so the searched geometry
+      // remains complete.
+      setRegionFilter(context.ambiguous ? "" : contextRegion);
     }
 
     setVisible((previous) => ({

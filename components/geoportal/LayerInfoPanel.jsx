@@ -1,4 +1,5 @@
-import { IconChartBar, IconDatabase, IconInfoCircle, IconLink, IconX } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import { IconAlertTriangle, IconChartBar, IconDatabase, IconInfoCircle, IconLink, IconShieldCheck, IconX } from "@tabler/icons-react";
 import LayerGlyph from "./LayerGlyph";
 import { getLayerInsight, getLayerStatistics } from "../../lib/geo/statistics";
 import { featureAdministrativeCodes } from "../../lib/geo/region";
@@ -6,6 +7,19 @@ import SourceBadge from "./SourceBadge";
 import useSheetPresence from "./useSheetPresence";
 import useSheetSwipe from "./useSheetSwipe";
 
+let dataQualityPromise;
+
+function loadDataQuality() {
+  if (!dataQualityPromise) {
+    dataQualityPromise = fetch("/data-quality.json", { cache: "force-cache" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .catch(() => null);
+  }
+  return dataQualityPromise;
+}
 const SOURCE_HELP = {
   "Ina-Geoportal BIG": "Data wilayah administrasi berasal dari Badan Informasi Geospasial (BIG).",
   "Kemendikdasmen": "Data pendidikan berasal dari Kementerian Pendidikan Dasar dan Menengah.",
@@ -51,7 +65,19 @@ function Distribution({ title, items }) {
 export default function LayerInfoPanel({ layer, data, summary, regionSummary = null, regionFilter = "", active = false, loading = false, error = "", open, onClose, onShowOnMap, onZoomToLayer, onShare }) {
   const { rendered, visible } = useSheetPresence(Boolean(open && layer));
   const { swipeHandlers, swipeStyle } = useSheetSwipe(onClose, Boolean(open && layer));
+  const [quality, setQuality] = useState(null);
 
+  useEffect(() => {
+    if (!open || !layer?.file) return undefined;
+    let disposed = false;
+    loadDataQuality().then((payload) => {
+      if (disposed || !payload?.datasets) return;
+      setQuality(payload.datasets.find((item) => item.dataset === layer.file) || null);
+    });
+    return () => {
+      disposed = true;
+    };
+  }, [open, layer?.file]);
 
   if (!rendered || !layer) return null;
 
@@ -109,6 +135,33 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
           <p className="mt-2 map-text-micro leading-4 text-slate-500">Jumlah data di wilayah ini belum tersedia.</p>
         )}
 
+        {quality && (
+          <section className="mt-4 rounded-lg border border-slate-200 bg-white">
+            <div className="flex items-start gap-3 border-b border-slate-100 px-4 py-3">
+              <span className={`grid size-8 shrink-0 place-items-center rounded-md ${quality.status === "Lulus pemeriksaan" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`} aria-hidden="true">
+                {quality.status === "Lulus pemeriksaan" ? <IconShieldCheck size={16} /> : <IconAlertTriangle size={16} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="map-text-compact font-semibold text-slate-900">Kualitas & asal data</h3>
+                <p className="mt-0.5 map-text-micro leading-4 text-slate-500">{quality.status} · skor pemeriksaan {quality.score}/100</p>
+              </div>
+            </div>
+            <dl className="divide-y divide-slate-100">
+              <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-2.5">
+                <dt className="map-text-micro text-slate-500">Pemeriksaan</dt>
+                <dd className="map-text-micro leading-4 text-slate-700">{quality.validationDate || "Belum dicantumkan"} · geometri, kelengkapan, dan posisi representatif</dd>
+              </div>
+              <div className="grid grid-cols-[40%_60%] gap-3 px-4 py-2.5">
+                <dt className="map-text-micro text-slate-500">Kandidat tinjauan</dt>
+                <dd className="map-text-compact font-medium text-slate-800">{quality.outsideCandidates.toLocaleString("id-ID")} feature</dd>
+              </div>
+            </dl>
+            {quality.note && (
+              <p className="border-t border-slate-100 px-4 py-3 map-text-micro leading-4 text-slate-500">{quality.note}</p>
+            )}
+          </section>
+        )}
+
         <section className="mt-4 rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
             <IconInfoCircle size={15} className="text-slate-400" aria-hidden="true" />
@@ -147,6 +200,16 @@ export default function LayerInfoPanel({ layer, data, summary, regionSummary = n
         </section>
 
         <p className="mt-3 map-text-micro leading-4 text-slate-500">{sourceNote}</p>
+        {(currentLayer.latestReferenceUrl || currentLayer.latestMetadataUrl) && (
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 map-text-micro">
+            {currentLayer.latestReferenceUrl && (
+              <a href={currentLayer.latestReferenceUrl} target="_blank" rel="noreferrer" className="font-semibold text-sky-700 hover:underline">Rujukan data ↗</a>
+            )}
+            {currentLayer.latestMetadataUrl && (
+              <a href={currentLayer.latestMetadataUrl} target="_blank" rel="noreferrer" className="font-semibold text-sky-700 hover:underline">Metadata ↗</a>
+            )}
+          </div>
+        )}
 
         {!stats.loaded && stats.unmappedCount > 0 && (
           <div className="mt-3.5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 map-text-compact leading-5 text-slate-500">

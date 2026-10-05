@@ -14,10 +14,12 @@
     "validate:admin": "node scripts/validate-admin.js",
     "validate:data:region": "node scripts/validate-geo-membership.js",
     "sync:data:region": "node scripts/build-region-summary.js",
-    "prebuild": "node scripts/build-region-summary.js && node scripts/validate-admin-area.js && node scripts/build-search-index.js",
+    "prebuild": "node scripts/build-region-summary.js && node scripts/validate-admin-area.js && node scripts/build-data-quality.js && node scripts/build-search-index.js",
     "sync:search": "node scripts/build-search-index.js",
+    "sync:quality": "node scripts/build-data-quality.js",
     "validate:data:area": "node scripts/validate-admin-area.js",
-    "validate:search:region-context": "node scripts/validate-search-region-context.js"
+    "validate:search:region-context": "node scripts/validate-search-region-context.js",
+    "validate:search:index": "node scripts/validate-search-index.js"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",

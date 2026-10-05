@@ -63,9 +63,14 @@ export default function SiteHeader({
               size={16}
             />
             <input
+              id="geoportal-map-search"
               value={search}
               onChange={(event) => onSearch?.(event.target.value)}
               placeholder={searchPlaceholder}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="geoportal-search-results"
+              aria-expanded={String(search).trim().length >= 2}
               className="ui-field w-full border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 map-text-compact text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100"
             />
           </label>

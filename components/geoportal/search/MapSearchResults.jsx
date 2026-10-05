@@ -112,7 +112,7 @@ export default function MapSearchResults({ query = "", onSelect }) {
   if (normalized.length < MIN_QUERY_LENGTH) return null;
 
   return (
-    <div className="map-search-popover absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg" role="listbox" aria-label="Hasil pencarian peta">
+    <div id="geoportal-search-results" className="map-search-popover absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg" role="listbox" aria-label="Hasil pencarian peta">
       {loading && !index && (
         <div className="flex items-center gap-2 px-3 py-3 map-text-compact text-slate-500">
           <IconLoader2 size={15} className="animate-spin" aria-hidden="true" />
