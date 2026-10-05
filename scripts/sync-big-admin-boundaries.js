@@ -1,8 +1,9 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
-import dns from "node:dns";
-import { WAJO_ADMIN_MASTER, getWajoKecamatanByKemendagri, getWajoVillageByKemendagri, getWajoVillageByKemendagriCode } from "../lib/geo/adminMaster.mjs";
+async function main() {
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const process = require("node:process");
+const dns = require("node:dns");
+const { WAJO_ADMIN_MASTER, getWajoKecamatanByKemendagri, getWajoVillageByKemendagri, getWajoVillageByKemendagriCode } = require("../lib/geo/adminMaster.js");
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -558,3 +559,10 @@ if (desaRows) {
   await fs.writeFile(path.join(OUT, "batas-desa-kelurahan.geojson"), JSON.stringify(toFeatureCollection(desaRows)), "utf8");
   console.log("Diperbarui: public/geo-data/batas-desa-kelurahan.geojson");
 }
+
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

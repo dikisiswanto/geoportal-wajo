@@ -1,6 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-import { layers } from "../lib/layers.js";
+const fs = require("node:fs");
+const path = require("node:path");
+const { layers } = require("../lib/layers.js");
 
 const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "public", "geo-data");
@@ -114,6 +114,6 @@ for (const file of files) {
 }
 
 const header = `// GENERATED FILE. Jalankan \"npm run sync:data:region\" atau \"npm run build\" setelah GeoJSON berubah.\n`;
-const body = `export const REGIONS = ${JSON.stringify(regions.map((item) => item.name), null, 2)};\n\nexport const REGION_SUMMARY = ${JSON.stringify(summary, null, 2)};\n`;
+const body = `const REGIONS = ${JSON.stringify(regions.map((item) => item.name), null, 2)};\n\nconst REGION_SUMMARY = ${JSON.stringify(summary, null, 2)};\n\nmodule.exports = { REGIONS, REGION_SUMMARY };\n`;
 fs.writeFileSync(OUT_FILE, `${header}${body}`);
 console.log(`Ringkasan wilayah dibuat: ${Object.keys(summary).length} dataset, ${regions.length} kecamatan, ${villages.length} desa/kelurahan.`);

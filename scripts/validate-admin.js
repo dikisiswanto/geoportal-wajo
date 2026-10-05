@@ -1,12 +1,13 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
-import {
+async function main() {
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const process = require("node:process");
+const {
   WAJO_ADMIN_MASTER,
   getWajoKecamatanByKemendagri,
   getWajoVillageByKemendagri,
   getWajoVillageByKemendagriCode,
-} from "../lib/geo/adminMaster.mjs";
+} = require("../lib/geo/adminMaster.js");
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "public", "geo-data");
@@ -131,3 +132,10 @@ if (errors.length) {
   process.exit(1);
 }
 console.log("VALIDASI BERHASIL: 14 kecamatan + 190 desa/kelurahan konsisten dengan master BPS dan kode Kemendagri.");
+
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

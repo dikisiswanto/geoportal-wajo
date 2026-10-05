@@ -174,6 +174,15 @@ export default function GeoPortal() {
     mapApi.current?.zoomToRegion?.(regionFilter);
   }, [mapReady, regionFilter]);
 
+  const updateMapQuery = useCallback((updates = {}) => {
+    const url = new URL(window.location.href);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value == null || value === "") url.searchParams.delete(key);
+      else url.searchParams.set(key, String(value));
+    });
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
   useEffect(() => {
     if (!requestedFeature || !mapReady) return;
     const params = new URLSearchParams(window.location.search);
@@ -288,15 +297,6 @@ export default function GeoPortal() {
       delete next[layer.id];
       return next;
     });
-  }, []);
-
-  const updateMapQuery = useCallback((updates = {}) => {
-    const url = new URL(window.location.href);
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value == null || value === "") url.searchParams.delete(key);
-      else url.searchParams.set(key, String(value));
-    });
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   }, []);
 
   const closeCatalog = useCallback(() => {

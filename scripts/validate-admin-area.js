@@ -1,5 +1,6 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+async function main() {
+const fs = require("node:fs/promises");
+const path = require("node:path");
 
 const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "public", "geo-data");
@@ -53,3 +54,10 @@ if (!Number.isFinite(countyArea) || Math.abs(districtTotal - countyArea) > 1e-5)
 }
 
 console.log(`Konsistensi total: ${countyArea.toFixed(6)} km².`);
+
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

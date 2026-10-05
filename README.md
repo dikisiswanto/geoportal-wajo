@@ -93,11 +93,11 @@ public/
 └── sw.js
 
 scripts/
-├── sync-big-admin-boundaries.mjs
-├── sync-big-kabupaten-boundary.mjs
-├── validate-admin.mjs
-├── validate-geo-membership.mjs
-└── build-region-summary.mjs
+├── sync-big-admin-boundaries.js
+├── sync-big-kabupaten-boundary.js
+├── validate-admin.js
+├── validate-geo-membership.js
+└── build-region-summary.js
 ```
 
 ## Instalasi
@@ -355,26 +355,3 @@ Salah satu sumber data dasar administrasi adalah **Ina-Geoportal Badan Informasi
 
 **Peta Interaktif Kabupaten Wajo**  
 Dikelola oleh **Diskominfotik Kabupaten Wajo**
-## Roadmap UX & Eksplorasi vNext
-
-Implementasi vNext dibagi menjadi tiga tahap dan dirancang tanpa mengubah lifecycle Leaflet yang sudah stabil.
-
-### Tahap 1 — Navigasi & konteks
-- Pencarian wilayah, fasilitas, feature, dan layer.
-- Deep-link untuk `region`, `layer`, `feature`, `layers`, serta posisi `lat/lng/zoom`.
-- Berbagi tampilan peta melalui Web Share API atau salin tautan.
-- Statistik wilayah dan ringkasan data sektoral.
-- Legenda interaktif mengikuti simbol dan style yang digunakan pada peta cetak.
-
-### Tahap 2 — Eksplorasi data
-- Ringkasan data yang tersedia di sekitar wilayah terpilih.
-- Perbandingan dua kecamatan.
-- Inspector menggunakan bottom sheet pada layar kecil.
-- Tampilan legenda dan panel tetap kontekstual terhadap layer aktif.
-
-### Tahap 3 — Orientasi & performa
-- Kontrol arah mata angin sederhana.
-- Instrumentasi performa hanya pada development, tanpa overhead UI production.
-- Rendering thematic tetap incremental dan tidak membuat ulang seluruh peta.
-
-Fitur-fitur ini mempertahankan prinsip bahwa **visibility**, **interaction**, dan **selection/highlight** adalah tiga hal yang berbeda. Tidak ada fitur vNext yang boleh menggunakan full map rebuild sebagai workaround.

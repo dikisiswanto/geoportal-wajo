@@ -1,8 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import process from "node:process";
-import { layers } from "../lib/layers.js";
-import { REGION_SUMMARY } from "../lib/geo/regionSummary.js";
+const fs = require("node:fs");
+const path = require("node:path");
+const process = require("node:process");
+const { layers } = require("../lib/layers.js");
+const { REGION_SUMMARY } = require("../lib/geo/regionSummary.js");
 
 const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "public", "geo-data");

@@ -1,5 +1,6 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+async function main() {
+const fs = require("node:fs/promises");
+const path = require("node:path");
 
 const SERVICE = "https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_KABKOTA_AR/MapServer/0";
 const OUT = path.resolve("public/geo-data/batas-kabupaten.geojson");
@@ -89,3 +90,10 @@ const output = {
 };
 await fs.writeFile(OUT, JSON.stringify(output), "utf8");
 console.log(`Wajo kabupaten: 1 feature disimpan → ${OUT}`);
+
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

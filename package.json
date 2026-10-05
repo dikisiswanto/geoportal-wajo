@@ -8,16 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "sync:admin": "node scripts/sync-big-admin-boundaries.mjs",
-    "sync:admin:desa": "node scripts/sync-big-admin-boundaries.mjs --desa --apply",
-    "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.mjs",
-    "validate:admin": "node scripts/validate-admin.mjs",
-    "validate:data:region": "node scripts/validate-geo-membership.mjs",
-    "sync:data:region": "node scripts/build-region-summary.mjs",
-    "prebuild": "node scripts/build-region-summary.mjs && node scripts/validate-admin-area.mjs && node scripts/build-search-index.mjs",
-    "sync:search": "node scripts/build-search-index.mjs",
-    "validate:data:area": "node scripts/validate-admin-area.mjs",
-    "validate:search:region-context": "node scripts/validate-search-region-context.mjs"
+    "sync:admin": "node scripts/sync-big-admin-boundaries.js",
+    "sync:admin:desa": "node scripts/sync-big-admin-boundaries.js --desa --apply",
+    "sync:admin:kab": "node scripts/sync-big-kabupaten-boundary.js",
+    "validate:admin": "node scripts/validate-admin.js",
+    "validate:data:region": "node scripts/validate-geo-membership.js",
+    "sync:data:region": "node scripts/build-region-summary.js",
+    "prebuild": "node scripts/build-region-summary.js && node scripts/validate-admin-area.js && node scripts/build-search-index.js",
+    "sync:search": "node scripts/build-search-index.js",
+    "validate:data:area": "node scripts/validate-admin-area.js",
+    "validate:search:region-context": "node scripts/validate-search-region-context.js"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",
@@ -31,8 +31,5 @@
     "@tailwindcss/postcss": "^4.1.13",
     "eslint": "^9.35.0",
     "eslint-config-next": "^16.3.7"
-  },
-  "engines": {
-    "node": "22.x"
   }
 }
