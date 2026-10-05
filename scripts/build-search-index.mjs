@@ -103,6 +103,8 @@ for (const [file, layer] of searchableLayers) {
       key: String(key),
       label: admin || label,
       subtitle: contextLabel(properties),
+      region: firstMeaningful(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "KECAMATAN"]),
+      village: firstMeaningful(properties, ["Desa", "WADMKD", "nama_desa", "DESA"]),
       text: searchText
     });
   }

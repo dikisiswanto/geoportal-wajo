@@ -954,7 +954,21 @@ const MapCanvas = forwardRef(function MapCanvas(
           }
         });
         if (!target) return false;
-        target.fire?.("click");
+
+        // Programmatic selection (search/deep-link) must carry a spatial
+        // location just like a real map click, otherwise thematic
+        // Point/Line/Polygon features cannot promote the correct
+        // administrative context.
+        let latlng = null;
+        const bounds = target.getBounds?.();
+        if (bounds?.isValid?.()) {
+          const center = bounds.getCenter?.();
+          if (center) latlng = center;
+        } else if (target.getLatLng) {
+          latlng = target.getLatLng();
+        }
+
+        target.fire?.("click", latlng ? { latlng } : {});
         return true;
       },
 

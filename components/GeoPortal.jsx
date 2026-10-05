@@ -7,7 +7,7 @@ import { kecamatanColor } from "../lib/geo/styles";
 import { DATA_SUMMARY } from "../lib/geo/dataSummary";
 import { REGION_SUMMARY, REGIONS } from "../lib/geo/regionSummary";
 import { getRelatedLayerIds, getRegionCount } from "../lib/geo/relations";
-import { normalizeRegionName, regionDisplayName } from "../lib/geo/region";
+import { featureSearchRegionContext, normalizeRegionName, regionDisplayName } from "../lib/geo/region";
 import { featureKey } from "../lib/geo/format";
 import GeoPortalHeader from "./geoportal/GeoPortalHeader";
 import LayerCatalog from "./geoportal/LayerCatalog";
@@ -182,14 +182,57 @@ export default function GeoPortal() {
     if (!layer) return;
     const data = layerData[layer.id];
     if (!data?.features?.length) return;
-    const found = data.features.find((feature) => String(featureKey(layer, feature) ?? "") === String(requestedFeature));
+
+    const found = data.features.find(
+      (feature) => String(featureKey(layer, feature) ?? "") === String(requestedFeature)
+    );
+    if (!found) return;
+
     const requestKey = `${layer.id}:${requestedFeature}`;
-    if (found && requestedFeatureHandledRef.current !== requestKey) {
+    const context = featureSearchRegionContext(
+      found,
+      layerData["adm-kecamatan"]
+    );
+    const contextRegion = context.ambiguous ? "" : context.region;
+
+    // Region must settle before selecting the feature, otherwise the
+    // current filter can remove the target layer before selectFeature runs.
+    if (
+      contextRegion &&
+      normalizeRegionName(regionFilter) !== normalizeRegionName(contextRegion)
+    ) {
+      setRegionFilter(contextRegion);
+      updateMapQuery({ region: contextRegion });
+      return;
+    }
+
+    if (
+      context.ambiguous &&
+      regionFilter
+    ) {
+      setRegionFilter("");
+      updateMapQuery({ region: null });
+      return;
+    }
+
+    if (requestedFeatureHandledRef.current === requestKey) return;
+
+    const selected = mapApi.current?.selectFeature?.(
+      layer.id,
+      requestedFeature
+    );
+
+    if (selected) {
       requestedFeatureHandledRef.current = requestKey;
-      mapApi.current?.selectFeature?.(layer.id, requestedFeature);
       mapApi.current?.zoomToFeature?.({ layer, feature: found });
     }
-  }, [requestedFeature, mapReady, layerData]);
+  }, [
+    requestedFeature,
+    mapReady,
+    layerData,
+    regionFilter,
+    updateMapQuery
+  ]);
 
   const activeLayers = useMemo(() => layers.filter((layer) => visible[layer.id]), [visible]);
   const kecamatanLegend = useMemo(
@@ -427,22 +470,67 @@ export default function GeoPortal() {
     const layer = layers.find((item) => item.id === result.layerId);
     if (!layer || result.key == null) return;
 
+    const data = layerData[layer.id];
+    const feature = data?.features?.find(
+      (item) => String(featureKey(layer, item) ?? "") === String(result.key)
+    );
+
     requestedFeatureHandledRef.current = "";
-    setVisible((previous) => ({ ...previous, [layer.id]: true }));
+    setSelected(null);
+    setInspectOpen(false);
+    setLayerInfo(null);
+    setFocusAdmin(null);
+    mapApi.current?.clearSelection?.();
+
+    // A search result is a feature request, so its spatial context takes
+    // precedence over the user's previous region filter. Point, line and
+    // polygon features are resolved against the current administrative
+    // boundaries only after the actual feature has been identified.
+    const context = feature
+      ? featureSearchRegionContext(feature, layerData["adm-kecamatan"])
+      : null;
+
+    const contextRegion = context?.ambiguous ? "" : context?.region || "";
+    if (context) {
+      if (contextRegion) {
+        setRegionFilter(contextRegion);
+      } else {
+        // A feature crossing multiple kecamatan must not be clipped by the
+        // previous region. Show the whole Kabupaten so the searched geometry
+        // remains complete.
+        setRegionFilter("");
+      }
+    }
+
+    setVisible((previous) => ({
+      ...previous,
+      [layer.id]: true,
+      "adm-desa": true
+    }));
+
     setSidebarOpen(false);
     setRequestedFeature(String(result.key));
+
+    const activeIds = layers
+      .filter((item) => visible[item.id] || item.id === layer.id || item.id === "adm-desa")
+      .map((item) => item.id);
+
     updateMapQuery({
-      layers: layers
-        .filter((item) => visible[item.id] || item.id === layer.id)
-        .map((item) => item.id)
-        .join(","),
+      layers: activeIds.join(","),
       layer: layer.id,
       feature: String(result.key),
+      region: contextRegion || null,
       catalog: null
     });
-    setStatus(`Menyiapkan ${result.label}…`);
-  }, [handleLayerInfo, handleRegionFilter, updateMapQuery, visible]);
 
+    setStatus(
+      context?.ambiguous
+        ? `Menyiapkan ${result.label} di beberapa kecamatan…`
+        : contextRegion
+          ? `Menyiapkan ${result.label} di ${regionDisplayName(contextRegion)}…`
+          : `Menyiapkan ${result.label}…`
+    );
+  }, [handleLayerInfo, handleRegionFilter, layerData, updateMapQuery, visible]);
   const openRegionComparison = useCallback(() => {
     setComparisonOpen(true);
   }, []);

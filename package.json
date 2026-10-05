@@ -16,7 +16,8 @@
     "sync:data:region": "node scripts/build-region-summary.mjs",
     "prebuild": "node scripts/build-region-summary.mjs && node scripts/validate-admin-area.mjs && node scripts/build-search-index.mjs",
     "sync:search": "node scripts/build-search-index.mjs",
-    "validate:data:area": "node scripts/validate-admin-area.mjs"
+    "validate:data:area": "node scripts/validate-admin-area.mjs",
+    "validate:search:region-context": "node scripts/validate-search-region-context.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",
