@@ -943,7 +943,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         });
       },
 
-      selectFeature: (layerId, key) => {
+      selectFeature: (layerId, key, options = {}) => {
         const group = layerRefs.current[layerId];
         if (!group || key == null) return false;
         let target = null;
@@ -968,7 +968,10 @@ const MapCanvas = forwardRef(function MapCanvas(
           latlng = target.getLatLng();
         }
 
-        target.fire?.("click", latlng ? { latlng } : {});
+        target.fire?.("click", {
+          ...(latlng ? { latlng } : {}),
+          __wajoSuppressContextPromotion: Boolean(options?.suppressContextPromotion)
+        });
         return true;
       },
 

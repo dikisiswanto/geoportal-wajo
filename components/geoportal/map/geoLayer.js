@@ -104,7 +104,7 @@ export function createGeoJsonLayer({
 
             let contextAdminFeature = null;
             let contextRegion = null;
-            if (!isAdministrativeLayerId(layer.id) && event?.latlng) {
+            if (!isAdministrativeLayerId(layer.id) && event?.latlng && !event?.__wajoSuppressContextPromotion) {
               const districtTarget = resolveAdministrativeTarget(event.latlng);
               contextAdminFeature = districtTarget?.__wajoFeature ?? null;
               if (contextAdminFeature && districtTarget?.__wajoLayerId === "adm-kecamatan") {

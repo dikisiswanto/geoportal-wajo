@@ -22,7 +22,9 @@ async function main() {
     ["old region cleared before feature search", geoPortal.includes("setRegionFilter(\"\")")],
     ["search query stores resolved region", geoPortal.includes("region: contextRegion || null")],
     ["deep-link resolves feature context", geoPortal.includes("featureSearchRegionContext(")],
-    ["programmatic click carries latlng", mapCanvas.includes('target.fire?.("click", latlng ? { latlng } : {})')]
+    ["programmatic click carries latlng", mapCanvas.includes("__wajoSuppressContextPromotion")],
+    ["search avoids forced desa boundary load", !geoPortal.includes('item.id === "adm-desa"') || geoPortal.includes("Only the searched thematic layer")],
+    ["unknown search context clears stale region", geoPortal.includes('setRegionFilter(contextRegion)') && geoPortal.includes("if (!contextRegion && regionFilter)") ]
   ];
 
   const failed = checks.filter(([, ok]) => !ok);

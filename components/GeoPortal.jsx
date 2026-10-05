@@ -52,6 +52,7 @@ function getDesktopViewNoticeServerSnapshot() {
 export default function GeoPortal() {
   const mapApi = useRef(null);
   const requestedFeatureHandledRef = useRef("");
+  const requestedFeatureContextRef = useRef(null);
   const [visible, setVisible] = useState(() => ({ ...DEFAULT_VISIBLE }));
   const [loading, setLoading] = useState({});
   const [printScale, setPrintScale] = useState(null);
@@ -198,27 +199,29 @@ export default function GeoPortal() {
     if (!found) return;
 
     const requestKey = `${layer.id}:${requestedFeature}`;
-    const context = featureSearchRegionContext(
-      found,
-      layerData["adm-kecamatan"]
-    );
+    const pendingContext = requestedFeatureContextRef.current?.requestKey === requestKey
+      ? requestedFeatureContextRef.current
+      : null;
+    const context = pendingContext
+      ? {
+          regions: pendingContext.regions ?? [],
+          region: pendingContext.region ?? "",
+          ambiguous: Boolean(pendingContext.ambiguous)
+        }
+      : featureSearchRegionContext(found, layerData["adm-kecamatan"]);
     const contextRegion = context.ambiguous ? "" : context.region;
 
-    // Region must settle before selecting the feature, otherwise the
-    // current filter can remove the target layer before selectFeature runs.
-    if (
-      contextRegion &&
-      normalizeRegionName(regionFilter) !== normalizeRegionName(contextRegion)
-    ) {
+    // Region must settle before selecting the feature, otherwise the current
+    // filter can remove the target layer before selectFeature runs. A search
+    // result without a reliable region is intentionally resolved to the whole
+    // Kabupaten rather than leaving an unrelated old region active.
+    if (contextRegion && normalizeRegionName(regionFilter) !== normalizeRegionName(contextRegion)) {
       setRegionFilter(contextRegion);
       updateMapQuery({ region: contextRegion });
       return;
     }
 
-    if (
-      context.ambiguous &&
-      regionFilter
-    ) {
+    if (!contextRegion && regionFilter) {
       setRegionFilter("");
       updateMapQuery({ region: null });
       return;
@@ -228,7 +231,8 @@ export default function GeoPortal() {
 
     const selected = mapApi.current?.selectFeature?.(
       layer.id,
-      requestedFeature
+      requestedFeature,
+      { suppressContextPromotion: true }
     );
 
     if (selected) {
@@ -476,15 +480,18 @@ export default function GeoPortal() {
     );
 
     requestedFeatureHandledRef.current = "";
+    requestedFeatureContextRef.current = null;
     setSelected(null);
     setInspectOpen(false);
     setLayerInfo(null);
     setFocusAdmin(null);
     mapApi.current?.clearSelection?.();
 
-    // Search context is resolved in two stages. The lightweight index gives
-    // us an administrative hint before the GeoJSON is downloaded; once the
-    // actual feature is loaded, geometry-aware resolution becomes authoritative.
+    // Search context is resolved in a lightweight first pass from the index.
+    // For already-loaded Point features we can cheaply verify the geometry;
+    // line/polygon geometry stays out of the foreground search path because
+    // large thematic geometries (especially contours) can be expensive to
+    // intersect against all 14 kecamatan boundaries.
     const indexedRegions = Array.isArray(result.regionCodes) && result.regionCodes.length > 1
       ? []
       : [result.region, ...(result.regions || [])].filter(Boolean);
@@ -496,37 +503,47 @@ export default function GeoPortal() {
       : indexedRegionNames.length > 1;
     const indexedRegion = indexedAmbiguous ? "" : indexedRegionNames[0] || "";
 
-    const geometryContext = feature
-      ? featureSearchRegionContext(feature, layerData["adm-kecamatan"])
-      : null;
-    const context = geometryContext || {
+    let context = {
       regions: indexedRegion ? [indexedRegion] : indexedRegionNames,
       region: indexedRegion,
       ambiguous: indexedAmbiguous
     };
 
-    const contextRegion = geometryContext
-      ? (geometryContext.ambiguous ? "" : geometryContext.region || "")
-      : indexedRegion;
-
-    if (context.ambiguous || contextRegion || indexedAmbiguous) {
-      // A feature crossing multiple kecamatan must not be clipped by the
-      // previous region. Show the whole Kabupaten so the searched geometry
-      // remains complete.
-      setRegionFilter(context.ambiguous ? "" : contextRegion);
+    const layerGeometry = String(layer.geometry || "").toLowerCase();
+    if (feature && layerGeometry.includes("point")) {
+      const geometryContext = featureSearchRegionContext(feature, layerData["adm-kecamatan"]);
+      if (geometryContext.region || geometryContext.ambiguous) {
+        context = geometryContext;
+      }
     }
 
+    const contextRegion = context.ambiguous ? "" : context.region || "";
+    const requestKey = `${layer.id}:${String(result.key)}`;
+    requestedFeatureContextRef.current = {
+      requestKey,
+      region: contextRegion,
+      regions: context.regions || [],
+      ambiguous: Boolean(context.ambiguous || indexedAmbiguous)
+    };
+
+    // A searched feature must never remain trapped inside an unrelated old
+    // region. When no reliable region is available yet, show the whole Wajo
+    // immediately; the selection remains visible while the layer loads.
+    setRegionFilter(contextRegion);
+
+    // Only the searched thematic layer is required for selection. Loading the
+    // 3.3 MB desa boundary dataset here adds unnecessary network/render work.
+    // Desa boundaries can still be activated by normal region/admin selection.
     setVisible((previous) => ({
       ...previous,
-      [layer.id]: true,
-      "adm-desa": true
+      [layer.id]: true
     }));
 
     setSidebarOpen(false);
     setRequestedFeature(String(result.key));
 
     const activeIds = layers
-      .filter((item) => visible[item.id] || item.id === layer.id || item.id === "adm-desa")
+      .filter((item) => visible[item.id] || item.id === layer.id)
       .map((item) => item.id);
 
     updateMapQuery({
