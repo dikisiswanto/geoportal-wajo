@@ -1,5 +1,5 @@
 import { markerIconMarkup, pointKind } from "../../../lib/geo/markers";
-import { featureKey, featureLabel } from "../../../lib/geo/format";
+import { featureKey, featureLabel, featureSearchId } from "../../../lib/geo/format";
 import { styleFor } from "../../../lib/geo/styles";
 import { featureRegionName } from "../../../lib/geo/region";
 import {
@@ -82,6 +82,7 @@ export function createGeoJsonLayer({
             featureLayer instanceof L.Polygon;
 
           featureLayer.__wajoFeatureKey = featureKey(layer, feature);
+          featureLayer.__wajoFeatureSearchId = featureSearchId(layer, feature);
           featureLayer.__wajoFeature = feature;
           featureLayer.__wajoLayerId = layer.id;
           featureLayer.__wajoLayerStyleMode = layer.styleMode;

@@ -19,7 +19,9 @@
     "sync:quality": "node scripts/build-data-quality.js",
     "validate:data:area": "node scripts/validate-admin-area.js",
     "validate:search:region-context": "node scripts/validate-search-region-context.js",
-    "validate:search:index": "node scripts/validate-search-index.js"
+    "validate:search:index": "node scripts/validate-search-index.js",
+    "validate:search:query-cases": "node scripts/validate-search-query-cases.js",
+    "validate:search:intent": "node scripts/validate-search-intent.js"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",

@@ -2,7 +2,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 const { layers } = require("../lib/layers.js");
-const { featureKey } = require("../lib/geo/format.js");
+const { featureKey, featureSearchId } = require("../lib/geo/format.js");
 
 const root = path.resolve(__dirname, "..");
 const dataDir = path.join(root, "public", "geo-data");
@@ -19,6 +19,113 @@ const SEARCH_FIELDS = [
   "NO", "Alamat", "ALAMAT", "TITIK_KOOR", "KLASIFIKAS", "KATEGORI", "JENIS", "TYPE",
   "NAMA_JALAN", "NAMA_RUAS", "NAMA_OPD", "website"
 ];
+
+const INTENT_RULES = {
+  administration: [
+    "kecamatan", "kec", "desa", "kelurahan", "wilayah", "administrasi", "batas"
+  ],
+  education: [
+    "sekolah", "sd", "sdn", "smp", "smpn", "sma", "sman", "smk", "smkn",
+    "madrasah", "mi", "mts", "ma", "tk", "paud", "pendidikan"
+  ],
+  health: [
+    "puskesmas", "pkm", "kesehatan", "rumah sakit", "rs", "klinik", "posyandu", "apotik", "apotek"
+  ],
+  government: [
+    "pemerintah", "pemkab", "opd", "dinas", "kantor", "badan", "sekretariat", "camat"
+  ],
+  transport: [
+    "jalan", "ruas", "jembatan", "kereta", "rel", "transportasi", "terminal", "pelabuhan", "pelayaran"
+  ],
+  water: [
+    "sungai", "danau", "waduk", "irigasi", "drainase", "saluran", "air", "tanggul", "tambak"
+  ],
+  terrain: [
+    "kontur", "topografi", "elevasi", "ketinggian", "tinggi", "medan"
+  ],
+  agriculture: [
+    "pertanian", "sawah", "ladang", "perkebunan", "peternakan", "tambak"
+  ],
+  landuse: [
+    "tutupan lahan", "penggunaan lahan", "permukiman", "perumahan", "hutan", "semak", "belukar",
+    "alang", "padang rumput", "lahan terbuka", "sawah", "ladang", "perkebunan", "tambak"
+  ],
+  infrastructure: [
+    "infrastruktur", "prasarana", "telekomunikasi", "energi", "listrik", "jaringan", "menara", "fasilitas"
+  ]
+};
+
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenizeSearch(value) {
+  return normalizeSearchText(value).split(" ").filter(Boolean);
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map(normalizeSearchText).flatMap((value) => value.split(" ")).filter(Boolean))];
+}
+
+const LAYER_INTENT_OVERRIDES = {
+  "jalan": ["transport"],
+  "jaringan-transportasi": ["transport"],
+  "jaringan-prasarana-lainnya": ["infrastructure"],
+  "jaringan-sumber-daya-air": ["water", "infrastructure"],
+  "jaringan-telekomunikasi": ["infrastructure"],
+  "jaringan-energi": ["infrastructure"],
+  "kontur": ["terrain"],
+  "sungai": ["water"],
+  "danau": ["water", "landuse"],
+  "tambak": ["water", "agriculture", "landuse"],
+  "pemukiman": ["landuse"],
+  "agri-kebun": ["agriculture", "landuse"],
+  "agri-ladang": ["agriculture", "landuse"],
+  "agri-sawah": ["agriculture", "landuse"],
+  "non-agri-hutan-kering": ["landuse"],
+  "non-agri-hutan-basah": ["landuse"],
+  "non-agri-semak-belukar": ["landuse"],
+  "non-agri-alang": ["landuse"],
+  "infra-transportasi": ["transport", "infrastructure"],
+  "infra-prasarana-lainnya": ["infrastructure"],
+  "infra-sumber-daya-air": ["water", "infrastructure"],
+  "infra-telekomunikasi": ["infrastructure"],
+  "infra-energi": ["infrastructure"]
+};
+
+function inferIntentTags(layer, properties) {
+  const haystack = normalizeSearchText([
+    layer?.id, layer?.title, layer?.group,
+    properties?.KATEGORI, properties?.KLASIFIKAS, properties?.JENIS,
+    properties?.TYPE, properties?.bentuk_pendidikan, properties?.status_sekolah,
+    properties?.NAMA_RUAS, properties?.NAMA_JALAN, properties?.NAMOBJ, properties?.NAME,
+    properties?.nama, properties?.PUSKESMAS, properties?.POTENSI, properties?.PETERNAKAN
+  ].filter(meaningful).join(" "));
+  const haystackTokens = new Set(haystack.split(" ").filter(Boolean));
+  const isAdministrativeLayer = String(layer?.id || "").startsWith("adm-") || normalizeSearchText(layer?.group) === "administrasi";
+
+  const inferred = Object.entries(INTENT_RULES)
+    .filter(([intent, terms]) => {
+      if (intent === "administration" && !isAdministrativeLayer) return false;
+      return terms.some((term) => {
+        const normalizedTerm = normalizeSearchText(term);
+        if (!normalizedTerm) return false;
+        if (normalizedTerm.includes(" ")) return ` ${haystack} `.includes(` ${normalizedTerm} `);
+        return haystackTokens.has(normalizedTerm);
+      });
+    })
+    .map(([intent]) => intent);
+
+  return [...new Set([...(LAYER_INTENT_OVERRIDES[layer?.id] || []), ...inferred])];
+}
+
 
 function meaningful(value) {
   const text = String(value ?? "").trim();
@@ -93,6 +200,39 @@ function buildAdminLookup(data, type) {
 const searchableLayers = new Map(layers.map((layer) => [layer.file, layer]));
 const items = [];
 
+function displayLabel(layer, properties, fallbackLabel, regionNames, villageNames, index) {
+  const normalizedLayer = normalizeSearchText(layer?.title || layer?.id || "data peta");
+  const fid = properties?.FID ?? properties?.OBJECTID ?? properties?.NO ?? index;
+
+  if (layer?.id === "kontur") {
+    const value = Number(properties?.VALKNT);
+    const elevation = Number.isFinite(value) ? `${value.toLocaleString("id-ID")} meter` : "Topografi";
+    const place = villageNames[0] ? `${villageNames[0]}${regionNames[0] ? ` · ${regionNames[0]}` : ""}` : (regionNames[0] || `Garis ${Number(fid) + 1}`);
+    return `Kontur ${elevation} — ${place}`;
+  }
+
+  const repeatedLabels = new Set([
+    "danau/situ", "permukiman dan tempat kegiatan", "sawah", "semak belukar",
+    "tanah kosong/gundul", "hutan lahan kering", "hutan lahan basah",
+    "perkebunan", "pertanian lahan kering", "tambak"
+  ]);
+  const normalizedFallback = normalizeSearchText(fallbackLabel);
+  const place = villageNames[0] ? `${villageNames[0]}${regionNames[0] ? ` · ${regionNames[0]}` : ""}` : regionNames[0];
+
+  if (!fallbackLabel) {
+    if (place) return `${layer?.title || normalizedLayer} — ${place}`;
+    return `${layer?.title || "Data peta"} #${String(fid)}`;
+  }
+
+  if (repeatedLabels.has(normalizedFallback)) {
+    if (place) return `${fallbackLabel} — ${place}`;
+    return `${fallbackLabel} #${String(fid)}`;
+  }
+
+  return fallbackLabel;
+}
+
+
 async function main() {
   const boundaryCache = new Map();
   for (const file of ["batas-kecamatan.geojson", "batas-desa-kelurahan.geojson"]) {
@@ -121,26 +261,23 @@ async function main() {
       const feature = data.features[index];
       const properties = feature?.properties ?? {};
       const label = firstMeaningful(properties, PRIORITY_FIELDS);
-      if (!label) continue;
 
       const specificForSearch = firstMeaningful(properties, [
         "NAMA_RUAS", "NAMA_OPD", "PUSKESMAS", "nama_sekolah", "NAMOBJ", "POTENSI", "PETERNAKAN"
       ]);
-      const admin = type === "polygon" && layer.id?.startsWith("adm-")
-        ? firstMeaningful(properties, ["Kecamatan", "Desa", "nama_kecamatan", "nama_desa", "NAMOBJ"])
-        : "";
+      const admin = layer.id === "adm-kecamatan"
+        ? firstMeaningful(properties, ["Kecamatan", "WADMKC", "nama_kecamatan", "NAMOBJ"])
+        : layer.id === "adm-desa"
+          ? firstMeaningful(properties, ["Desa", "WADMKD", "nama_desa", "WADMKD", "NAMOBJ"])
+          : "";
 
       const key = featureKey(layer, feature);
-      if (key == null) continue;
+      const selectionKey = featureSearchId(layer, feature);
+      if (selectionKey == null) continue;
 
-      const dedupeKey = `${layer.id}|${String(key).toLowerCase()}|${label.toLowerCase()}`;
+      const dedupeKey = `${layer.id}|${String(selectionKey).toLowerCase()}`;
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
-
-      const includeGenericPolygon = type === "polygon" && !layer.id?.startsWith("adm-")
-        ? meaningful(specificForSearch) && !["tidak ada", "belum ada"].includes(label.toLowerCase())
-        : true;
-      if (!includeGenericPolygon) continue;
 
       const kecamatanCodes = contextCodes(properties, "kecamatan");
       const desaCodes = contextCodes(properties, "desa");
@@ -163,16 +300,18 @@ async function main() {
           ? `${villageNames[0]} · ${region}`
           : region || villageNames[0] || "Kabupaten Wajo";
 
-      const searchText = [
-        layer.title,
-        layer.group,
-        label,
-        specificForSearch,
-        contextSummary,
-        regionNames.join(" "),
-        villageNames.join(" "),
+      const display = displayLabel(layer, properties, admin || label, regionNames, villageNames, index);
+      const valueSearchTerms = layer.id === "kontur" && meaningful(properties?.VALKNT)
+        ? [`${properties.VALKNT}`, `${properties.VALKNT} meter`, "meter", "m"]
+        : [];
+
+      const searchableValues = [
+        layer.title, layer.group, label, specificForSearch, contextSummary,
+        regionNames.join(" "), villageNames.join(" "),
         ...SEARCH_FIELDS.map((field) => properties[field])
-      ].filter(meaningful).join(" ");
+      ];
+      const intentTags = inferIntentTags(layer, properties);
+      const searchTokens = uniqueStrings(searchableValues);
 
       items.push({
         id: `${layer.id}:${String(key)}:${index}`,
@@ -180,8 +319,9 @@ async function main() {
         layerTitle: layer.title,
         group: layer.group,
         type,
-        key: String(key),
-        label: admin || label,
+        key: String(key ?? selectionKey),
+        selectionKey: String(selectionKey),
+        label: display,
         subtitle: contextSummary === "Kabupaten Wajo" ? `${layer.group} · Kabupaten Wajo` : `${contextSummary} · ${layer.group}`,
         region,
         regions: regionNames,
@@ -191,13 +331,14 @@ async function main() {
         villageCodes: unique(desaCodes),
         contextSummary,
         coverageCount: Math.max(1, regionNames.length),
-        text: searchText
+        intentTags,
+        searchTokens
       });
     }
   }
 
   const payload = {
-    version: 2,
+    version: 4,
     items
   };
   await fs.writeFile(outputPath, `${JSON.stringify(payload)}\n`);

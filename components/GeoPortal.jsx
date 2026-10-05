@@ -8,7 +8,7 @@ import { DATA_SUMMARY } from "../lib/geo/dataSummary";
 import { REGION_SUMMARY, REGIONS } from "../lib/geo/regionSummary";
 import { getRelatedLayerIds, getRegionCount } from "../lib/geo/relations";
 import { featureSearchRegionContext, normalizeRegionName, regionDisplayName } from "../lib/geo/region";
-import { featureKey } from "../lib/geo/format";
+import { featureKey, featureSearchId } from "../lib/geo/format";
 import GeoPortalHeader from "./geoportal/GeoPortalHeader";
 import LayerCatalog from "./geoportal/LayerCatalog";
 import MapCanvas from "./geoportal/MapCanvas";
@@ -193,8 +193,9 @@ export default function GeoPortal() {
     const data = layerData[layer.id];
     if (!data?.features?.length) return;
 
-    const found = data.features.find(
-      (feature) => String(featureKey(layer, feature) ?? "") === String(requestedFeature)
+    const found = data.features.find((feature) =>
+      String(featureSearchId(layer, feature) ?? "") === String(requestedFeature) ||
+      String(featureKey(layer, feature) ?? "") === String(requestedFeature)
     );
     if (!found) return;
 
@@ -232,7 +233,10 @@ export default function GeoPortal() {
     const selected = mapApi.current?.selectFeature?.(
       layer.id,
       requestedFeature,
-      { suppressContextPromotion: true }
+      {
+        selectionKey: featureSearchId(layer, found),
+        suppressContextPromotion: true
+      }
     );
 
     if (selected) {
@@ -427,20 +431,27 @@ export default function GeoPortal() {
     window.setTimeout(() => setStatus(`${layer.title} tampil di peta`), 450);
   }, [updateMapQuery, visible]);
 
+  const canonicalizeRegion = useCallback((region) => {
+    const value = String(region || "").trim();
+    if (!value) return "";
+    return REGIONS.find((item) => normalizeRegionName(item) === normalizeRegionName(value)) || value.replace(/^kec\.?\s*/i, "").trim();
+  }, []);
+
   const handleRegionFilter = useCallback((region) => {
+    const canonicalRegion = canonicalizeRegion(region);
     setHasInteracted(true);
     setSelected(null);
-    if (region) {
+    if (canonicalRegion) {
       setVisible((previous) => ({ ...previous, "adm-desa": true }));
     }
     setInspectOpen(false);
     setLayerInfo(null);
     mapApi.current?.clearSelection?.();
     setFocusAdmin(null);
-    setRegionFilter(region);
-    if (region) {
-      setStatus(`Menampilkan data di ${regionDisplayName(region)}`);
-      updateMapQuery({ region, feature: null });
+    setRegionFilter(canonicalRegion);
+    if (canonicalRegion) {
+      setStatus(`Menampilkan data di ${regionDisplayName(canonicalRegion)}`);
+      updateMapQuery({ region: canonicalRegion, feature: null });
     } else {
       setStatus("Menampilkan seluruh data Kabupaten Wajo");
       updateMapQuery({ region: null, feature: null });
@@ -448,7 +459,7 @@ export default function GeoPortal() {
         mapApi.current?.zoomHome?.();
       });
     }
-  }, [updateMapQuery]);
+  }, [canonicalizeRegion, updateMapQuery]);
 
   const handleSearchResult = useCallback((result) => {
     if (!result) return;
@@ -462,12 +473,59 @@ export default function GeoPortal() {
       return;
     }
 
+    if (result.kind === "village") {
+      const canonicalRegion = canonicalizeRegion(result.region || result.regionName);
+      requestedFeatureHandledRef.current = "";
+      requestedFeatureContextRef.current = null;
+      setSelected(null);
+      setInspectOpen(false);
+      setLayerInfo(null);
+      setFocusAdmin(null);
+      mapApi.current?.clearSelection?.();
+      setRegionFilter(canonicalRegion);
+      setVisible((previous) => ({
+        ...previous,
+        "adm-desa": true
+      }));
+      setSidebarOpen(false);
+      setRequestedFeature(selectionKey);
+      const requestKey = `adm-desa:${String(result.key)}`;
+      requestedFeatureContextRef.current = {
+        requestKey,
+        region: canonicalRegion,
+        regions: canonicalRegion ? [canonicalRegion] : [],
+        ambiguous: false
+      };
+      updateMapQuery({
+        layers: [...new Set([...(visible ? Object.keys(visible).filter((id) => visible[id]) : []), "adm-desa"])].join(","),
+        layer: "adm-desa",
+        feature: String(result.key),
+        region: canonicalRegion || null,
+        catalog: null
+      });
+      setStatus(
+        canonicalRegion
+          ? `Menyiapkan Desa/Kelurahan ${result.label} di ${regionDisplayName(canonicalRegion)}…`
+          : `Menyiapkan Desa/Kelurahan ${result.label}…`
+      );
+      return;
+    }
+
     if (result.kind === "layer") {
       const layer = layers.find((item) => item.id === result.layerId);
       if (!layer) return;
-      setSidebarOpen(true);
-      setCatalogLayerId(layer.id);
-      handleLayerInfo(layer);
+      if (result.region) {
+        const canonicalRegion = canonicalizeRegion(result.region);
+        setRegionFilter(canonicalRegion);
+        setVisible((previous) => ({ ...previous, [layer.id]: true }));
+        setSidebarOpen(false);
+        updateMapQuery({ layers: layer.id, layer: layer.id, region: canonicalRegion, feature: null, catalog: null });
+        setStatus(`Menampilkan ${layer.title} di ${regionDisplayName(canonicalRegion)}`);
+      } else {
+        setSidebarOpen(true);
+        setCatalogLayerId(layer.id);
+        handleLayerInfo(layer);
+      }
       return;
     }
 
@@ -475,8 +533,9 @@ export default function GeoPortal() {
     if (!layer || result.key == null) return;
 
     const data = layerData[layer.id];
-    const feature = data?.features?.find(
-      (item) => String(featureKey(layer, item) ?? "") === String(result.key)
+    const feature = data?.features?.find((item) =>
+      String(featureSearchId(layer, item) ?? "") === String(result.selectionKey ?? "") ||
+      String(featureKey(layer, item) ?? "") === String(result.key)
     );
 
     requestedFeatureHandledRef.current = "";
@@ -518,7 +577,8 @@ export default function GeoPortal() {
     }
 
     const contextRegion = context.ambiguous ? "" : context.region || "";
-    const requestKey = `${layer.id}:${String(result.key)}`;
+    const selectionKey = String(result.selectionKey ?? featureSearchId(layer, feature) ?? result.key);
+    const requestKey = `${layer.id}:${selectionKey}`;
     requestedFeatureContextRef.current = {
       requestKey,
       region: contextRegion,
@@ -540,7 +600,7 @@ export default function GeoPortal() {
     }));
 
     setSidebarOpen(false);
-    setRequestedFeature(String(result.key));
+    setRequestedFeature(selectionKey);
 
     const activeIds = layers
       .filter((item) => visible[item.id] || item.id === layer.id)
@@ -549,7 +609,7 @@ export default function GeoPortal() {
     updateMapQuery({
       layers: activeIds.join(","),
       layer: layer.id,
-      feature: String(result.key),
+      feature: selectionKey,
       region: contextRegion || null,
       catalog: null
     });
@@ -561,7 +621,7 @@ export default function GeoPortal() {
           ? `Menyiapkan ${result.label} di ${regionDisplayName(contextRegion)}…`
           : `Menyiapkan ${result.label}…`
     );
-  }, [handleLayerInfo, handleRegionFilter, layerData, updateMapQuery, visible]);
+  }, [canonicalizeRegion, handleLayerInfo, handleRegionFilter, layerData, updateMapQuery, visible]);
   const openRegionComparison = useCallback(() => {
     setComparisonOpen(true);
   }, []);

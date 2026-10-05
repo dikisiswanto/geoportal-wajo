@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { withAssetVersion } from "../../lib/assetVersion";
+import { normalizeRegionName } from "../../lib/geo/region";
 import { createGeoJsonLayer } from "./map/geoLayer";
 import { bindMapInteraction } from "./map/interaction";
 import { DEFAULT_VIEW, fitWajoBounds, findFeatureLayerAtLatLng, getInteractiveMapFitOptions } from "./map/geometry";
@@ -927,8 +928,9 @@ const MapCanvas = forwardRef(function MapCanvas(
         const adminData = loadedData.current["adm-kecamatan"];
         if (!adminData?.features?.length) return;
         import("leaflet").then((L) => {
+          const targetRegion = normalizeRegionName(regionName);
           const feature = adminData.features.find((item) =>
-            String(item?.properties?.Kecamatan ?? item?.properties?.WADMKC ?? item?.properties?.NAMOBJ ?? "").trim().toLowerCase() === String(regionName).trim().toLowerCase()
+            normalizeRegionName(item?.properties?.Kecamatan ?? item?.properties?.WADMKC ?? item?.properties?.NAMOBJ ?? "") === targetRegion
           );
           if (!feature) return;
           const bounds = L.geoJSON(feature).getBounds();
@@ -949,9 +951,12 @@ const MapCanvas = forwardRef(function MapCanvas(
         let target = null;
         group.eachLayer?.((candidate) => {
           if (target) return;
-          if (candidate?.__wajoFeatureKey != null && String(candidate.__wajoFeatureKey) === String(key)) {
-            target = candidate;
-          }
+          const matchesSelectionId = options?.selectionKey != null &&
+            candidate?.__wajoFeatureSearchId != null &&
+            String(candidate.__wajoFeatureSearchId) === String(options.selectionKey);
+          const matchesFeatureKey = candidate?.__wajoFeatureKey != null &&
+            String(candidate.__wajoFeatureKey) === String(key);
+          if (matchesSelectionId || matchesFeatureKey) target = candidate;
         });
         if (!target) return false;
 
