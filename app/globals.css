@@ -1713,6 +1713,148 @@ a:focus-visible {
   opacity: 0;
 }
 
+.geoportal-intro__fast-cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0;
+  transform: scale(1.01);
+  filter: saturate(0.94) contrast(1.03);
+  transition: opacity 260ms ease, transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.geoportal-intro__fast-cosmos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 52% 48%, rgba(18, 47, 78, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(0, 3, 8, 0.08), rgba(0, 3, 8, 0.2));
+}
+
+.geoportal-intro__fast-nebula {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 72% 28%, rgba(111, 73, 163, 0.16), transparent 28%),
+    radial-gradient(ellipse at 23% 66%, rgba(55, 120, 169, 0.14), transparent 30%),
+    radial-gradient(ellipse at 52% 80%, rgba(18, 66, 105, 0.12), transparent 32%);
+  filter: blur(34px);
+  animation: geoportalIntroFastNebula 14s ease-in-out infinite alternate;
+}
+
+.geoportal-intro__fast-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.48;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.9) 0 0.8px, transparent 1px),
+    radial-gradient(circle, rgba(180,220,255,0.75) 0 0.7px, transparent 0.95px),
+    radial-gradient(circle, rgba(255,236,194,0.55) 0 0.6px, transparent 0.9px);
+  background-size: 89px 83px, 137px 151px, 191px 173px;
+  background-position: 3px 9px, 27px 31px, 61px 47px;
+  mix-blend-mode: screen;
+  animation: geoportalIntroFastStars 18s linear infinite;
+}
+
+.geoportal-intro__fast-earth {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(138px, 21vw, 230px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow:
+    inset -20px -12px 34px rgba(0, 0, 0, 0.52),
+    inset 14px 10px 26px rgba(152, 221, 255, 0.1),
+    0 0 54px rgba(72, 159, 226, 0.12);
+  animation: geoportalIntroFastEarthIn 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.geoportal-intro__fast-earth::before {
+  content: "";
+  position: absolute;
+  inset: -7%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, rgba(150, 231, 255, 0.2), transparent 44%), rgba(61, 160, 239, 0.03);
+  box-shadow: 0 0 28px rgba(91, 193, 255, 0.24);
+  filter: blur(1.5px);
+}
+
+.geoportal-intro__fast-earth-clouds,
+.geoportal-intro__fast-earth-night,
+.geoportal-intro__fast-earth-atmosphere {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 50%;
+}
+
+.geoportal-intro__fast-earth-clouds {
+  background-position: center;
+  background-size: cover;
+  opacity: 0.26;
+  mix-blend-mode: screen;
+  animation: geoportalIntroFastClouds 10s linear infinite;
+}
+
+.geoportal-intro__fast-earth-night {
+  background-position: center;
+  background-size: cover;
+  opacity: 0.56;
+  mix-blend-mode: multiply;
+  filter: brightness(0.9) saturate(0.86);
+}
+
+.geoportal-intro__fast-earth-atmosphere {
+  box-shadow:
+    inset 0 0 0 1px rgba(164, 226, 255, 0.22),
+    0 0 22px rgba(98, 193, 255, 0.36);
+}
+
+.geoportal-intro__fast-earth-target {
+  position: absolute;
+  left: 56%;
+  top: 56%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9ee7ff;
+  box-shadow: 0 0 0 3px rgba(158, 231, 255, 0.1), 0 0 18px rgba(158, 231, 255, 0.95);
+  color: transparent;
+  animation: geoportalIntroFastTarget 1200ms ease-in-out infinite;
+}
+
+.geoportal-intro__fast-sun {
+  position: absolute;
+  left: calc(50% + clamp(64px, 11vw, 110px));
+  top: calc(50% - clamp(56px, 9vw, 96px));
+  width: clamp(120px, 18vw, 190px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  mix-blend-mode: screen;
+  filter: blur(0.5px);
+  animation: geoportalIntroFastSun 7s ease-in-out infinite alternate;
+}
+
+.geoportal-intro--fast .geoportal-intro__fast-cosmos {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .geoportal-intro--fast .geoportal-intro__destination {
   animation: geoportalIntroTarget 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -1751,6 +1893,38 @@ a:focus-visible {
   animation: geoportalIntroFastEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+
+@keyframes geoportalIntroFastNebula {
+  from { transform: translate3d(-1%, 0, 0) scale(1); }
+  to { transform: translate3d(2%, 2%, 0) scale(1.05); }
+}
+
+@keyframes geoportalIntroFastStars {
+  from { transform: translate3d(0, 0, 0); opacity: 0.42; }
+  50% { opacity: 0.54; }
+  to { transform: translate3d(-1.5%, 1%, 0); opacity: 0.44; }
+}
+
+@keyframes geoportalIntroFastEarthIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes geoportalIntroFastClouds {
+  from { transform: translateX(-1.5%) scale(1.02); }
+  to { transform: translateX(1.5%) scale(1.02); }
+}
+
+@keyframes geoportalIntroFastTarget {
+  0%, 100% { opacity: 0.42; transform: scale(0.84); }
+  50% { opacity: 1; transform: scale(1.22); }
+}
+
+@keyframes geoportalIntroFastSun {
+  from { transform: translate(-50%, -50%) scale(0.98); }
+  to { transform: translate(-46%, -54%) scale(1.05); }
+}
+
 @keyframes geoportalIntroFastOrbit {
   from { transform: translate(-50%, -50%) rotate(-18deg); }
   to { transform: translate(-50%, -50%) rotate(342deg); }
@@ -1762,7 +1936,13 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .geoportal-intro--fast .geoportal-intro__fast-orbit {
+  .geoportal-intro--fast .geoportal-intro__fast-orbit,
+  .geoportal-intro--fast .geoportal-intro__fast-nebula,
+  .geoportal-intro--fast .geoportal-intro__fast-stars,
+  .geoportal-intro--fast .geoportal-intro__fast-earth,
+  .geoportal-intro--fast .geoportal-intro__fast-earth-clouds,
+  .geoportal-intro--fast .geoportal-intro__fast-earth-target,
+  .geoportal-intro--fast .geoportal-intro__fast-sun {
     animation: none;
   }
 }

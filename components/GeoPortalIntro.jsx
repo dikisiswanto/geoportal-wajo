@@ -983,6 +983,32 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
       aria-busy="true"
     >
       <div ref={hostRef} className="geoportal-intro__scene" aria-hidden="true" />
+      <div
+        className="geoportal-intro__fast-cosmos"
+        style={{ backgroundImage: `url(${COSMIC_TEXTURE_URL})` }}
+        aria-hidden="true"
+      >
+        <div className="geoportal-intro__fast-nebula" />
+        <div className="geoportal-intro__fast-stars" />
+        <div
+          className="geoportal-intro__fast-earth"
+          style={{ backgroundImage: `url(${EARTH_TEXTURE_URL})` }}
+        >
+          <span
+            className="geoportal-intro__fast-earth-clouds"
+            style={{ backgroundImage: `url(${EARTH_CLOUDS_URL})` }}
+          />
+          <span className="geoportal-intro__fast-earth-night"
+            style={{ backgroundImage: `url(${EARTH_NIGHT_URL})` }}
+          />
+          <span className="geoportal-intro__fast-earth-atmosphere" />
+          <span className="geoportal-intro__fast-earth-target">Wajo</span>
+        </div>
+        <span
+          className="geoportal-intro__fast-sun"
+          style={{ backgroundImage: `url(${SUN_GLOW_URL})` }}
+        />
+      </div>
       <div className="geoportal-intro__fast-orbit" aria-hidden="true"><span /></div>
       <div className="geoportal-intro__space-glow" aria-hidden="true" />
       <div className="geoportal-intro__vignette" aria-hidden="true" />
