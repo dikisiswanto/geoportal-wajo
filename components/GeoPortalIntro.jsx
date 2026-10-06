@@ -783,9 +783,10 @@ function buildScene(THREE, host) {
   };
 }
 
-export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = false }) {
+export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = false, vectorReady = false }) {
   const hostRef = useRef(null);
   const mapReadyRef = useRef(mapReady);
+  const vectorReadyRef = useRef(vectorReady);
   const mapWarmupRequestedRef = useRef(false);
   const completedRef = useRef(false);
   const exitTimerRef = useRef(null);
@@ -795,6 +796,10 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
   useEffect(() => {
     mapReadyRef.current = mapReady;
   }, [mapReady]);
+
+  useEffect(() => {
+    vectorReadyRef.current = vectorReady;
+  }, [vectorReady]);
 
   const requestMapWarmup = () => {
     if (mapWarmupRequestedRef.current) return;
@@ -816,16 +821,17 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
       window.clearTimeout(maxTimer);
     };
 
-    const waitForMapReady = (timeoutMs) => new Promise((resolve) => {
-      if (mapReadyRef.current) {
+    const waitForStartupReady = (timeoutMs) => new Promise((resolve) => {
+      if (mapReadyRef.current && vectorReadyRef.current) {
         resolve(true);
         return;
       }
 
       const startedAt = performance.now();
       const check = () => {
-        if (cancelled || mapReadyRef.current || performance.now() - startedAt >= timeoutMs) {
-          resolve(mapReadyRef.current);
+        const ready = mapReadyRef.current && vectorReadyRef.current;
+        if (cancelled || ready || performance.now() - startedAt >= timeoutMs) {
+          resolve(ready);
           return;
         }
         window.requestAnimationFrame(check);
@@ -849,7 +855,8 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
       const startedAt = performance.now();
 
       if (reducedMotion) {
-        await Promise.allSettled([criticalReady, waitForMapReady(2500)]);
+        requestMapWarmup();
+        await Promise.allSettled([criticalReady, waitForStartupReady(4500)]);
         if (!cancelled) finish();
         return;
       }
@@ -877,13 +884,18 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
         window.setTimeout(() => {
           setStatus("Menyiapkan tampilan peta…");
           requestMapWarmup();
-        }, 5650),
+        }, 5000),
         window.setTimeout(() => setStatus("Membuka peta interaktif…"), 6450)
       ];
 
-      const textureReady = sceneHandle?.texturePromise ?? Promise.resolve();
-      await Promise.allSettled([criticalReady, textureReady]);
-      await waitForMapReady(Math.max(0, MAX_INTRO_MS - (performance.now() - startedAt)));
+      // Texture quality is progressive: the fallback Earth may render immediately,
+      // while local textures can finish in the background. Intro completion must
+      // never wait on optional visual assets.
+      void criticalReady;
+      void (sceneHandle?.texturePromise ?? Promise.resolve());
+
+      await waitForStartupReady(Math.max(0, MAX_INTRO_MS - (performance.now() - startedAt)));
+      requestMapWarmup();
 
       const elapsed = performance.now() - startedAt;
       const remaining = Math.max(0, MIN_INTRO_MS - elapsed);
@@ -903,6 +915,7 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
 
   const skip = () => {
     if (completedRef.current) return;
+    requestMapWarmup();
     completedRef.current = true;
     setClosing(true);
     window.clearTimeout(exitTimerRef.current);

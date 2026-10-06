@@ -11,6 +11,7 @@ import {
 
 import { withAssetVersion } from "../../lib/assetVersion";
 import { getStartupLayerDataPromise } from "../../lib/geo/startupData";
+import { getStartupNavigationState } from "../../lib/geo/startupNavigation";
 import { normalizeRegionName } from "../../lib/geo/region";
 import { createGeoJsonLayer } from "./map/geoLayer";
 import { bindMapInteraction } from "./map/interaction";
@@ -55,6 +56,9 @@ const MapCanvas = forwardRef(function MapCanvas(
     onPrintScale,
     onPerformance,
     deferInitialVectorRender = false,
+    deferInitialLayerDataLoad = false,
+    deferInitialBasemap = false,
+    onInitialVectorReady,
     regionFilter,
     focusAdmin = null,
     retryTokens = {}
@@ -120,6 +124,8 @@ const MapCanvas = forwardRef(function MapCanvas(
   const onViewChangeRef = useRef(onViewChange);
   const onPrintScaleRef = useRef(onPrintScale);
   const onPerformanceRef = useRef(onPerformance);
+  const onInitialVectorReadyRef = useRef(onInitialVectorReady);
+  const initialVectorReadyRef = useRef(false);
 
   useEffect(() => {
     onStatusRef.current = onStatus;
@@ -136,6 +142,10 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     onPerformanceRef.current = onPerformance;
   }, [onPerformance]);
+
+  useEffect(() => {
+    onInitialVectorReadyRef.current = onInitialVectorReady;
+  }, [onInitialVectorReady]);
 
   useEffect(() => {
     onLayerLoadingRef.current = onLayerLoading;
@@ -380,9 +390,11 @@ const MapCanvas = forwardRef(function MapCanvas(
           )
       );
 
-      osm.addTo(map);
-
       tileRef.current = osm;
+      if (!deferInitialBasemap) {
+        osm.addTo(map);
+      }
+
 
       bindMapInteraction({
         map,
@@ -402,6 +414,7 @@ const MapCanvas = forwardRef(function MapCanvas(
       leafletRef.current = L;
       setRenderVersion((value) => value + 1);
 
+      onStatusRef.current?.("Kerangka peta siap");
       map.whenReady(() => {
         window.requestAnimationFrame(
           () =>
@@ -711,6 +724,13 @@ const MapCanvas = forwardRef(function MapCanvas(
     });
   }, [layers, retryTokens]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    const osm = tileRef.current;
+    if (deferInitialBasemap || !map || !osm || map.hasLayer?.(osm)) return;
+    osm.addTo(map);
+  }, [deferInitialBasemap, renderVersion]);
+
   /*
    * Load data hanya ketika layer aktif.
    */
@@ -719,10 +739,9 @@ const MapCanvas = forwardRef(function MapCanvas(
       layers.filter(
         (layer) =>
           visible[layer.id] &&
-          !loadedData.current[
-            layer.id
-          ] &&
-          !errors[layer.id]
+          !loadedData.current[layer.id] &&
+          !errors[layer.id] &&
+          !deferInitialLayerDataLoad
       );
 
     if (!active.length) {
@@ -740,7 +759,8 @@ const MapCanvas = forwardRef(function MapCanvas(
     layers,
     loadLayerData,
     visible,
-    errors
+    errors,
+    deferInitialLayerDataLoad
   ]);
 
   /*
@@ -905,7 +925,9 @@ const MapCanvas = forwardRef(function MapCanvas(
       visible["adm-kecamatan"] &&
       !map._wajoInitialFit
     ) {
-      if (adminLayer.getBounds().isValid()) {
+      const navigation = getStartupNavigationState(window.location.search);
+
+      if (navigation.priority === "default" && adminLayer.getBounds().isValid()) {
         fitWajoBounds(map, L, adminLayer.toGeoJSON());
       }
       map._wajoInitialFit = true;
@@ -926,6 +948,15 @@ const MapCanvas = forwardRef(function MapCanvas(
         activeVectorLayers,
         featureCount
       });
+    }
+
+    const initialVisibleReady = layers
+      .filter((layer) => visible[layer.id])
+      .every((layer) => Boolean(layerRefs.current[layer.id]) || Boolean(errorsRef.current[layer.id]));
+
+    if (initialVisibleReady && !initialVectorReadyRef.current) {
+      initialVectorReadyRef.current = true;
+      onInitialVectorReadyRef.current?.();
     }
   }, [layers, visible, renderVersion, regionFilter, focusAdmin, resolveAdministrativeTarget, deferInitialVectorRender]);
 

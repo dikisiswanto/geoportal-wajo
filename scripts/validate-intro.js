@@ -11,6 +11,12 @@ const assetDir = path.join(root, "public", "intro", "earth");
 const intro = fs.readFileSync(introPath, "utf8");
 const mapCanvasPath = path.join(root, "components", "geoportal", "MapCanvas.jsx");
 const mapCanvas = fs.readFileSync(mapCanvasPath, "utf8");
+const geoPortalPath = path.join(root, "components", "GeoPortal.jsx");
+const geoPortal = fs.readFileSync(geoPortalPath, "utf8");
+const startupDataPath = path.join(root, "lib", "geo", "startupData.js");
+const startupData = fs.readFileSync(startupDataPath, "utf8");
+const startupNavigationPath = path.join(root, "lib", "geo", "startupNavigation.js");
+const startupNavigation = fs.readFileSync(startupNavigationPath, "utf8");
 const nextConfig = fs.readFileSync(configPath, "utf8");
 const sw = fs.readFileSync(swPath, "utf8");
 const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
@@ -46,10 +52,23 @@ const checks = [
   ["Star field tersedia", intro.includes("createStarField")],
   ["Flat-map bridge tersedia", intro.includes("createFlatBridgeMaterial")],
   ["Critical preload tetap aktif", intro.includes("preloadCriticalGeoData")],
-  ["Map warmup terjadwal", intro.includes("onMapWarmup") && intro.includes("5650")],
+  ["Map warmup terjadwal", intro.includes("onMapWarmup") && intro.includes("5000")],
   ["Three.js handoff throttled", intro.includes("handoffThrottle") && intro.includes("48")],
   ["Map vector render dapat ditunda", mapCanvas.includes("deferInitialVectorRender") && mapCanvas.includes("if (!map || !L || deferInitialVectorRender) return")],
-  ["Intro menunggu map ready", intro.includes("mapReadyRef.current") && intro.includes("waitForMapReady")],
+  ["Initial layer data load dapat ditunda", mapCanvas.includes("deferInitialLayerDataLoad") && mapCanvas.includes("!deferInitialLayerDataLoad")],
+  ["Initial basemap load dapat ditunda", mapCanvas.includes("deferInitialBasemap") && mapCanvas.includes("osm.addTo(map)")],
+  ["Initial vector ready callback tersedia", mapCanvas.includes("onInitialVectorReady") && mapCanvas.includes("initialVectorReadyRef")],
+  ["Share URL priority helper tersedia", startupNavigation.includes("priority: hasFeature ? \"feature\" : hasRegion ? \"region\" : hasView ? \"view\" : \"default\"")],
+  ["Home fit terlindung oleh directed navigation", mapCanvas.includes("navigation.priority === \"default\"")],
+  ["Share view hanya dijalankan untuk priority view", geoPortal.includes("navigation.priority !== \"view\"")],
+  ["Share region menunggu vector ready", geoPortal.includes("[mapReady, regionFilter, startupVectorReady]")],
+  ["Feature deep-link retry setelah vector ready", geoPortal.includes("startupVectorReady,\n    regionFilter")],
+  ["Critical preload hanya mengambil response text", startupData.includes("return response.text()")],
+  ["Critical JSON parse ditunda sampai data diminta", startupData.includes("JSON.parse(text)")],
+  ["Warmup langsung saat reduced motion", intro.includes("requestMapWarmup();\n        await Promise.allSettled")],
+  ["Warmup langsung saat skip", intro.includes("const skip = () =>") && intro.includes("requestMapWarmup();\n    completedRef.current")],
+  ["Intro menunggu map + vector ready", intro.includes("mapReadyRef.current") && intro.includes("vectorReadyRef.current") && intro.includes("waitForStartupReady")],
+  ["Intro tidak menunggu texture optional", intro.includes("Texture quality is progressive") && !intro.includes("await Promise.allSettled([criticalReady, textureReady])")],
   ["Intro timeout/fallback aktif", intro.includes("THREE_LOAD_TIMEOUT_MS")],
   ["Exit fade singkat", intro.includes("EXIT_FADE_MS = 180")],
   ["Timeline cinematic diperpanjang", intro.includes("INTRO_TIMELINE_MS = 7200")],

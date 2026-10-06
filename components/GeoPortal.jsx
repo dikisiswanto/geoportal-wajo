@@ -29,6 +29,7 @@ import MapPerformance from "./geoportal/MapPerformance";
 import RegionComparisonPanel from "./geoportal/RegionComparisonPanel";
 import { IconDeviceDesktop } from "@tabler/icons-react";
 import { withAssetVersion } from "../lib/assetVersion";
+import { getStartupNavigationState } from "../lib/geo/startupNavigation";
 import GeoPortalIntro from "./GeoPortalIntro";
 
 const DEFAULT_VISIBLE = Object.freeze(
@@ -73,6 +74,7 @@ export default function GeoPortal() {
   const [startupLoading, setStartupLoading] = useState(true);
   const [startupIntroDone, setStartupIntroDone] = useState(false);
   const [startupMapWarmup, setStartupMapWarmup] = useState(false);
+  const [startupVectorReady, setStartupVectorReady] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [regionFilter, setRegionFilter] = useState("");
   const [focusAdmin, setFocusAdmin] = useState(null);
@@ -87,6 +89,10 @@ export default function GeoPortal() {
     getDesktopViewNoticeServerSnapshot
   );
   const [desktopViewNoticeOpen, setDesktopViewNoticeOpen] = useState(true);
+  const startupNavigationRef = useRef(null);
+  if (startupNavigationRef.current === null && typeof window !== "undefined") {
+    startupNavigationRef.current = getStartupNavigationState(window.location.search);
+  }
 
   const closeDesktopViewNotice = useCallback((remember = false) => {
     if (remember) {
@@ -141,9 +147,9 @@ export default function GeoPortal() {
   }, []);
 
   useEffect(() => {
-    if (!mapReady || !startupIntroDone) return;
+    if (!mapReady || !startupIntroDone || !startupVectorReady) return;
     setStartupLoading(false);
-  }, [mapReady, startupIntroDone]);
+  }, [mapReady, startupIntroDone, startupVectorReady]);
 
   const handleStartupMapWarmup = useCallback(() => {
     setStartupMapWarmup(true);
@@ -153,15 +159,19 @@ export default function GeoPortal() {
     setStartupIntroDone(true);
   }, []);
 
+  const handleStartupVectorReady = useCallback(() => {
+    setStartupVectorReady(true);
+  }, []);
+
   useEffect(() => {
     if (!mapReady) return;
-    const params = new URLSearchParams(window.location.search);
-    const lat = Number(params.get("lat"));
-    const lng = Number(params.get("lng"));
-    const zoom = Number(params.get("zoom"));
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      mapApi.current?.setView?.({ lat, lng, zoom: Number.isFinite(zoom) ? zoom : undefined });
-    }
+    const navigation = startupNavigationRef.current || getStartupNavigationState(window.location.search);
+    if (navigation.priority !== "view") return;
+    mapApi.current?.setView?.({
+      lat: navigation.lat,
+      lng: navigation.lng,
+      zoom: Number.isFinite(navigation.zoom) ? navigation.zoom : undefined
+    });
   }, [mapReady]);
 
   useEffect(() => {
@@ -178,8 +188,10 @@ export default function GeoPortal() {
 
   useEffect(() => {
     if (!mapReady || !regionFilter) return;
+    const navigation = startupNavigationRef.current || getStartupNavigationState(window.location.search);
+    if (navigation.priority === "feature") return;
     mapApi.current?.zoomToRegion?.(regionFilter);
-  }, [mapReady, regionFilter]);
+  }, [mapReady, regionFilter, startupVectorReady]);
 
   const updateMapQuery = useCallback((updates = {}) => {
     const url = new URL(window.location.href);
@@ -253,6 +265,7 @@ export default function GeoPortal() {
     requestedFeature,
     mapReady,
     layerData,
+    startupVectorReady,
     regionFilter,
     updateMapQuery
   ]);
@@ -1003,6 +1016,9 @@ export default function GeoPortal() {
             onPrintScale={setPrintScale}
             onPerformance={setMapPerformance}
             deferInitialVectorRender={!startupMapWarmup}
+            deferInitialLayerDataLoad={!startupMapWarmup}
+            deferInitialBasemap={!startupMapWarmup}
+            onInitialVectorReady={handleStartupVectorReady}
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}
