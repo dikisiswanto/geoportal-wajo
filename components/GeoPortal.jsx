@@ -437,6 +437,17 @@ export default function GeoPortal() {
     setLayerInfo(null);
   }, [updateMapQuery, visible]);
 
+  // Layer info uses the same visibility toggle as the catalog/active-layer UI.
+  // This keeps “Sembunyikan dari peta” from merely reopening/showing the layer.
+  const handleLayerInfoVisibility = useCallback((layer) => {
+    if (!layer) return;
+    if (visible[layer.id]) {
+      handleToggleLayer(layer);
+      return;
+    }
+    showLayerOnMap(layer);
+  }, [handleToggleLayer, showLayerOnMap, visible]);
+
   const zoomToLayer = useCallback((layer) => {
     setHasInteracted(true);
     setVisible((previous) => ({ ...previous, [layer.id]: true }));
@@ -1058,7 +1069,7 @@ export default function GeoPortal() {
             error={layerInfo ? errors[layerInfo.id] || "" : ""}
             open={Boolean(layerInfo)}
             onClose={closeLayerInfo}
-            onShowOnMap={() => layerInfo && showLayerOnMap(layerInfo)}
+            onShowOnMap={() => layerInfo && handleLayerInfoVisibility(layerInfo)}
             onZoomToLayer={zoomToLayer}
             onShare={() => handleShare(`data ${layerInfo?.title || "ini"}`)}
           />
