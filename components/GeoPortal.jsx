@@ -899,7 +899,7 @@ export default function GeoPortal() {
       </a>
 
       {startupLoading && (
-        <GeoPortalIntro mapReady={mapReady} onMapWarmup={handleStartupMapWarmup} onComplete={handleStartupIntroComplete} />
+        <GeoPortalIntro mapReady={mapReady} vectorReady={startupVectorReady} onMapWarmup={handleStartupMapWarmup} onComplete={handleStartupIntroComplete} />
       )}
 
       <GeoPortalHeader

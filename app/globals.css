@@ -1708,3 +1708,70 @@ a:focus-visible {
     transition: none;
   }
 }
+
+.geoportal-intro--fast .geoportal-intro__scene {
+  opacity: 0;
+}
+
+.geoportal-intro--fast .geoportal-intro__destination {
+  animation: geoportalIntroTarget 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.geoportal-intro__fast-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(42vw, 300px);
+  height: min(42vw, 300px);
+  transform: translate(-50%, -50%) rotate(-18deg);
+  border: 1px solid rgba(139, 220, 255, 0.12);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.geoportal-intro__fast-orbit span {
+  position: absolute;
+  left: 10%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #8bdcff;
+  box-shadow: 0 0 18px rgba(139, 220, 255, 0.95);
+}
+
+.geoportal-intro--fast .geoportal-intro__fast-orbit {
+  opacity: 1;
+  animation: geoportalIntroFastOrbit 1400ms linear infinite;
+}
+
+.geoportal-intro--fast .geoportal-intro__content {
+  animation: geoportalIntroFastEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes geoportalIntroFastOrbit {
+  from { transform: translate(-50%, -50%) rotate(-18deg); }
+  to { transform: translate(-50%, -50%) rotate(342deg); }
+}
+
+@keyframes geoportalIntroFastEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .geoportal-intro--fast .geoportal-intro__fast-orbit {
+    animation: none;
+  }
+}
+
+.geoportal-intro--checking .geoportal-intro__scene {
+  opacity: 0;
+}
+
+.geoportal-intro--checking .geoportal-intro__fast-orbit {
+  opacity: 1;
+  animation: geoportalIntroFastOrbit 1800ms linear infinite;
+}

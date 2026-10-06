@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { withAssetVersion } from "../lib/assetVersion";
 import { preloadCriticalGeoData } from "../lib/geo/startupData";
+import { getStartupExperienceMode, markStartupIntroSeen } from "../lib/geo/startupExperience";
 
 const EARTH_TEXTURE_URL = withAssetVersion("/intro/earth/earth-surface.jpg");
 const EARTH_HEIGHT_URL = withAssetVersion("/intro/earth/earth-height.jpg");
@@ -23,6 +24,8 @@ const MIN_INTRO_MS = 6500;
 const MAX_INTRO_MS = 7800;
 const EXIT_FADE_MS = 180;
 const THREE_LOAD_TIMEOUT_MS = 5000;
+const FAST_LOADER_MIN_MS = 320;
+const FAST_LOADER_TIMEOUT_MS = 12000;
 
 let threeLoadPromise = null;
 
@@ -80,10 +83,6 @@ function loadThree() {
     });
 
   return threeLoadPromise;
-}
-
-if (typeof window !== "undefined") {
-  loadThree().catch(() => null);
 }
 
 function disposeObject3D(object) {
@@ -396,40 +395,85 @@ function createStarField(THREE) {
   };
 
   const layers = [
-    { count: 1800, minRadius: 17, maxRadius: 28, size: 0.025, opacity: 0.78, color: 0xe6f2ff },
-    { count: 650, minRadius: 10, maxRadius: 18, size: 0.016, opacity: 0.42, color: 0x9ecfff }
+    { count: 1350, minRadius: 18, maxRadius: 30, minSize: 1.0, maxSize: 2.4, minOpacity: 0.34, maxOpacity: 0.92 },
+    { count: 450, minRadius: 12, maxRadius: 19, minSize: 0.72, maxSize: 1.65, minOpacity: 0.20, maxOpacity: 0.58 }
   ];
 
   layers.forEach((layer) => {
     const positions = new Float32Array(layer.count * 3);
+    const sizes = new Float32Array(layer.count);
+    const opacities = new Float32Array(layer.count);
+    const phases = new Float32Array(layer.count);
+
     for (let index = 0; index < layer.count; index += 1) {
       const radius = layer.minRadius + random() * (layer.maxRadius - layer.minRadius);
       const theta = random() * Math.PI * 2;
       const z = random() * 2 - 1;
-      const r = Math.sqrt(1 - z * z);
-      positions[index * 3] = radius * r * Math.cos(theta);
+      const radial = Math.sqrt(1 - z * z);
+      positions[index * 3] = radius * radial * Math.cos(theta);
       positions[index * 3 + 1] = radius * z;
-      positions[index * 3 + 2] = radius * r * Math.sin(theta);
+      positions[index * 3 + 2] = radius * radial * Math.sin(theta);
+      sizes[index] = layer.minSize + random() * (layer.maxSize - layer.minSize);
+      opacities[index] = layer.minOpacity + random() * (layer.maxOpacity - layer.minOpacity);
+      phases[index] = random() * Math.PI * 2;
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({
-      color: layer.color,
-      size: layer.size,
-      sizeAttenuation: true,
+    geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute("aOpacity", new THREE.BufferAttribute(opacities, 1));
+    geometry.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 }
+      },
+      vertexShader: `
+        attribute float aSize;
+        attribute float aOpacity;
+        attribute float aPhase;
+        varying float vOpacity;
+        varying float vPhase;
+
+        void main() {
+          vOpacity = aOpacity;
+          vPhase = aPhase;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = aSize;
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying float vOpacity;
+        varying float vPhase;
+
+        void main() {
+          vec2 centered = gl_PointCoord - vec2(0.5);
+          float radius = length(centered);
+          float softEdge = 1.0 - smoothstep(0.34, 0.50, radius);
+          float core = 1.0 - smoothstep(0.02, 0.20, radius);
+          float twinkle = 0.88 + 0.12 * sin(uTime * 0.9 + vPhase);
+          vec3 white = mix(vec3(0.62, 0.76, 0.92), vec3(1.0), core * 0.82);
+          float alpha = softEdge * vOpacity * twinkle;
+
+          if (alpha < 0.01) discard;
+          gl_FragColor = vec4(white, alpha);
+        }
+      `,
       transparent: true,
-      opacity: layer.opacity,
       depthWrite: false,
+      depthTest: true,
       blending: THREE.AdditiveBlending
     });
+
     const points = new THREE.Points(geometry, material);
+    points.userData.starMaterial = material;
     groups.push(points);
   });
 
   return groups;
 }
-
 function buildScene(THREE, host) {
   const width = Math.max(host.clientWidth, window.innerWidth || 1);
   const height = Math.max(host.clientHeight, window.innerHeight || 1);
@@ -511,7 +555,6 @@ function buildScene(THREE, host) {
   const starGroups = createStarField(THREE);
   starGroups.forEach((group) => scene.add(group));
 
-  let cosmicBackdrop = null;
   let sunSprite = null;
   let clouds = null;
   let flatBridge = null;
@@ -602,22 +645,7 @@ function buildScene(THREE, host) {
 
     if (cosmicTexture) {
       cosmicTexture.colorSpace = THREE.SRGBColorSpace;
-      if (!cosmicBackdrop) {
-        cosmicBackdrop = new THREE.Mesh(
-          new THREE.SphereGeometry(55, 64, 32),
-          new THREE.MeshBasicMaterial({
-            map: cosmicTexture,
-            side: THREE.BackSide,
-            depthWrite: false,
-            toneMapped: false
-          })
-        );
-        cosmicBackdrop.renderOrder = -20;
-        scene.add(cosmicBackdrop);
-      } else {
-        cosmicBackdrop.material.map = cosmicTexture;
-        cosmicBackdrop.material.needsUpdate = true;
-      }
+      scene.background = cosmicTexture;
       cosmicFallback.visible = false;
     }
 
@@ -746,10 +774,14 @@ function buildScene(THREE, host) {
     if (flatBridgeMaterial) {
       flatBridgeMaterial.uniforms.uOpacity.value = easeOutCubic(clamp((timeline - 0.89) / 0.09, 0, 1)) * 0.92;
     }
-    if (cosmicBackdrop) cosmicBackdrop.rotation.y += deltaSeconds * 0.0011;
     if (sunSprite) sunSprite.material.opacity = 0.34 * (1 - flattenProgress);
-    if (starGroups[0]) starGroups[0].rotation.y += deltaSeconds * 0.0008;
-    if (starGroups[1]) starGroups[1].rotation.y -= deltaSeconds * 0.0012;
+    starGroups.forEach((group, index) => {
+      if (index === 0) group.rotation.y += deltaSeconds * 0.00045;
+      else group.rotation.y -= deltaSeconds * 0.00065;
+      if (group.userData.starMaterial?.uniforms?.uTime) {
+        group.userData.starMaterial.uniforms.uTime.value = elapsed / 1000;
+      }
+    });
 
     // Once the camera enters the handoff window, deliberately reduce Three.js
     // render pressure so Leaflet/GeoJSON can hydrate without competing for
@@ -775,6 +807,9 @@ function buildScene(THREE, host) {
       window.cancelAnimationFrame(frameId);
       resizeObserver?.disconnect?.();
       window.removeEventListener("resize", resize);
+      const backgroundTexture = scene.background;
+      scene.background = null;
+      backgroundTexture?.dispose?.();
       disposeObject3D(scene);
       renderer.dispose();
       renderer.forceContextLoss?.();
@@ -792,6 +827,7 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
   const exitTimerRef = useRef(null);
   const [closing, setClosing] = useState(false);
   const [status, setStatus] = useState("Menyiapkan peta Wajo…");
+  const [experienceMode, setExperienceMode] = useState("checking");
 
   useEffect(() => {
     mapReadyRef.current = mapReady;
@@ -801,6 +837,10 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
     vectorReadyRef.current = vectorReady;
   }, [vectorReady]);
 
+  useEffect(() => {
+    setExperienceMode(getStartupExperienceMode(window.location.search));
+  }, []);
+
   const requestMapWarmup = () => {
     if (mapWarmupRequestedRef.current) return;
     mapWarmupRequestedRef.current = true;
@@ -808,6 +848,8 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
   };
 
   useEffect(() => {
+    if (experienceMode === "checking") return undefined;
+
     let cancelled = false;
     let sceneHandle = null;
     let finishTimer = null;
@@ -842,6 +884,9 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
     const finish = () => {
       if (cancelled || completedRef.current) return;
       completedRef.current = true;
+      if (experienceMode === "cinematic") {
+        markStartupIntroSeen();
+      }
       clearTimers();
       setClosing(true);
       exitTimerRef.current = window.setTimeout(() => {
@@ -850,14 +895,22 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
     };
 
     const run = async () => {
-      const criticalReady = preloadCriticalGeoData().catch(() => null);
+      const mode = experienceMode;
       const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       const startedAt = performance.now();
+      const criticalReady = preloadCriticalGeoData().catch(() => null);
 
-      if (reducedMotion) {
+      if (mode === "fast") {
+        setStatus("Menyiapkan peta interaktif…");
         requestMapWarmup();
-        await Promise.allSettled([criticalReady, waitForStartupReady(4500)]);
-        if (!cancelled) finish();
+        await Promise.allSettled([
+          criticalReady,
+          waitForStartupReady(FAST_LOADER_TIMEOUT_MS)
+        ]);
+        if (cancelled) return;
+
+        const remaining = Math.max(0, FAST_LOADER_MIN_MS - (performance.now() - startedAt));
+        finishTimer = window.setTimeout(() => finish(), remaining);
         return;
       }
 
@@ -888,13 +941,11 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
         window.setTimeout(() => setStatus("Membuka peta interaktif…"), 6450)
       ];
 
-      // Texture quality is progressive: the fallback Earth may render immediately,
-      // while local textures can finish in the background. Intro completion must
-      // never wait on optional visual assets.
       void criticalReady;
       void (sceneHandle?.texturePromise ?? Promise.resolve());
 
-      await waitForStartupReady(Math.max(0, MAX_INTRO_MS - (performance.now() - startedAt)));
+      const cinematicTimeout = reducedMotion ? 4500 : Math.max(0, MAX_INTRO_MS - (performance.now() - startedAt));
+      await waitForStartupReady(cinematicTimeout);
       requestMapWarmup();
 
       const elapsed = performance.now() - startedAt;
@@ -902,7 +953,6 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
       finishTimer = window.setTimeout(finish, remaining);
       maxTimer = window.setTimeout(finish, Math.max(0, MAX_INTRO_MS - elapsed));
     };
-
     run();
 
     return () => {
@@ -911,11 +961,14 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
       window.clearTimeout(exitTimerRef.current);
       sceneHandle?.stop?.();
     };
-  }, [onComplete, onMapWarmup]);
+  }, [experienceMode, onComplete, onMapWarmup]);
 
   const skip = () => {
-    if (completedRef.current) return;
+    if (completedRef.current || experienceMode === "checking") return;
     requestMapWarmup();
+    if (experienceMode === "cinematic") {
+      markStartupIntroSeen();
+    }
     completedRef.current = true;
     setClosing(true);
     window.clearTimeout(exitTimerRef.current);
@@ -924,12 +977,13 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
 
   return (
     <div
-      className={`geoportal-intro ${closing ? "geoportal-intro--closing" : ""}`}
+      className={`geoportal-intro geoportal-intro--${experienceMode} ${closing ? "geoportal-intro--closing" : ""}`}
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
       <div ref={hostRef} className="geoportal-intro__scene" aria-hidden="true" />
+      <div className="geoportal-intro__fast-orbit" aria-hidden="true"><span /></div>
       <div className="geoportal-intro__space-glow" aria-hidden="true" />
       <div className="geoportal-intro__vignette" aria-hidden="true" />
 
@@ -959,10 +1013,13 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
           <span>{status}</span>
         </div>
 
+      </div>
+
+      {experienceMode === "cinematic" && (
         <button type="button" className="geoportal-intro__skip" onClick={skip}>
           Lewati intro
         </button>
-      </div>
+      )}
 
       <div className="geoportal-intro__credit">Globe visualization · GeoPortal Kabupaten Wajo</div>
     </div>

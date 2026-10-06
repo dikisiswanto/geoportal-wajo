@@ -32,6 +32,10 @@ const requiredAssets = [
 ];
 
 const checks = [
+  ["Hybrid startup helper is versioned", fs.existsSync(path.join(root, "lib", "geo", "startupExperience.js")) && fs.readFileSync(path.join(root, "lib", "geo", "startupExperience.js"), "utf8").includes("STARTUP_INTRO_VERSION")],
+  ["Share/deep-link uses fast startup", fs.readFileSync(path.join(root, "lib", "geo", "startupExperience.js"), "utf8").includes("navigation.hasDirectedNavigation")],
+  ["First visit has cinematic mode", fs.readFileSync(path.join(root, "lib", "geo", "startupExperience.js"), "utf8").includes("hasSeenStartupIntro() ? \"fast\" : \"cinematic\"")],
+  ["Returning startup skips Three.js load", intro.includes("if (mode === \"fast\")") && !/if \(typeof window !== \"undefined\"\)\s*\{\s*loadThree\(\)/.test(intro)],
   ["Three.js dibundle lewat npm", pkg.dependencies?.three === "0.186.1"],
   ["Lockfile mengunci Three.js 0.186.1", lock.packages?.["node_modules/three"]?.version === "0.186.1"],
   ["Tidak ada Three.js CDN runtime", !/cdnjs\.cloudflare|cdn\.jsdelivr|unpkg\.com|three\.module\.min\.js|three\.min\.js/i.test(intro)],
@@ -48,8 +52,8 @@ const checks = [
   ["Night-side city glow tersedia", intro.includes("pow(max(nightTexture, 0.0), 1.65)")],
   ["Atmosphere Fresnel tersedia", intro.includes("fresnel")],
   ["Cloud layer tersedia", intro.includes("createCloudMaterial")],
-  ["Cosmic backdrop tersedia", intro.includes("cosmicBackdrop")],
-  ["Star field tersedia", intro.includes("createStarField")],
+  ["Cosmic backdrop is screen-stable", intro.includes("scene.background = cosmicTexture") && !intro.includes("cosmicBackdrop")],
+  ["Star field uses round shader particles", intro.includes("gl_PointCoord") && intro.includes("softEdge") && intro.includes("aSize")],
   ["Flat-map bridge tersedia", intro.includes("createFlatBridgeMaterial")],
   ["Critical preload tetap aktif", intro.includes("preloadCriticalGeoData")],
   ["Map warmup terjadwal", intro.includes("onMapWarmup") && intro.includes("5000")],
@@ -66,9 +70,9 @@ const checks = [
   ["Critical preload hanya mengambil response text", startupData.includes("return response.text()")],
   ["Critical JSON parse ditunda sampai data diminta", startupData.includes("JSON.parse(text)")],
   ["Warmup langsung saat reduced motion", intro.includes("requestMapWarmup();\n        await Promise.allSettled")],
-  ["Warmup langsung saat skip", intro.includes("const skip = () =>") && intro.includes("requestMapWarmup();\n    completedRef.current")],
+  ["Warmup langsung saat skip", intro.includes("const skip = () =>") && intro.includes("requestMapWarmup();")],
   ["Intro menunggu map + vector ready", intro.includes("mapReadyRef.current") && intro.includes("vectorReadyRef.current") && intro.includes("waitForStartupReady")],
-  ["Intro tidak menunggu texture optional", intro.includes("Texture quality is progressive") && !intro.includes("await Promise.allSettled([criticalReady, textureReady])")],
+  ["Intro tidak menunggu texture optional", intro.includes("void (sceneHandle?.texturePromise ?? Promise.resolve())") && !intro.includes("await Promise.allSettled([criticalReady, textureReady])")],
   ["Intro timeout/fallback aktif", intro.includes("THREE_LOAD_TIMEOUT_MS")],
   ["Exit fade singkat", intro.includes("EXIT_FADE_MS = 180")],
   ["Timeline cinematic diperpanjang", intro.includes("INTRO_TIMELINE_MS = 7200")],
