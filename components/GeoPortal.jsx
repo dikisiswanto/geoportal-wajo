@@ -22,6 +22,7 @@ import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
 import PrintPreflightNotice from "./geoportal/PrintPreflightNotice";
 import { getPrintPreflight } from "./geoportal/map/print";
+import { isAdministrativeLayerId } from "./geoportal/map/context";
 import MapHint from "./geoportal/MapHint";
 import MapOrientation from "./geoportal/MapOrientation";
 import MapPerformance from "./geoportal/MapPerformance";
@@ -353,6 +354,8 @@ export default function GeoPortal() {
     const contextRegion = String(payload.contextRegion ?? "").trim();
     const contextAdminFeature = payload.contextAdminFeature;
     const hasContextPromotion = Boolean(contextRegion && contextAdminFeature);
+    const geometryType = String(payload.feature?.geometry?.type ?? "");
+    const isPointFeature = geometryType === "Point" || geometryType === "MultiPoint";
 
     let shouldSetRegion = false;
     if (hasContextPromotion) {
@@ -375,6 +378,19 @@ export default function GeoPortal() {
     } else if (adminLayerId === "adm-kabupaten") {
       setFocusAdmin({ type: "kabupaten", feature: payload.feature });
       setRegionFilter("");
+    }
+
+    // Keep the pre-patch point behavior: selecting a point may promote the
+    // administrative context, but the camera must remain focused on the
+    // actual point instead of settling on the kecamatan bounds. Wait for the
+    // context render to settle before refitting the point.
+    if (isPointFeature) {
+      window.requestAnimationFrame(() => {
+        mapApi.current?.zoomToFeature?.({
+          layer: payload.layer,
+          feature: payload.feature
+        });
+      });
     }
 
     const activeIds = layers
@@ -468,8 +484,19 @@ export default function GeoPortal() {
     setHasInteracted(true);
 
     if (result.kind === "region") {
-      handleRegionFilter(result.key || result.label);
+      const canonicalRegion = canonicalizeRegion(result.key || result.label);
+      handleRegionFilter(canonicalRegion);
       setSidebarOpen(false);
+
+      // Search result wilayah behaves like a real map selection: open the
+      // inspector, highlight the boundary, switch context, and fit the map
+      // after the panel has had a chance to render.
+      window.requestAnimationFrame(() => {
+        mapApi.current?.selectFeature?.("adm-kecamatan", canonicalRegion, {
+          zoom: true,
+          maxZoom: 15
+        });
+      });
       return;
     }
 
@@ -488,8 +515,9 @@ export default function GeoPortal() {
         "adm-desa": true
       }));
       setSidebarOpen(false);
-      setRequestedFeature(selectionKey);
-      const requestKey = `adm-desa:${String(result.key)}`;
+      const villageSelectionKey = String(result.selectionKey ?? result.key);
+      setRequestedFeature(villageSelectionKey);
+      const requestKey = `adm-desa:${villageSelectionKey}`;
       requestedFeatureContextRef.current = {
         requestKey,
         region: canonicalRegion,
@@ -568,9 +596,15 @@ export default function GeoPortal() {
       ambiguous: indexedAmbiguous
     };
 
-    const layerGeometry = String(layer.geometry || "").toLowerCase();
-    if (feature && layerGeometry.includes("point")) {
-      const geometryContext = featureSearchRegionContext(feature, layerData["adm-kecamatan"]);
+    if (feature && !isAdministrativeLayerId(layer.id)) {
+      // Spatial context is needed for Point, LineString and Polygon alike.
+      // featureSearchRegionContext is cached and uses sampled geometry, so
+      // this remains limited to an explicit search selection instead of the
+      // normal render path.
+      const geometryContext = featureSearchRegionContext(
+        feature,
+        layerData["adm-kecamatan"]
+      );
       if (geometryContext.region || geometryContext.ambiguous) {
         context = geometryContext;
       }

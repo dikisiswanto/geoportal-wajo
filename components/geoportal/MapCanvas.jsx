@@ -36,7 +36,8 @@ import {
 import {
   layerPaneName,
   ensureLayerPane,
-  applyActiveAdministrationStyles
+  applyActiveAdministrationStyles,
+  setFeatureSelectedVisual
 } from "./map/layerStyles";
 
 const MapCanvas = forwardRef(function MapCanvas(
@@ -754,12 +755,18 @@ const MapCanvas = forwardRef(function MapCanvas(
       previousMapContextKeyRef.current !== null &&
       previousMapContextKeyRef.current !== contextKey;
 
-    if (contextChanged) {
-      selectedRef.current?.setStyle?.(
-        selectedRef.current?.__wajoBaseStyle || {}
-      );
-      selectedRef.current?.setZIndexOffset?.(
-        selectedRef.current?.__wajoBaseZIndexOffset ?? 0
+    let selectionToRestore = null;
+    if (contextChanged && selectedRef.current) {
+      const previousSelected = selectedRef.current;
+      selectionToRestore = {
+        layerId: previousSelected.__wajoLayerId,
+        featureKey: previousSelected.__wajoFeatureKey,
+        featureSearchId: previousSelected.__wajoFeatureSearchId
+      };
+
+      previousSelected.setStyle?.(previousSelected.__wajoBaseStyle || {});
+      previousSelected.setZIndexOffset?.(
+        previousSelected.__wajoBaseZIndexOffset ?? 0
       );
       selectedRef.current = null;
     }
@@ -850,6 +857,39 @@ const MapCanvas = forwardRef(function MapCanvas(
       loadedData.current,
       { focusAdmin, regionFilter }
     );
+
+    // Context promotion can rebuild a thematic layer. Rebind the current
+    // selection to its new Leaflet feature so the panel and selected outline
+    // stay in sync without keeping stale layer references alive.
+    if (selectionToRestore?.layerId) {
+      const nextGroup = layerRefs.current[selectionToRestore.layerId];
+      const nextLayerConfig = layers.find((item) => item.id === selectionToRestore.layerId);
+      let nextSelected = null;
+
+      nextGroup?.eachLayer?.((candidate) => {
+        if (nextSelected) return;
+        const matchesSearchId = selectionToRestore.featureSearchId != null &&
+          String(candidate?.__wajoFeatureSearchId ?? "") === String(selectionToRestore.featureSearchId);
+        const matchesFeatureKey = selectionToRestore.featureKey != null &&
+          String(candidate?.__wajoFeatureKey ?? "") === String(selectionToRestore.featureKey);
+        if (matchesSearchId || matchesFeatureKey) nextSelected = candidate;
+      });
+
+      if (nextSelected && nextLayerConfig) {
+        const geometryType = nextSelected?.__wajoFeature?.geometry?.type;
+        const isPolygon = geometryType === "Polygon" ||
+          geometryType === "MultiPolygon" ||
+          nextSelected instanceof L.Polygon;
+        setFeatureSelectedVisual(
+          nextSelected,
+          nextLayerConfig,
+          nextSelected.__wajoBaseStyle || {},
+          isPolygon,
+          true
+        );
+        selectedRef.current = nextSelected;
+      }
+    }
 
     const adminLayer = layerRefs.current["adm-kecamatan"];
     if (
@@ -977,6 +1017,24 @@ const MapCanvas = forwardRef(function MapCanvas(
           ...(latlng ? { latlng } : {}),
           __wajoSuppressContextPromotion: Boolean(options?.suppressContextPromotion)
         });
+
+        if (options?.zoom) {
+          window.requestAnimationFrame(() => {
+            const currentBounds = target.getBounds?.();
+            const targetBounds = currentBounds?.isValid?.() ? currentBounds : null;
+            if (!targetBounds || !mapRef.current) return;
+
+            mapRef.current.fitBounds(
+              targetBounds,
+              getInteractiveMapFitOptions(mapRef.current, {
+                horizontal: 44,
+                vertical: 44,
+                maxZoom: options?.maxZoom ?? 17,
+                animate: false
+              })
+            );
+          });
+        }
         return true;
       },
 
