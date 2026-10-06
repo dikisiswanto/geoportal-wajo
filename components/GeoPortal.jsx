@@ -27,9 +27,9 @@ import MapHint from "./geoportal/MapHint";
 import MapOrientation from "./geoportal/MapOrientation";
 import MapPerformance from "./geoportal/MapPerformance";
 import RegionComparisonPanel from "./geoportal/RegionComparisonPanel";
-import Image from "next/image";
 import { IconDeviceDesktop } from "@tabler/icons-react";
 import { withAssetVersion } from "../lib/assetVersion";
+import GeoPortalIntro from "./GeoPortalIntro";
 
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
@@ -71,6 +71,8 @@ export default function GeoPortal() {
   const [status, setStatus] = useState("Memuat peta…");
   const [mapReady, setMapReady] = useState(false);
   const [startupLoading, setStartupLoading] = useState(true);
+  const [startupIntroDone, setStartupIntroDone] = useState(false);
+  const [startupMapWarmup, setStartupMapWarmup] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [regionFilter, setRegionFilter] = useState("");
   const [focusAdmin, setFocusAdmin] = useState(null);
@@ -139,14 +141,17 @@ export default function GeoPortal() {
   }, []);
 
   useEffect(() => {
-    if (!mapReady) return undefined;
+    if (!mapReady || !startupIntroDone) return;
+    setStartupLoading(false);
+  }, [mapReady, startupIntroDone]);
 
-    const timer = window.setTimeout(() => {
-      setStartupLoading(false);
-    }, 250);
+  const handleStartupMapWarmup = useCallback(() => {
+    setStartupMapWarmup(true);
+  }, []);
 
-    return () => window.clearTimeout(timer);
-  }, [mapReady]);
+  const handleStartupIntroComplete = useCallback(() => {
+    setStartupIntroDone(true);
+  }, []);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -327,6 +332,9 @@ export default function GeoPortal() {
       mapApi.current?.clearSelection?.();
       setSelected(null);
       setInspectOpen(false);
+      requestedFeatureHandledRef.current = "";
+      requestedFeatureContextRef.current = null;
+      setRequestedFeature("");
     }
 
     setVisible((previous) => ({ ...previous, [layer.id]: nextVisible }));
@@ -356,6 +364,16 @@ export default function GeoPortal() {
     const hasContextPromotion = Boolean(contextRegion && contextAdminFeature);
     const geometryType = String(payload.feature?.geometry?.type ?? "");
     const isPointFeature = geometryType === "Point" || geometryType === "MultiPoint";
+    const cameraMaxZoom =
+      adminLayerId === "adm-kecamatan"
+        ? 13
+        : adminLayerId === "adm-desa"
+          ? 15
+          : adminLayerId === "adm-kabupaten"
+            ? 12
+            : isPointFeature
+              ? 17
+              : 16;
 
     let shouldSetRegion = false;
     if (hasContextPromotion) {
@@ -380,18 +398,23 @@ export default function GeoPortal() {
       setRegionFilter("");
     }
 
-    // Keep the pre-patch point behavior: selecting a point may promote the
-    // administrative context, but the camera must remain focused on the
-    // actual point instead of settling on the kecamatan bounds. Wait for the
-    // context render to settle before refitting the point.
-    if (isPointFeature) {
-      window.requestAnimationFrame(() => {
-        mapApi.current?.zoomToFeature?.({
+    // All selections share one camera path. Points retain the pre-patch
+    // behavior (fit the actual point with the existing max zoom), while
+    // lines/polygons/admin areas fit their own geometry with a sensible
+    // layer-specific zoom cap. Running on the next frame lets the inspector
+    // become visible so its occlusion is included by the map fit helper.
+    window.requestAnimationFrame(() => {
+      mapApi.current?.zoomToFeature?.(
+        {
           layer: payload.layer,
           feature: payload.feature
-        });
-      });
-    }
+        },
+        {
+          maxZoom: cameraMaxZoom,
+          animate: false
+        }
+      );
+    });
 
     const activeIds = layers
       .filter((layer) => visible[layer.id] || (hasContextPromotion && layer.id === "adm-desa"))
@@ -468,6 +491,9 @@ export default function GeoPortal() {
     const canonicalRegion = canonicalizeRegion(region);
     setHasInteracted(true);
     setSelected(null);
+    requestedFeatureHandledRef.current = "";
+    requestedFeatureContextRef.current = null;
+    setRequestedFeature("");
     if (canonicalRegion) {
       setVisible((previous) => ({ ...previous, "adm-desa": true }));
     }
@@ -501,12 +527,11 @@ export default function GeoPortal() {
 
       // Search result wilayah behaves like a real map selection: open the
       // inspector, highlight the boundary, switch context, and fit the map
-      // after the panel has had a chance to render.
+      // after the panel has had a chance to render. Camera positioning is
+      // centralized in handleFeatureSelect/zoomToFeature to avoid a second
+      // fit operation.
       window.requestAnimationFrame(() => {
-        mapApi.current?.selectFeature?.("adm-kecamatan", canonicalRegion, {
-          zoom: true,
-          maxZoom: 15
-        });
+        mapApi.current?.selectFeature?.("adm-kecamatan", canonicalRegion);
       });
       return;
     }
@@ -861,33 +886,7 @@ export default function GeoPortal() {
       </a>
 
       {startupLoading && (
-        <div
-          className="fixed inset-0 z-[5000] grid place-items-center bg-white"
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <div className="flex flex-col items-center text-center px-6">
-            <Image
-              src={withAssetVersion("/brand/logo-kabupaten-wajo.png")}
-              alt="Lambang Kabupaten Wajo"
-              width={82}
-              height={82}
-              priority
-              className="h-20 w-20 object-contain"
-            />
-            <p className="mt-4 map-text-micro font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Pemerintah Kabupaten Wajo
-            </p>
-            <p className="mt-1 map-text-compact font-semibold text-slate-900">
-              Peta Interaktif Kabupaten Wajo
-            </p>
-            <div className="mt-5 flex items-center gap-2 map-text-micro text-slate-500">
-              <span className="size-3.5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700" aria-hidden="true" />
-              Menyiapkan peta…
-            </div>
-          </div>
-        </div>
+        <GeoPortalIntro mapReady={mapReady} onMapWarmup={handleStartupMapWarmup} onComplete={handleStartupIntroComplete} />
       )}
 
       <GeoPortalHeader
@@ -1003,6 +1002,7 @@ export default function GeoPortal() {
             onViewChange={handleMapViewChange}
             onPrintScale={setPrintScale}
             onPerformance={setMapPerformance}
+            deferInitialVectorRender={!startupMapWarmup}
             regionFilter={regionFilter}
             focusAdmin={focusAdmin}
             retryTokens={retryTokens}

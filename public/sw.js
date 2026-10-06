@@ -9,6 +9,12 @@ const APP_SHELL = [
   "/pwa/icon-512.png",
   "/pwa/icon-512-maskable.png",
   "/brand/logo-kabupaten-wajo.png",
+  "/intro/earth/earth-surface.jpg",
+  "/intro/earth/earth-height.jpg",
+  "/intro/earth/earth-clouds.png",
+  "/intro/earth/earth-night.jpg",
+  "/intro/earth/cosmic-bg.jpg",
+  "/intro/earth/sun-glow.png",
   "/offline.html"
 ];
 

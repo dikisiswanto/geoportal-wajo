@@ -21,14 +21,16 @@
     "validate:search:region-context": "node scripts/validate-search-region-context.js",
     "validate:search:index": "node scripts/validate-search-index.js",
     "validate:search:query-cases": "node scripts/validate-search-query-cases.js",
-    "validate:search:intent": "node scripts/validate-search-intent.js"
+    "validate:search:intent": "node scripts/validate-search-intent.js",
+    "validate:intro": "node scripts/validate-intro.js"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.48.0",
     "leaflet": "^1.9.4",
     "next": "^16.3.7",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "tailwindcss": "^4.1.13",

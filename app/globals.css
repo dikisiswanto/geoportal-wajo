@@ -1434,3 +1434,277 @@ a:focus-visible {
     animation: none;
   }
 }
+
+/* Cinematic GeoPortal entrance. The overlay is disposable: once the initial
+   map is ready, it fades away and leaves Leaflet fully interactive underneath. */
+.geoportal-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(39, 89, 145, 0.16), transparent 27%),
+    radial-gradient(circle at 78% 22%, rgba(79, 45, 115, 0.10), transparent 22%),
+    radial-gradient(circle at 50% 96%, rgba(4, 24, 44, 0.52), transparent 58%),
+    #010207;
+  color: #eaf3fb;
+  opacity: 1;
+  transition: opacity 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.geoportal-intro--closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.geoportal-intro__scene,
+.geoportal-intro__scene::before {
+  position: absolute;
+  inset: 0;
+}
+
+.geoportal-intro__scene {
+  overflow: hidden;
+}
+
+.geoportal-intro__scene::before {
+  content: "";
+  inset: auto;
+  width: min(78vw, 680px);
+  height: min(78vw, 680px);
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(73, 160, 216, 0.07), rgba(11, 33, 54, 0.06) 42%, transparent 73%);
+  filter: blur(16px);
+  opacity: 0.62;
+}
+
+.geoportal-intro__space-glow {
+  position: absolute;
+  left: -10%;
+  top: -25%;
+  width: 62%;
+  height: 75%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(92, 170, 224, 0.16), rgba(30, 84, 124, 0.05) 42%, transparent 72%);
+  filter: blur(28px);
+  transform: rotate(-18deg);
+  animation: geoportalIntroSpaceDrift 8s ease-in-out infinite alternate;
+}
+
+.geoportal-intro-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.geoportal-intro__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 30%, rgba(1, 5, 12, 0.12) 60%, rgba(1, 5, 12, 0.86) 100%),
+    linear-gradient(180deg, rgba(1, 5, 12, 0.66), transparent 28%, transparent 72%, rgba(1, 5, 12, 0.72));
+}
+
+.geoportal-intro__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(24px, 4vw, 44px);
+}
+
+.geoportal-intro__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(92vw, 520px);
+  animation: geoportalIntroRise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.geoportal-intro__logo {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.34));
+}
+
+.geoportal-intro__eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(213, 229, 241, 0.72);
+}
+
+.geoportal-intro__title {
+  margin-top: 3px;
+  font-size: clamp(0.95rem, 1.7vw, 1.14rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #f8fbff;
+}
+
+.geoportal-intro__destination {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  display: flex;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  font-size: clamp(0.62rem, 1.4vw, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(224, 239, 248, 0.82);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.56);
+  animation: geoportalIntroTarget 1600ms 1800ms ease both;
+}
+
+.geoportal-intro__destination-line {
+  width: 24px;
+  height: 1px;
+  background: rgba(139, 220, 255, 0.8);
+  box-shadow: 0 0 14px rgba(139, 220, 255, 0.48);
+}
+
+.geoportal-intro__status {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(74px, 11vh, 96px);
+  display: flex;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  color: rgba(216, 231, 241, 0.68);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
+}
+
+.geoportal-intro__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #8bdcff;
+  box-shadow: 0 0 14px rgba(139, 220, 255, 0.86);
+  animation: geoportalIntroPulse 1100ms ease-in-out infinite;
+}
+
+.geoportal-intro__skip {
+  position: absolute;
+  right: clamp(24px, 4vw, 44px);
+  bottom: clamp(22px, 4vw, 36px);
+  border: 1px solid rgba(203, 224, 238, 0.2);
+  border-radius: 999px;
+  background: rgba(8, 18, 29, 0.34);
+  padding: 8px 13px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(223, 237, 247, 0.78);
+  backdrop-filter: blur(10px);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.geoportal-intro__skip:hover {
+  border-color: rgba(203, 224, 238, 0.34);
+  background: rgba(8, 18, 29, 0.58);
+  color: #ffffff;
+}
+
+.geoportal-intro__credit {
+  position: absolute;
+  right: clamp(22px, 4vw, 44px);
+  bottom: 6px;
+  z-index: 2;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  color: rgba(210, 226, 238, 0.38);
+}
+
+@keyframes geoportalIntroRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes geoportalIntroTarget {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes geoportalIntroPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes geoportalIntroSpaceDrift {
+  from {
+    transform: translate3d(-1%, -1%, 0) rotate(-18deg) scale(0.98);
+  }
+  to {
+    transform: translate3d(4%, 5%, 0) rotate(-12deg) scale(1.05);
+  }
+}
+
+@media (max-width: 640px) {
+  .geoportal-intro__content {
+    padding: 20px;
+  }
+
+  .geoportal-intro__identity {
+    align-items: flex-start;
+  }
+
+  .geoportal-intro__logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .geoportal-intro__destination {
+    top: 58%;
+    font-size: 0.58rem;
+  }
+
+  .geoportal-intro__credit {
+    max-width: 62%;
+    line-height: 1.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .geoportal-intro,
+  .geoportal-intro__identity,
+  .geoportal-intro__destination,
+  .geoportal-intro__status-dot,
+  .geoportal-intro__space-glow {
+    animation: none;
+    transition: none;
+  }
+}

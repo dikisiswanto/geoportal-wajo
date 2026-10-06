@@ -11,9 +11,14 @@ Aplikasi menyediakan peta administrasi, data tematik, jaringan, fasilitas publik
 - JavaScript / JSX
 - Tailwind CSS 4
 - Leaflet
+- Three.js (intro 3D globe, runtime-loaded and pinned) · runtime lokal dibundle oleh Next.js
 - GeoJSON
 - Tabler Icons
 - PWA / Service Worker
+
+## Intro Cinematic
+
+Halaman utama memakai intro singkat berbasis Three.js untuk perjalanan visual dari globe dunia menuju Kabupaten Wajo. Selama intro berjalan, batas Kabupaten dan Kecamatan diprefetch secara paralel sehingga MapCanvas dapat mengambil promise data yang sama tanpa melakukan request ulang. Three.js dan renderer 3D hanya hidup selama intro lalu dibersihkan. Earth imagery menggunakan NASA/GSFC Scientific Visualization Studio.
 
 ## Fitur Utama
 

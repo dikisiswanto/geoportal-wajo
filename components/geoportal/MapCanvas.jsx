@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { withAssetVersion } from "../../lib/assetVersion";
+import { getStartupLayerDataPromise } from "../../lib/geo/startupData";
 import { normalizeRegionName } from "../../lib/geo/region";
 import { createGeoJsonLayer } from "./map/geoLayer";
 import { bindMapInteraction } from "./map/interaction";
@@ -53,6 +54,7 @@ const MapCanvas = forwardRef(function MapCanvas(
     onViewChange,
     onPrintScale,
     onPerformance,
+    deferInitialVectorRender = false,
     regionFilter,
     focusAdmin = null,
     retryTokens = {}
@@ -186,20 +188,26 @@ const MapCanvas = forwardRef(function MapCanvas(
         true
       );
 
-      const request = fetch(
+      const startupDataPromise = getStartupLayerDataPromise(layer.file);
+      const request = (startupDataPromise || fetch(
         withAssetVersion(`/geo-data/${encodeURIComponent(layer.file)}`),
         {
           cache: "force-cache"
         }
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(
-              `HTTP ${response.status}`
-            );
+      ))
+        .then((responseOrData) => {
+          if (responseOrData && typeof responseOrData.json === "function") {
+            const response = responseOrData;
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}`
+              );
+            }
+
+            return response.json();
           }
 
-          return response.json();
+          return responseOrData;
         })
         .then((data) => {
           loadedData.current[layer.id] = data;
@@ -747,7 +755,7 @@ const MapCanvas = forwardRef(function MapCanvas(
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
-    if (!map || !L) return;
+    if (!map || !L || deferInitialVectorRender) return;
     const renderStartedAt = typeof performance !== "undefined" ? performance.now() : 0;
 
     const contextKey = getAdminContextKey(regionFilter, focusAdmin);
@@ -919,7 +927,7 @@ const MapCanvas = forwardRef(function MapCanvas(
         featureCount
       });
     }
-  }, [layers, visible, renderVersion, regionFilter, focusAdmin, resolveAdministrativeTarget]);
+  }, [layers, visible, renderVersion, regionFilter, focusAdmin, resolveAdministrativeTarget, deferInitialVectorRender]);
 
   useImperativeHandle(
     ref,
@@ -1268,11 +1276,13 @@ const MapCanvas = forwardRef(function MapCanvas(
       },
 
       zoomToFeature: (
-        selection
+        selection,
+        options = {}
       ) => {
         if (
           !selection ||
-          !mapRef.current
+          !mapRef.current ||
+          !selection.feature
         ) {
           return;
         }
@@ -1292,8 +1302,8 @@ const MapCanvas = forwardRef(function MapCanvas(
                 getInteractiveMapFitOptions(mapRef.current, {
                   horizontal: 44,
                   vertical: 44,
-                  maxZoom: 17,
-                  animate: false
+                  maxZoom: Number.isFinite(options.maxZoom) ? options.maxZoom : 17,
+                  animate: Boolean(options.animate)
                 })
               );
             }
