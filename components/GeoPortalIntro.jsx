@@ -7,6 +7,7 @@ import { preloadCriticalGeoData } from "../lib/geo/startupData";
 import { getStartupExperienceMode, markStartupIntroSeen } from "../lib/geo/startupExperience";
 
 const EARTH_TEXTURE_URL = withAssetVersion("/intro/earth/earth-surface.jpg");
+const FAST_EARTH_URL = withAssetVersion("/intro/earth/earth-fast-wajo.png");
 const EARTH_HEIGHT_URL = withAssetVersion("/intro/earth/earth-height.jpg");
 const EARTH_CLOUDS_URL = withAssetVersion("/intro/earth/earth-clouds.png");
 const EARTH_NIGHT_URL = withAssetVersion("/intro/earth/earth-night.jpg");
@@ -992,17 +993,10 @@ export default function GeoPortalIntro({ onComplete, onMapWarmup, mapReady = fal
         <div className="geoportal-intro__fast-stars" />
         <div
           className="geoportal-intro__fast-earth"
-          style={{ backgroundImage: `url(${EARTH_TEXTURE_URL})` }}
+          style={{ backgroundImage: `url(${FAST_EARTH_URL})` }}
         >
-          <span
-            className="geoportal-intro__fast-earth-clouds"
-            style={{ backgroundImage: `url(${EARTH_CLOUDS_URL})` }}
-          />
-          <span className="geoportal-intro__fast-earth-night"
-            style={{ backgroundImage: `url(${EARTH_NIGHT_URL})` }}
-          />
           <span className="geoportal-intro__fast-earth-atmosphere" />
-          <span className="geoportal-intro__fast-earth-target">Wajo</span>
+          <span className="geoportal-intro__fast-earth-target" aria-hidden="true" />
         </div>
         <span
           className="geoportal-intro__fast-sun"
