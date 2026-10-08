@@ -3,12 +3,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconDatabase, IconLoader2, IconMapPin, IconSearch } from "@tabler/icons-react";
 import { layers } from "../../../lib/layers";
-import { REGION_SUMMARY, REGIONS } from "../../../lib/geo/regionSummary";
+import { REGIONS } from "../../../lib/geo/regions";
+import { withAssetVersion } from "../../../lib/assetVersion";
 import { normalizeRegionName, regionDisplayName } from "../../../lib/geo/region";
 
 const MIN_QUERY_LENGTH = 2;
 const MAX_RESULTS = 9;
 const MAX_VILLAGE_RESULTS = 3;
+
+let searchIndexPromise;
+let regionSearchIndexPromise;
+
+function loadSearchIndex() {
+  if (!searchIndexPromise) {
+    searchIndexPromise = fetch(withAssetVersion("/search-index.json"), { cache: "force-cache" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .catch((error) => {
+        searchIndexPromise = undefined;
+        throw error;
+      });
+  }
+  return searchIndexPromise;
+}
+
+function loadRegionSearchIndex() {
+  if (!regionSearchIndexPromise) {
+    regionSearchIndexPromise = fetch(withAssetVersion("/region-search-index.json"), { cache: "force-cache" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .catch((error) => {
+        regionSearchIndexPromise = undefined;
+        throw error;
+      });
+  }
+  return regionSearchIndexPromise;
+}
 
 const QUERY_ALIASES = new Map([
   ["sdn", ["sdn", "sd"]],
@@ -494,15 +528,15 @@ function mentionedRegionNames(query) {
   return REGIONS.filter((region) => nameMentioned(queryTokens, region));
 }
 
-function mentionedVillageNames(query) {
+function mentionedVillageNames(query, regionIndex) {
   const queryTokens = tokenize(query);
-  const villages = REGION_SUMMARY?.["batas-desa-kelurahan.geojson"]?.villages || [];
+  const villages = regionIndex?.villages || [];
   return villages
     .filter((village) => nameMentioned(queryTokens, village.name))
     .slice(0, 8);
 }
 
-function parseQuery(query) {
+function parseQuery(query, regionIndex) {
   const rawTokens = tokenize(query);
   const intents = new Set();
 
@@ -522,7 +556,7 @@ function parseQuery(query) {
   }
 
   const contextRegions = mentionedRegionNames(normalizedQuery);
-  const contextVillages = mentionedVillageNames(normalizedQuery);
+  const contextVillages = mentionedVillageNames(normalizedQuery, regionIndex);
   const intentTokens = new Set(rawTokens.filter((token) => INTENT_TOKEN_MAP.has(token)));
 
   const entityTokens = rawTokens.filter((token) => !STOP_WORDS.has(token) && !intentTokens.has(token));
@@ -710,8 +744,8 @@ function regionResult(region, parsedQuery) {
   };
 }
 
-function villageResults(query, parsedQuery) {
-  const summary = REGION_SUMMARY?.["batas-desa-kelurahan.geojson"] || {};
+function villageResults(query, parsedQuery, regionIndex) {
+  const summary = regionIndex || {};
   const villages = summary.villages || [];
   const regionByCode = new Map(
     (summary.regions || []).map((item) => [String(item.code || "").trim(), String(item.name || "").trim()])
@@ -767,22 +801,33 @@ function resultSubtitle(result) {
 export default function MapSearchResults({ query = "", onSelect }) {
   const [index, setIndex] = useState(null);
   const [loadError, setLoadError] = useState(false);
+  const [regionIndex, setRegionIndex] = useState({ regions: [], villages: [] });
 
   const normalized = normalizeQuery(query);
   const loading = normalized.length >= MIN_QUERY_LENGTH && !index && !loadError;
   const catalog = useMemo(() => buildSearchCatalog(index || []), [index]);
 
+  const shouldLoadIndexes = normalized.length >= MIN_QUERY_LENGTH && !loadError;
+
   useEffect(() => {
-    if (normalized.length < MIN_QUERY_LENGTH || index || loadError) return undefined;
+    if (!shouldLoadIndexes) return undefined;
 
     let disposed = false;
-    fetch("/search-index.json", { cache: "force-cache" })
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json();
+    loadRegionSearchIndex()
+      .then((regionData) => {
+        if (disposed) return;
+        setRegionIndex({
+          regions: Array.isArray(regionData?.regions) ? regionData.regions : [],
+          villages: Array.isArray(regionData?.villages) ? regionData.villages : []
+        });
       })
+      .catch(() => {
+        if (!disposed) setRegionIndex({ regions: [], villages: [] });
+      });
+
+    loadSearchIndex()
       .then((data) => {
-        if (!disposed) setIndex(Array.isArray(data?.items) ? data.items : []);
+        if (!disposed) setIndex((current) => current || (Array.isArray(data?.items) ? data.items : []));
       })
       .catch(() => {
         if (!disposed) setLoadError(true);
@@ -791,12 +836,12 @@ export default function MapSearchResults({ query = "", onSelect }) {
     return () => {
       disposed = true;
     };
-  }, [index, loadError, normalized]);
+  }, [shouldLoadIndexes]);
 
   const results = useMemo(() => {
     if (normalized.length < MIN_QUERY_LENGTH) return [];
 
-    const parsedQuery = parseQuery(normalized);
+    const parsedQuery = parseQuery(normalized, regionIndex);
     const adminOnlyQuery = parsedQuery.intents.includes("administration") && parsedQuery.entityTokens.length === 0 && !parsedQuery.regions.length && !parsedQuery.villages.length;
     const regionResults = parsedQuery.wantsVillage ? [] : REGIONS
       .filter((region) => {
@@ -810,7 +855,7 @@ export default function MapSearchResults({ query = "", onSelect }) {
     const hasThematicIntent = parsedQuery.intents.some((intent) => intent !== "administration");
     const villageItems = hasThematicIntent && !parsedQuery.wantsVillage
       ? []
-      : villageResults(normalized, parsedQuery)
+      : villageResults(normalized, parsedQuery, regionIndex)
       .filter((item) => {
         if (parsedQuery.wantsRegion && !parsedQuery.wantsVillage) return false;
         if (parsedQuery.wantsVillage && parsedQuery.villages.length) {
@@ -956,7 +1001,7 @@ export default function MapSearchResults({ query = "", onSelect }) {
         return true;
       })
       .slice(0, MAX_RESULTS);
-  }, [catalog, normalized]);
+  }, [catalog, normalized, regionIndex]);
 
   if (normalized.length < MIN_QUERY_LENGTH) return null;
 

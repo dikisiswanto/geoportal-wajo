@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { IconArrowsExchange, IconChartBar, IconX } from "@tabler/icons-react";
-import { REGIONS, REGION_SUMMARY } from "../../lib/geo/regionSummary";
+import { REGIONS } from "../../lib/geo/regions";
 import { regionDisplayName } from "../../lib/geo/region";
 import useSheetPresence from "./useSheetPresence";
 import useSheetSwipe from "./useSheetSwipe";
 
-function regionEntryCount(file, region) {
+function regionEntryCount(file, region, regionSummary = {}) {
   const normalized = String(region ?? "").trim().toLowerCase();
-  return REGION_SUMMARY?.[file]?.regions?.find((item) => String(item.name ?? "").trim().toLowerCase() === normalized)?.count ?? 0;
+  return regionSummary?.[file]?.regions?.find((item) => String(item.name ?? "").trim().toLowerCase() === normalized)?.count ?? 0;
 }
 
 function districtFeatureByName(data, name) {
@@ -38,7 +38,7 @@ function Metric({ label, left, right }) {
   );
 }
 
-export default function RegionComparisonPanel({ open, initialRegion = "", districtData, onClose }) {
+export default function RegionComparisonPanel({ open, initialRegion = "", districtData, regionSummary = {}, onClose }) {
   const { rendered, visible } = useSheetPresence(open);
   const { swipeHandlers, swipeStyle } = useSheetSwipe(onClose, open);
   const defaultFirst = initialRegion && REGIONS.includes(initialRegion) ? initialRegion : REGIONS[0];
@@ -47,10 +47,10 @@ export default function RegionComparisonPanel({ open, initialRegion = "", distri
   const [second, setSecond] = useState(defaultSecond);
 
   const metrics = useMemo(() => {
-    const files = Object.keys(REGION_SUMMARY || {}).filter((file) => file !== "batas-kecamatan.geojson" && file !== "batas-desa-kelurahan.geojson");
-    const leftDataCount = files.reduce((total, file) => total + regionEntryCount(file, first), 0);
-    const rightDataCount = files.reduce((total, file) => total + regionEntryCount(file, second), 0);
-    const villages = REGION_SUMMARY["batas-desa-kelurahan.geojson"]?.regions || [];
+    const files = Object.keys(regionSummary || {}).filter((file) => file !== "batas-kecamatan.geojson" && file !== "batas-desa-kelurahan.geojson");
+    const leftDataCount = files.reduce((total, file) => total + regionEntryCount(file, first, regionSummary), 0);
+    const rightDataCount = files.reduce((total, file) => total + regionEntryCount(file, second, regionSummary), 0);
+    const villages = regionSummary["batas-desa-kelurahan.geojson"]?.regions || [];
     const leftVillages = villages.find((item) => item.name === first)?.count ?? 0;
     const rightVillages = villages.find((item) => item.name === second)?.count ?? 0;
     return {
@@ -61,7 +61,7 @@ export default function RegionComparisonPanel({ open, initialRegion = "", distri
       dataLeft: leftDataCount,
       dataRight: rightDataCount
     };
-  }, [districtData, first, second]);
+  }, [districtData, first, second, regionSummary]);
 
   if (!rendered) return null;
 

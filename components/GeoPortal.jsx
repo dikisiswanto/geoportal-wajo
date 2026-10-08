@@ -5,7 +5,8 @@ import { groupOrder, layers } from "../lib/layers";
 import { buildKecamatanLegend } from "../lib/geo/format";
 import { kecamatanColor } from "../lib/geo/styles";
 import { DATA_SUMMARY } from "../lib/geo/dataSummary";
-import { REGION_SUMMARY, REGIONS } from "../lib/geo/regionSummary";
+import { REGIONS } from "../lib/geo/regions";
+import { loadRegionSummary } from "../lib/geo/regionSummaryClient";
 import { getRelatedLayerIds, getRegionCount } from "../lib/geo/relations";
 import { featureSearchRegionContext, normalizeRegionName, regionDisplayName } from "../lib/geo/region";
 import { featureKey, featureSearchId } from "../lib/geo/format";
@@ -61,11 +62,13 @@ export default function GeoPortal() {
   const [printNotice, setPrintNotice] = useState(null);
   const [errors, setErrors] = useState({});
   const [layerData, setLayerData] = useState({});
+  const [regionSummary, setRegionSummary] = useState({});
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("Semua");
   const [legendOpen, setLegendOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopLayoutReady, setDesktopLayoutReady] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
   const [layerInfo, setLayerInfo] = useState(null);
   const [coords, setCoords] = useState("—");
@@ -180,6 +183,7 @@ export default function GeoPortal() {
       const requestedCatalog = new URLSearchParams(window.location.search).get("catalog") === "1";
       setSidebarOpen(media.matches || requestedCatalog);
       setLegendOpen(media.matches);
+      setDesktopLayoutReady(true);
     };
     sync();
     media.addEventListener?.("change", sync);
@@ -876,6 +880,24 @@ export default function GeoPortal() {
   }, []);
 
   const selectedRegion = selected?.regionName || "";
+
+  useEffect(() => {
+    const selectedLayerId = selected?.layer?.id;
+    const isAdministrativeSelection = ["adm-kabupaten", "adm-kecamatan", "adm-desa"].includes(selectedLayerId);
+    if (!(regionFilter || layerInfo?.file || comparisonOpen || selectedRegion || isAdministrativeSelection)) return undefined;
+
+    let cancelled = false;
+    loadRegionSummary()
+      .then((summary) => {
+        if (!cancelled) setRegionSummary(summary);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [regionFilter, layerInfo?.file, comparisonOpen, selectedRegion, selected?.layer?.id]);
+
   const relatedItems = useMemo(() => {
     if (!selected?.layer) return [];
     return getRelatedLayerIds(selected.layer.id)
@@ -883,11 +905,11 @@ export default function GeoPortal() {
       .filter(Boolean)
       .map((layer) => ({
         layer,
-        count: selectedRegion ? getRegionCount(REGION_SUMMARY, layer.file, selectedRegion) : 0
+        count: selectedRegion ? getRegionCount(regionSummary, layer.file, selectedRegion) : 0
       }))
       .filter(({ count }) => count > 0)
       .slice(0, 5);
-  }, [selected, selectedRegion]);
+  }, [selected, selectedRegion, regionSummary]);
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-white">
@@ -914,7 +936,7 @@ export default function GeoPortal() {
         onSearchResult={handleSearchResult}
       />
 
-      <main id="map" className="relative flex min-h-0 flex-1 overflow-hidden">
+      <main id="map" className={`relative flex min-h-0 flex-1 overflow-hidden ${sidebarOpen || !desktopLayoutReady ? "lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]" : ""}`}>
         <LayerCatalog
           open={sidebarOpen}
           focusLayerId={catalogLayerId}
@@ -935,7 +957,7 @@ export default function GeoPortal() {
           onInfo={handleLayerInfo}
           layerData={layerData}
           dataSummary={DATA_SUMMARY}
-          regionSummary={REGION_SUMMARY}
+          regionSummary={regionSummary}
           onClose={closeCatalog}
         />
 
@@ -948,7 +970,7 @@ export default function GeoPortal() {
           />
         )}
 
-        <div className="print-map-stage relative min-w-0 flex-1">
+        <div className="print-map-stage relative min-w-0 min-h-0 flex-1 lg:col-start-2 lg:row-start-1">
           {showDesktopViewNotice && desktopViewNoticeOpen && (
             <div className="desktop-best-view-modal fixed inset-0 z-[1800] grid place-items-center px-4" role="dialog" aria-modal="true" aria-labelledby="desktop-view-notice-title">
               <button
@@ -991,7 +1013,7 @@ export default function GeoPortal() {
               </div>
             </div>
           )}
-          <ActiveLayersBar activeLayers={activeLayers} layerData={layerData} dataSummary={DATA_SUMMARY} regionFilter={regionFilter} regionSummary={REGION_SUMMARY} onSelectLayer={handleActiveLayerSelect} onCloseLayer={hideActiveLayer} onClearRegion={() => handleRegionFilter("")} />
+          <ActiveLayersBar activeLayers={activeLayers} layerData={layerData} dataSummary={DATA_SUMMARY} regionFilter={regionFilter} regionSummary={regionSummary} onSelectLayer={handleActiveLayerSelect} onCloseLayer={hideActiveLayer} onClearRegion={() => handleRegionFilter("")} />
           {!hasInteracted && !layerInfo && !selected && (
             <MapHint
               step={activeLayers.length ? "feature" : "layer"}
@@ -1078,7 +1100,7 @@ export default function GeoPortal() {
             layer={layerInfo}
             data={layerInfo ? layerData[layerInfo.id] : null}
             summary={layerInfo ? DATA_SUMMARY[layerInfo.file] : null}
-            regionSummary={layerInfo ? REGION_SUMMARY[layerInfo.file] : null}
+            regionSummary={layerInfo ? regionSummary[layerInfo.file] || null : null}
             regionFilter={regionFilter}
             active={layerInfo ? !!visible[layerInfo.id] : false}
             loading={layerInfo ? !!loading[layerInfo.id] : false}
@@ -1096,6 +1118,7 @@ export default function GeoPortal() {
             onZoom={() => mapApi.current?.zoomToFeature?.(selected)}
             onShare={() => handleShare(`informasi ${selected?.layer?.title || "ini"}`)}
             regionName={selectedRegion}
+            regionSummary={regionSummary}
             relatedItems={relatedItems}
             onExploreRelated={handleExploreRelated}
             onExploreAdminLayer={handleExploreAdminLayer}
@@ -1106,6 +1129,7 @@ export default function GeoPortal() {
             open={comparisonOpen}
             initialRegion={selected?.regionName || regionFilter || (selected?.layer?.id === "adm-kecamatan" ? selected?.feature?.properties?.Kecamatan : "")}
             districtData={layerData["adm-kecamatan"]}
+            regionSummary={regionSummary}
             onClose={() => setComparisonOpen(false)}
           />
           <MobileActions

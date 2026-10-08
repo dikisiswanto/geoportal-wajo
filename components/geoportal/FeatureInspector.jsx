@@ -90,6 +90,7 @@ export default function FeatureInspector({
   onZoom,
   onShare,
   regionName,
+  regionSummary = {},
   relatedItems = [],
   onExploreRelated,
   onExploreAdminLayer,
@@ -111,7 +112,7 @@ export default function FeatureInspector({
   const adminType = getAdministrativeType(currentSelected.layer?.id);
   const isAdministrative = Boolean(adminType);
   const groups = inspectorGroups(currentSelected.layer, properties);
-  const adminStats = isAdministrative ? getAdministrativeStats(currentSelected.layer, currentSelected.feature) : null;
+  const adminStats = isAdministrative ? getAdministrativeStats(currentSelected.layer, currentSelected.feature, regionSummary) : null;
   const hasAdminStats = Boolean(adminStats?.layers?.length);
   const districtName = String(
     properties.Kecamatan ??

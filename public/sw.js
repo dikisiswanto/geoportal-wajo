@@ -9,12 +9,6 @@ const APP_SHELL = [
   "/pwa/icon-512.png",
   "/pwa/icon-512-maskable.png",
   "/brand/logo-kabupaten-wajo.png",
-  "/intro/earth/earth-surface.jpg",
-  "/intro/earth/earth-height.jpg",
-  "/intro/earth/earth-clouds.png",
-  "/intro/earth/earth-night.jpg",
-  "/intro/earth/cosmic-bg.jpg",
-  "/intro/earth/sun-glow.png",
   "/offline.html"
 ];
 
@@ -96,6 +90,21 @@ self.addEventListener("fetch", (event) => {
 
         return network;
       })
+    );
+    return;
+  }
+
+  // Cinematic textures are cached on demand, not during service-worker installation.
+  // This avoids competing with the first page render for bandwidth on cold visits.
+  if (url.pathname.startsWith("/intro/earth/")) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      }))
     );
     return;
   }

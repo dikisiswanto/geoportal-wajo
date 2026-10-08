@@ -5,6 +5,9 @@ const { layers } = require("../lib/layers.js");
 const ROOT = process.cwd();
 const DATA_DIR = path.join(ROOT, "public", "geo-data");
 const OUT_FILE = path.join(ROOT, "lib", "geo", "regionSummary.js");
+const REGIONS_OUT_FILE = path.join(ROOT, "lib", "geo", "regions.js");
+const SUMMARY_JSON_FILE = path.join(ROOT, "public", "region-summary.json");
+const SEARCH_REGION_JSON_FILE = path.join(ROOT, "public", "region-search-index.json");
 const ADMIN_FILES = new Set([
   "batas-kabupaten.geojson",
   "batas-kecamatan.geojson",
@@ -113,7 +116,17 @@ for (const file of files) {
   };
 }
 
-const header = `// GENERATED FILE. Jalankan \"npm run sync:data:region\" atau \"npm run build\" setelah GeoJSON berubah.\n`;
-const body = `const REGIONS = ${JSON.stringify(regions.map((item) => item.name), null, 2)};\n\nconst REGION_SUMMARY = ${JSON.stringify(summary, null, 2)};\n\nmodule.exports = { REGIONS, REGION_SUMMARY };\n`;
+const regionNames = regions.map((item) => item.name);
+const regionSearchIndex = {
+  regions: (summary["batas-desa-kelurahan.geojson"]?.regions ?? []).map(({ code, name }) => ({ code, name })),
+  villages: villages.map(({ code, name, kecamatanCode }) => ({ code, name, kecamatanCode })),
+};
+const header = `// GENERATED FILE. Jalankan "npm run sync:data:region" atau "npm run build" setelah GeoJSON berubah.\n`;
+const body = `const REGIONS = ${JSON.stringify(regionNames, null, 2)};\n\nconst REGION_SUMMARY = ${JSON.stringify(summary, null, 2)};\n\nmodule.exports = { REGIONS, REGION_SUMMARY };\n`;
+fs.mkdirSync(path.dirname(SUMMARY_JSON_FILE), { recursive: true });
 fs.writeFileSync(OUT_FILE, `${header}${body}`);
+fs.writeFileSync(REGIONS_OUT_FILE, `// GENERATED FILE. Do not edit manually.\nexport const REGIONS = ${JSON.stringify(regionNames, null, 2)};\n`);
+fs.writeFileSync(SUMMARY_JSON_FILE, JSON.stringify(summary));
+fs.writeFileSync(SEARCH_REGION_JSON_FILE, JSON.stringify(regionSearchIndex));
 console.log(`Ringkasan wilayah dibuat: ${Object.keys(summary).length} dataset, ${regions.length} kecamatan, ${villages.length} desa/kelurahan.`);
+console.log(`Aset wilayah deferred dibuat: region-summary.json + region-search-index.json.`);

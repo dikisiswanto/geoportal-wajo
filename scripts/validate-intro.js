@@ -77,7 +77,7 @@ const checks = [
   ["Exit fade singkat", intro.includes("EXIT_FADE_MS = 180")],
   ["Timeline cinematic diperpanjang", intro.includes("INTRO_TIMELINE_MS = 7200")],
   ["Intro assets mendapat cache header", nextConfig.includes('source: "/intro/:path*"')],
-  ["Intro assets masuk PWA shell", sw.includes("/intro/earth/cosmic-bg.jpg") && sw.includes("/intro/earth/sun-glow.png")],
+  ["Intro textures are cached on demand, not during SW install", !sw.includes('"/intro/earth/cosmic-bg.jpg",') && !sw.includes('"/intro/earth/sun-glow.png",') && sw.includes('url.pathname.startsWith("/intro/earth/")')],
   ["Loader CDN lama sudah dihapus", !fs.existsSync(path.join(root, "public", "vendor", "geoportal-three-loader.js"))]
 ];
 

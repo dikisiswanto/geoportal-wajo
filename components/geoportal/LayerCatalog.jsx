@@ -70,7 +70,7 @@ export default function LayerCatalog({
   };
 
   return (
-    <aside className={`layer-catalog-sheet sheet-panel sheet-panel-left absolute inset-x-0 bottom-0 z-[1400] flex h-[min(72dvh,560px)] w-full flex-col rounded-t-2xl border-t border-slate-200 bg-white shadow-[0_-12px_32px_rgba(15,23,42,0.10)] sm:inset-y-0 sm:left-0 sm:bottom-auto sm:h-auto sm:w-[340px] sm:rounded-none sm:rounded-r-xl sm:border-r sm:border-t-0 sm:shadow-[8px_0_24px_rgba(15,23,42,0.04)] lg:relative lg:w-[340px] lg:rounded-none lg:border-r-0 lg:shadow-none ${sheetVisible ? "sheet-panel-visible" : "sheet-panel-hidden"}`} aria-label="Daftar data peta" style={swipeStyle}>
+    <aside className={`layer-catalog-sheet sheet-panel sheet-panel-left absolute inset-x-0 bottom-0 z-[1400] flex h-[min(72dvh,560px)] w-full flex-col rounded-t-2xl border-t border-slate-200 bg-white shadow-[0_-12px_32px_rgba(15,23,42,0.10)] sm:inset-y-0 sm:left-0 sm:bottom-auto sm:h-auto sm:w-[340px] sm:rounded-none sm:rounded-r-xl sm:border-r sm:border-t-0 sm:shadow-[8px_0_24px_rgba(15,23,42,0.04)] lg:relative lg:col-start-1 lg:row-start-1 lg:h-full lg:w-[340px] lg:rounded-none lg:border-r-0 lg:shadow-none ${sheetVisible ? "sheet-panel-visible" : "sheet-panel-hidden"}`} aria-label="Daftar data peta" style={swipeStyle}>
       <div className="border-b border-slate-200 px-3 pb-2 pt-2">
         <div className="mx-auto mb-1.5 h-1 w-9 rounded-full bg-slate-200 sm:hidden touch-none" aria-hidden="true" {...swipeHandlers} />
         <div>
