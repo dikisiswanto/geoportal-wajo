@@ -16,6 +16,8 @@ import LayerCatalog from "./geoportal/LayerCatalog";
 import MapCanvas from "./geoportal/MapCanvas";
 import MapControls from "./geoportal/MapControls";
 import LegendPanel from "./geoportal/LegendPanel";
+import PrintLegend from "./geoportal/PrintLegend";
+import PrintPreflightNotice from "./geoportal/PrintPreflightNotice";
 import MapStatus from "./geoportal/MapStatus";
 import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
@@ -41,15 +43,6 @@ const RegionComparisonPanel = dynamic(() => import("./geoportal/RegionComparison
   ssr: false,
   loading: () => null
 });
-const PrintPreflightNotice = dynamic(() => import("./geoportal/PrintPreflightNotice"), {
-  ssr: false,
-  loading: () => null
-});
-const PrintLegend = dynamic(() => import("./geoportal/PrintLegend"), {
-  ssr: false,
-  loading: () => null
-});
-
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
 );
@@ -105,7 +98,6 @@ export default function GeoPortal() {
   const [retryTokens, setRetryTokens] = useState({});
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [comparisonPanelMounted, setComparisonPanelMounted] = useState(false);
-  const [printLegendMounted, setPrintLegendMounted] = useState(false);
   const [mapPerformance, setMapPerformance] = useState(null);
   const showDesktopViewNotice = useSyncExternalStore(
     subscribeDesktopViewNotice,
@@ -888,21 +880,13 @@ export default function GeoPortal() {
 
     setPrintNotice(null);
     setStatus("Menyiapkan peta untuk dicetak…");
-    setPrintLegendMounted(true);
-
-    const printLegendChunk = import("./geoportal/PrintLegend").catch(() => null);
     const prepared = await mapApi.current?.preparePrint?.();
-    await printLegendChunk;
     if (prepared === false) {
       return;
     }
-
-    await new Promise((resolve) => {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(resolve);
-      });
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.print());
     });
-    window.print();
   }, [visible]);
 
   const handleMapReadyStatus = useCallback((nextStatus) => {
@@ -1180,7 +1164,7 @@ export default function GeoPortal() {
           />
         </div>
 
-        {printLegendMounted && <PrintLegend
+        <PrintLegend
           activeLayers={activeLayers}
           layerData={layerData}
           kecamatanLegend={printKecamatanLegend}
@@ -1190,7 +1174,7 @@ export default function GeoPortal() {
           selectedRegion={selectedRegion}
           regionFilter={regionFilter}
           printScale={printScale}
-        />}
+        />
       </main>
     </div>
   );

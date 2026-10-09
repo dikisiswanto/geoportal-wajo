@@ -64,6 +64,21 @@ check(
     geoPortal.includes('dynamic(() => import("./geoportal/RegionComparisonPanel")')
 );
 check(
+  "Print legend is statically available before opening print preview",
+  geoPortal.includes('import PrintLegend from "./geoportal/PrintLegend";') &&
+    !geoPortal.includes('dynamic(() => import("./geoportal/PrintLegend")')
+);
+check(
+  "Print legend stays mounted so print CSS can reveal it reliably",
+  /<PrintLegend\s+[\s\S]*?printScale={printScale}\s*\/>/.test(geoPortal) &&
+    !geoPortal.includes("printLegendMounted")
+);
+check(
+  "Print waits for map preparation and two animation frames",
+  geoPortal.includes("await mapApi.current?.preparePrint?.()") &&
+    geoPortal.includes("window.requestAnimationFrame(() => {\n      window.requestAnimationFrame(() => window.print());")
+);
+check(
   "Startup navigation ref is accessed only after mount, not during render",
   geoPortal.includes("const startupNavigationRef = useRef(null);") &&
     geoPortal.includes("startupNavigationRef.current = getStartupNavigationState(window.location.search);") &&
