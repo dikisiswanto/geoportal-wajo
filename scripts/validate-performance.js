@@ -49,6 +49,39 @@ check(
 );
 
 const geoPortal = read("components/GeoPortal.jsx");
+const intro = read("components/GeoPortalIntro.jsx");
+const sceneRuntime = read("components/geoportal/GeoPortalCinematicScene.js");
+check(
+  "Heavy cinematic scene is separated from lightweight intro component",
+  intro.length < 12000 && !intro.includes("function buildScene(") &&
+    intro.includes('import("./geoportal/GeoPortalCinematicScene")') &&
+    sceneRuntime.includes("export { buildScene }")
+);
+check(
+  "Detail panels are dynamically imported",
+  geoPortal.includes('dynamic(() => import("./geoportal/FeatureInspector")') &&
+    geoPortal.includes('dynamic(() => import("./geoportal/LayerInfoPanel")') &&
+    geoPortal.includes('dynamic(() => import("./geoportal/RegionComparisonPanel")')
+);
+check(
+  "Startup navigation ref is accessed only after mount, not during render",
+  geoPortal.includes("const startupNavigationRef = useRef(null);") &&
+    geoPortal.includes("startupNavigationRef.current = getStartupNavigationState(window.location.search);") &&
+    !geoPortal.includes("if (startupNavigationRef.current === null")
+);
+check(
+  "Deep-link priority and camera effects remain in place",
+  geoPortal.includes("getStartupNavigationState(window.location.search)") &&
+    geoPortal.includes('navigation.priority !== "view"') &&
+    geoPortal.includes('if (navigation.priority === "feature") return;') &&
+    geoPortal.includes("setRequestedFeature(requestedFeatureParam)")
+);
+check(
+  "Feature deep-link selection mounts its inspector panel",
+  geoPortal.includes("setInspectorPanelMounted(true);") &&
+    geoPortal.includes("startupVectorReady") &&
+    geoPortal.includes("requestedFeature")
+);
 check(
   "Desktop map reserves catalog space before hydration settles",
   geoPortal.includes("!desktopLayoutReady") && geoPortal.includes("lg:grid-cols-[340px_minmax(0,1fr)]")

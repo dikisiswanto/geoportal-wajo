@@ -9,6 +9,9 @@ const packagePath = path.join(root, "package.json");
 const lockPath = path.join(root, "package-lock.json");
 const assetDir = path.join(root, "public", "intro", "earth");
 const intro = fs.readFileSync(introPath, "utf8");
+const sceneRuntimePath = path.join(root, "components", "geoportal", "GeoPortalCinematicScene.js");
+const sceneRuntime = fs.readFileSync(sceneRuntimePath, "utf8");
+const introFull = `${intro}\n${sceneRuntime}`;
 const mapCanvasPath = path.join(root, "components", "geoportal", "MapCanvas.jsx");
 const mapCanvas = fs.readFileSync(mapCanvasPath, "utf8");
 const geoPortalPath = path.join(root, "components", "GeoPortal.jsx");
@@ -39,25 +42,27 @@ const checks = [
   ["Three.js dibundle lewat npm", pkg.dependencies?.three === "0.186.1"],
   ["Lockfile mengunci Three.js 0.186.1", lock.packages?.["node_modules/three"]?.version === "0.186.1"],
   ["Tidak ada Three.js CDN runtime", !/cdnjs\.cloudflare|cdn\.jsdelivr|unpkg\.com|three\.module\.min\.js|three\.min\.js/i.test(intro)],
-  ["Import Three.js lokal", intro.includes('import("three")')],
+  ["Import Three.js lokal", intro.includes('import("three")') && intro.includes('import("./geoportal/GeoPortalCinematicScene")') && intro.includes("if (mode === \"fast\")")],
+  ["Cinematic scene runtime is dynamically imported only in cinematic path", intro.includes('import("./geoportal/GeoPortalCinematicScene")') && sceneRuntime.includes("export { buildScene }")],
+  ["Fast loader component excludes the heavy shader builder", !intro.includes("function buildScene(") && !intro.includes("function createEarthSurfaceMaterial")],
   ["Tidak ada NASA image URL runtime", !/svs\.gsfc\.nasa\.gov|bluemarble-1024/i.test(intro)],
-  ["Texture surface lokal", intro.includes('withAssetVersion("/intro/earth/earth-surface.jpg")')],
-  ["Texture cosmic lokal", intro.includes('withAssetVersion("/intro/earth/cosmic-bg.jpg")')],
-  ["Texture sun glow lokal", intro.includes('withAssetVersion("/intro/earth/sun-glow.png")')],
-  ["Kamera dikunci ke Wajo", intro.includes("wajoQuaternion")],
-  ["Jalur orientasi bertahap Indonesia-Sulawesi-Wajo", intro.includes("indonesiaQuaternion") && intro.includes("sulawesiQuaternion")],
-  ["Animasi memakai quaternion slerp", intro.includes("slerpQuaternions")],
-  ["Animasi memakai delta time", intro.includes("deltaSeconds")],
-  ["Permukaan Earth memiliki day/night shader", intro.includes("uNightMap") && intro.includes("smoothstep(-0.24, 0.18, lightDot)")],
-  ["Night-side city glow tersedia", intro.includes("pow(max(nightTexture, 0.0), 1.65)")],
-  ["Atmosphere Fresnel tersedia", intro.includes("fresnel")],
-  ["Cloud layer tersedia", intro.includes("createCloudMaterial")],
-  ["Cosmic backdrop is screen-stable", intro.includes("scene.background = cosmicTexture") && !intro.includes("cosmicBackdrop")],
-  ["Star field uses round shader particles", intro.includes("gl_PointCoord") && intro.includes("softEdge") && intro.includes("aSize")],
-  ["Flat-map bridge tersedia", intro.includes("createFlatBridgeMaterial")],
+  ["Texture surface lokal", sceneRuntime.includes('withAssetVersion("/intro/earth/earth-surface.jpg")')],
+  ["Texture cosmic lokal", intro.includes('withAssetVersion("/intro/earth/cosmic-bg.jpg")') || sceneRuntime.includes('withAssetVersion("/intro/earth/cosmic-bg.jpg")')],
+  ["Texture sun glow lokal", intro.includes('withAssetVersion("/intro/earth/sun-glow.png")') || sceneRuntime.includes('withAssetVersion("/intro/earth/sun-glow.png")')],
+  ["Kamera dikunci ke Wajo", introFull.includes("wajoQuaternion")],
+  ["Jalur orientasi bertahap Indonesia-Sulawesi-Wajo", introFull.includes("indonesiaQuaternion") && introFull.includes("sulawesiQuaternion")],
+  ["Animasi memakai quaternion slerp", introFull.includes("slerpQuaternions")],
+  ["Animasi memakai delta time", introFull.includes("deltaSeconds")],
+  ["Permukaan Earth memiliki day/night shader", introFull.includes("uNightMap") && introFull.includes("smoothstep(-0.24, 0.18, lightDot)")],
+  ["Night-side city glow tersedia", introFull.includes("pow(max(nightTexture, 0.0), 1.65)")],
+  ["Atmosphere Fresnel tersedia", introFull.includes("fresnel")],
+  ["Cloud layer tersedia", introFull.includes("createCloudMaterial")],
+  ["Cosmic backdrop is screen-stable", introFull.includes("scene.background = cosmicTexture") && !introFull.includes("cosmicBackdrop")],
+  ["Star field uses round shader particles", introFull.includes("gl_PointCoord") && introFull.includes("softEdge") && introFull.includes("aSize")],
+  ["Flat-map bridge tersedia", introFull.includes("createFlatBridgeMaterial")],
   ["Critical preload tetap aktif", intro.includes("preloadCriticalGeoData")],
   ["Map warmup terjadwal", intro.includes("onMapWarmup") && intro.includes("5000")],
-  ["Three.js handoff throttled", intro.includes("handoffThrottle") && intro.includes("48")],
+  ["Three.js handoff throttled", introFull.includes("handoffThrottle") && introFull.includes("48")],
   ["Map vector render dapat ditunda", mapCanvas.includes("deferInitialVectorRender") && mapCanvas.includes("if (!map || !L || deferInitialVectorRender) return")],
   ["Initial layer data load dapat ditunda", mapCanvas.includes("deferInitialLayerDataLoad") && mapCanvas.includes("!deferInitialLayerDataLoad")],
   ["Initial basemap load dapat ditunda", mapCanvas.includes("deferInitialBasemap") && mapCanvas.includes("osm.addTo(map)")],
@@ -75,7 +80,7 @@ const checks = [
   ["Intro tidak menunggu texture optional", intro.includes("void (sceneHandle?.texturePromise ?? Promise.resolve())") && !intro.includes("await Promise.allSettled([criticalReady, textureReady])")],
   ["Intro timeout/fallback aktif", intro.includes("THREE_LOAD_TIMEOUT_MS")],
   ["Exit fade singkat", intro.includes("EXIT_FADE_MS = 180")],
-  ["Timeline cinematic diperpanjang", intro.includes("INTRO_TIMELINE_MS = 7200")],
+  ["Timeline cinematic diperpanjang", sceneRuntime.includes("INTRO_TIMELINE_MS = 7200")],
   ["Intro assets mendapat cache header", nextConfig.includes('source: "/intro/:path*"')],
   ["Intro textures are cached on demand, not during SW install", !sw.includes('"/intro/earth/cosmic-bg.jpg",') && !sw.includes('"/intro/earth/sun-glow.png",') && sw.includes('url.pathname.startsWith("/intro/earth/")')],
   ["Loader CDN lama sudah dihapus", !fs.existsSync(path.join(root, "public", "vendor", "geoportal-three-loader.js"))]

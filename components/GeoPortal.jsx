@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { groupOrder, layers } from "../lib/layers";
 import { buildKecamatanLegend } from "../lib/geo/format";
 import { kecamatanColor } from "../lib/geo/styles";
@@ -15,23 +16,39 @@ import LayerCatalog from "./geoportal/LayerCatalog";
 import MapCanvas from "./geoportal/MapCanvas";
 import MapControls from "./geoportal/MapControls";
 import LegendPanel from "./geoportal/LegendPanel";
-import PrintLegend from "./geoportal/PrintLegend";
-import FeatureInspector from "./geoportal/FeatureInspector";
-import LayerInfoPanel from "./geoportal/LayerInfoPanel";
 import MapStatus from "./geoportal/MapStatus";
 import MobileActions from "./geoportal/MobileActions";
 import ActiveLayersBar from "./geoportal/ActiveLayersBar";
-import PrintPreflightNotice from "./geoportal/PrintPreflightNotice";
 import { getPrintPreflight } from "./geoportal/map/print";
 import { isAdministrativeLayerId } from "./geoportal/map/context";
 import MapHint from "./geoportal/MapHint";
 import MapOrientation from "./geoportal/MapOrientation";
 import MapPerformance from "./geoportal/MapPerformance";
-import RegionComparisonPanel from "./geoportal/RegionComparisonPanel";
 import { IconDeviceDesktop } from "@tabler/icons-react";
 import { withAssetVersion } from "../lib/assetVersion";
 import { getStartupNavigationState } from "../lib/geo/startupNavigation";
 import GeoPortalIntro from "./GeoPortalIntro";
+
+const FeatureInspector = dynamic(() => import("./geoportal/FeatureInspector"), {
+  ssr: false,
+  loading: () => null
+});
+const LayerInfoPanel = dynamic(() => import("./geoportal/LayerInfoPanel"), {
+  ssr: false,
+  loading: () => null
+});
+const RegionComparisonPanel = dynamic(() => import("./geoportal/RegionComparisonPanel"), {
+  ssr: false,
+  loading: () => null
+});
+const PrintPreflightNotice = dynamic(() => import("./geoportal/PrintPreflightNotice"), {
+  ssr: false,
+  loading: () => null
+});
+const PrintLegend = dynamic(() => import("./geoportal/PrintLegend"), {
+  ssr: false,
+  loading: () => null
+});
 
 const DEFAULT_VISIBLE = Object.freeze(
   Object.fromEntries(layers.map((layer) => [layer.id, Boolean(layer.visible)]))
@@ -70,7 +87,9 @@ export default function GeoPortal() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopLayoutReady, setDesktopLayoutReady] = useState(false);
   const [inspectOpen, setInspectOpen] = useState(false);
+  const [inspectorPanelMounted, setInspectorPanelMounted] = useState(false);
   const [layerInfo, setLayerInfo] = useState(null);
+  const [layerInfoPanelMounted, setLayerInfoPanelMounted] = useState(false);
   const [coords, setCoords] = useState("—");
   const [status, setStatus] = useState("Memuat peta…");
   const [mapReady, setMapReady] = useState(false);
@@ -85,6 +104,8 @@ export default function GeoPortal() {
   const [catalogLayerId, setCatalogLayerId] = useState("");
   const [retryTokens, setRetryTokens] = useState({});
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [comparisonPanelMounted, setComparisonPanelMounted] = useState(false);
+  const [printLegendMounted, setPrintLegendMounted] = useState(false);
   const [mapPerformance, setMapPerformance] = useState(null);
   const showDesktopViewNotice = useSyncExternalStore(
     subscribeDesktopViewNotice,
@@ -93,9 +114,6 @@ export default function GeoPortal() {
   );
   const [desktopViewNoticeOpen, setDesktopViewNoticeOpen] = useState(true);
   const startupNavigationRef = useRef(null);
-  if (startupNavigationRef.current === null && typeof window !== "undefined") {
-    startupNavigationRef.current = getStartupNavigationState(window.location.search);
-  }
 
   const closeDesktopViewNotice = useCallback((remember = false) => {
     if (remember) {
@@ -105,6 +123,7 @@ export default function GeoPortal() {
   }, []);
 
   useEffect(() => {
+    startupNavigationRef.current = getStartupNavigationState(window.location.search);
     const params = new URLSearchParams(window.location.search);
     const requestedLayer = params.get("layer");
     const requestedLayers = (params.get("layers") || requestedLayer || "")
@@ -367,6 +386,7 @@ export default function GeoPortal() {
     setStatus(`${payload.layer.title} · dipilih`);
     if (window.matchMedia("(max-width: 1023px)").matches) setSidebarOpen(false);
     setLayerInfo(null);
+    setInspectorPanelMounted(true);
     setSelected(payload);
     setInspectOpen(true);
 
@@ -454,6 +474,7 @@ export default function GeoPortal() {
     if (window.matchMedia("(max-width: 1023px)").matches) {
       setSidebarOpen(false);
     }
+    setLayerInfoPanelMounted(true);
     setLayerInfo(layer);
     updateMapQuery({ feature: null, layer: layer.id });
   }, [updateMapQuery]);
@@ -710,6 +731,7 @@ export default function GeoPortal() {
     );
   }, [canonicalizeRegion, handleLayerInfo, handleRegionFilter, layerData, updateMapQuery, visible]);
   const openRegionComparison = useCallback(() => {
+    setComparisonPanelMounted(true);
     setComparisonOpen(true);
   }, []);
 
@@ -812,6 +834,7 @@ export default function GeoPortal() {
 
   const handleActiveLayerSelect = useCallback((layer) => {
     setHasInteracted(true);
+    setLayerInfoPanelMounted(true);
     setLayerInfo(layer);
     setSelected(null);
     setInspectOpen(false);
@@ -865,13 +888,21 @@ export default function GeoPortal() {
 
     setPrintNotice(null);
     setStatus("Menyiapkan peta untuk dicetak…");
+    setPrintLegendMounted(true);
+
+    const printLegendChunk = import("./geoportal/PrintLegend").catch(() => null);
     const prepared = await mapApi.current?.preparePrint?.();
+    await printLegendChunk;
     if (prepared === false) {
       return;
     }
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => window.print());
+
+    await new Promise((resolve) => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(resolve);
+      });
     });
+    window.print();
   }, [visible]);
 
   const handleMapReadyStatus = useCallback((nextStatus) => {
@@ -1096,7 +1127,7 @@ export default function GeoPortal() {
             onClose={() => setLegendOpen(false)}
           />
           <MapStatus status={status} coords={coords} />
-          <LayerInfoPanel
+          {layerInfoPanelMounted && <LayerInfoPanel
             layer={layerInfo}
             data={layerInfo ? layerData[layerInfo.id] : null}
             summary={layerInfo ? DATA_SUMMARY[layerInfo.file] : null}
@@ -1110,8 +1141,8 @@ export default function GeoPortal() {
             onShowOnMap={() => layerInfo && handleLayerInfoVisibility(layerInfo)}
             onZoomToLayer={zoomToLayer}
             onShare={() => handleShare(`data ${layerInfo?.title || "ini"}`)}
-          />
-          <FeatureInspector
+          />}
+          {inspectorPanelMounted && <FeatureInspector
             selected={selected}
             open={inspectOpen}
             onClose={closeInspector}
@@ -1123,15 +1154,15 @@ export default function GeoPortal() {
             onExploreRelated={handleExploreRelated}
             onExploreAdminLayer={handleExploreAdminLayer}
             onCompareRegion={selected?.layer?.id === "adm-kecamatan" ? openRegionComparison : undefined}
-          />
-          <RegionComparisonPanel
+          />}
+          {comparisonPanelMounted && <RegionComparisonPanel
             key={`${comparisonOpen}:${selected?.featureKey || selected?.feature?.properties?.Kecamatan || regionFilter || ""}`}
             open={comparisonOpen}
             initialRegion={selected?.regionName || regionFilter || (selected?.layer?.id === "adm-kecamatan" ? selected?.feature?.properties?.Kecamatan : "")}
             districtData={layerData["adm-kecamatan"]}
             regionSummary={regionSummary}
             onClose={() => setComparisonOpen(false)}
-          />
+          />}
           <MobileActions
             onOpenSidebar={() => {
               setHasInteracted(true);
@@ -1149,7 +1180,7 @@ export default function GeoPortal() {
           />
         </div>
 
-        <PrintLegend
+        {printLegendMounted && <PrintLegend
           activeLayers={activeLayers}
           layerData={layerData}
           kecamatanLegend={printKecamatanLegend}
@@ -1159,7 +1190,7 @@ export default function GeoPortal() {
           selectedRegion={selectedRegion}
           regionFilter={regionFilter}
           printScale={printScale}
-        />
+        />}
       </main>
     </div>
   );
